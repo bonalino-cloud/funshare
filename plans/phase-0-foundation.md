@@ -8,7 +8,7 @@
 - [ ] `be/p0-vercel` — проект на Vercel, привязка к GitHub (прод — `main`, превью — все ветки), `vercel env pull`
 - [ ] `be/p0-ci` — GitHub Actions: `typecheck`, `lint`, `test` на каждый PR в `dev` и `main`
 - [ ] `be/p0-db` — Neon через Vercel Marketplace, Drizzle, первая миграция (`generations`, `artifacts`), Blob-стор
-- [ ] `be/p0-repo-rules` — CODEOWNERS с реальными логинами, защита `main`/`dev` (см. предупреждение про тариф в `architecture/git-workflow.md`)
+- [ ] `be/p0-repo-rules` — защита `main`/`dev` (см. предупреждение про тариф в `architecture/git-workflow.md`)
 
 ## Общая зона
 

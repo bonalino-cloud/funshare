@@ -1,21 +1,29 @@
-# Владельцы зон (см. CLAUDE.md). Замените логины на реальные GitHub-логины.
-# Пока строки закомментированы: несуществующий логин GitHub считает ошибкой.
+# Владельцы зон (см. CLAUDE.md).
+# Сергей (@bonalino-cloud) — FE, Денис (@foxawear-lab) — BE.
+# Порядок важен: последнее совпадение побеждает.
 
-# * @BE_LOGIN
+# По умолчанию — BE (конфиги, инфраструктура, всё, что не попало в зоны ниже)
+*                    @foxawear-lab
 
 # FE — интерфейс, визуал, UX
-# /src/app/(site)/   @FE_LOGIN
-# /src/components/   @FE_LOGIN
-# /src/styles/       @FE_LOGIN
-# /src/lib/client/   @FE_LOGIN
-# /public/           @FE_LOGIN
+/src/app/(site)/     @bonalino-cloud
+/src/components/     @bonalino-cloud
+/src/styles/         @bonalino-cloud
+/src/lib/client/     @bonalino-cloud
+/public/             @bonalino-cloud
 
 # BE — API, конвейер, данные, инфраструктура
-# /src/app/api/      @BE_LOGIN
-# /src/server/       @BE_LOGIN
-# /src/workflows/    @BE_LOGIN
-# /drizzle/          @BE_LOGIN
-# /.github/          @BE_LOGIN
+/src/app/api/        @foxawear-lab
+/src/server/         @foxawear-lab
+/src/workflows/      @foxawear-lab
+/drizzle/            @foxawear-lab
+/.github/            @foxawear-lab
+
+# Общие документы — оба
+/business/           @bonalino-cloud @foxawear-lab
+/architecture/       @bonalino-cloud @foxawear-lab
+/plans/              @bonalino-cloud @foxawear-lab
+/CLAUDE.md           @bonalino-cloud @foxawear-lab
 
 # Общая зона — ревью обоих
-# /src/contracts/    @FE_LOGIN @BE_LOGIN
+/src/contracts/      @bonalino-cloud @foxawear-lab

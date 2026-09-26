@@ -12,8 +12,8 @@
 
 | Зона | Владелец | Папки |
 |---|---|---|
-| **FE** — интерфейс, визуал, UX-флоу | Фронтенд | `src/app/(site)/**`, `src/components/**`, `src/styles/**`, `src/lib/client/**`, `public/**` |
-| **BE** — API, конвейер, агенты, данные, инфраструктура | Бэкенд | `src/app/api/**`, `src/server/**`, `src/workflows/**`, `drizzle/**`, `.github/workflows/**` |
+| **FE** — интерфейс, визуал, UX-флоу | Сергей, `@bonalino-cloud` | `src/app/(site)/**`, `src/components/**`, `src/styles/**`, `src/lib/client/**`, `public/**` |
+| **BE** — API, конвейер, агенты, данные, инфраструктура | Денис, `@foxawear-lab` | `src/app/api/**`, `src/server/**`, `src/workflows/**`, `drizzle/**`, `.github/workflows/**` |
 | **Общая** — контракты | Оба, ревью обоих обязательно | `src/contracts/**` |
 
 - Агент **не правит файлы чужой зоны**. Если нужно изменение там — пишет задачу владельцу (issue или комментарий в PR).
