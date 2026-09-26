@@ -28,6 +28,8 @@ src/contracts/
 
 Страница `/a/[slug]` читает артефакт на сервере напрямую (server component), без HTTP-запроса к себе.
 
+Картинки для шаринга рисует зона SERJ из тех же данных `Artifact`: `/a/[slug]/opengraph-image` (1200×630, превью ссылки) и `/a/[slug]/story.png` (1080×1920, Instagram Stories).
+
 ## Статусы
 
 `queued → scraping → analyzing → writing → drawing → ready`, из любого — `failed`.
