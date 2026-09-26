@@ -8,7 +8,7 @@
 | 1 | `scrape` | `igUsername` | `ProfileSnapshot` | `scraping` — «Изучаем профиль» |
 | 2 | `analyze` | `ProfileSnapshot` | `PersonaProfile` | `analyzing` — «Разбираемся, кто это» |
 | 3 | `write` | `PersonaProfile`, `kind` | `ArtifactContent` (текст + `imagePrompts[]`) | `writing` — «Пишем досье» |
-| 4 | `draw` | `imagePrompts[]` | URL картинок в Blob | `drawing` — «Рисуем иллюстрации» |
+| 4 | `draw` | `imagePrompts[]` | URL картинок в Blob (GPT Image 2.5 через KIE API) | `drawing` — «Рисуем иллюстрации» |
 | 5 | `assemble` | всё выше | `Artifact` со `slug` | `ready` |
 | — | ошибка на любом шаге после ретраев | | `errorCode` | `failed` |
 
@@ -24,6 +24,17 @@
 6. **Промпты версионируются**: `src/server/prompts/<kind>/v<N>.ts`. Версия промпта пишется в запись, чтобы сравнивать качество.
 7. **Гардрейлы в шаге `analyze`**: схема `PersonaProfile` содержит флаги `isPrivate`, `likelyMinor`, `insufficientData`. Любой `true` → `failed` с понятным `errorCode`, шаги 3–5 не запускаются и не тратят деньги.
 8. **Тон и безопасность** — в системном промпте шага `write` (запретные темы из `business/INDEX.md`). В картинках — только стилизация, без фотореализма лица.
+
+## Картинки: KIE API
+
+Модель — GPT Image 2.5 (вариант Flare или Sunburst, решаем в фазе 2). CLI `velsvisual` из команды Visual — инструмент для локальных проб; в продукте конвейер ходит в REST API kie.ai напрямую.
+
+- **Запуск:** `POST https://api.kie.ai/api/v1/jobs/createTask`, заголовок `Authorization: Bearer $KIE_API_KEY`, тело `{ model, input: { prompt, aspect_ratio, resolution }, callBackUrl }`. Ответ — `taskId`.
+- **Результат:** KIE присылает callback на `POST /api/webhooks/kie`, оттуда продолжаем workflow. Запасной путь — опрос `GET /api/v1/jobs/recordInfo?taskId=…`.
+- **Картинку сразу копируем в Vercel Blob** и переводим в WebP. Ссылки KIE живут около 24 часов, дальше артефакт остался бы без картинок.
+- **Параметры по умолчанию:** `resolution: 2K`, `aspect_ratio: 3:4` для секций и `16:9` для hero (финально — по макету SERJ). Картинка 2K стоит $0.05, артефакт из 3–5 картинок — $0.15–0.25.
+- **Ошибки KIE:** 402 — кончились кредиты (алерт в лог, `failed` с `internal`), 429 — ретрай с паузой, 422 — баг в запросе (не ретраить, чинить код).
+- **Входные схемы полей** сверять по документации модели: `https://docs.kie.ai/market/gpt/<id-модели>.md`.
 
 ## Коды ошибок (`errorCode`) → текст в UI (решает SERJ)
 

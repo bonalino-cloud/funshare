@@ -4,9 +4,10 @@
 
 ## DAN
 
-- [ ] `dan/p2-image-model-test` — сравнить 2–3 модели картинок на eval-сете (стиль, консистентность, цена, время), зафиксировать выбор в `architecture/stack.md`
+- [ ] `dan/p2-kie-client` — клиент KIE API: `createTask`, вебхук `/api/webhooks/kie` с проверкой, запасной опрос `recordInfo`, копирование результата в Blob
+- [ ] `dan/p2-image-variant-test` — GPT Image 2.5 Flare против Sunburst на eval-сете (стиль, единообразие серии, время), 1K против 2K; выбор записать в `architecture/stack.md`
 - [ ] `dan/p2-image-prompts` — шаг `write` выдаёт `imagePrompts[]` с общим стилевым префиксом (стиль задаёт SERJ, см. синхронизацию)
-- [ ] `dan/p2-draw-step` — параллельная генерация, WebP в public Blob, правило «меньше половины упало — собираем без них»
+- [ ] `dan/p2-draw-step` — параллельная генерация через KIE, WebP в public Blob, правило «меньше половины упало — собираем без них»
 - [ ] `dan/p2-assemble` — финальная сборка `Artifact.images`
 - [ ] `dan/p2-events-api` — `POST /api/artifacts/:slug/events` (`view`, `share_click`, `copy_link`, `cta_click`)
 - [ ] `dan/p2-delete` — `DELETE /api/artifacts/:slug` по `ownerToken`, удаление картинок

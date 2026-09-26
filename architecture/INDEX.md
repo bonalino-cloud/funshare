@@ -16,7 +16,7 @@
                                                  1. scrape    → Apify → ProfileSnapshot
                                                  2. analyze   → LLM   → PersonaProfile  ← источник истины
                                                  3. write     → LLM   → ArtifactContent + image prompts
-                                                 4. draw      → Image model × N → Vercel Blob
+                                                 4. draw      → KIE API (GPT Image 2.5) × N → Vercel Blob
                                                  5. assemble  → Artifact (slug) → status: ready
                      ▼
                Postgres (Neon) + Blob          /a/[slug] — публичная страница + OG-картинка для мессенджеров
