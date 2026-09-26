@@ -1,4 +1,4 @@
-# Контракты FE↔BE (общая зона)
+# Контракты SERJ↔DAN (общая зона)
 
 Контракт — единственное место, где зоны касаются друг друга. Код лежит в `src/contracts/`. Любое изменение — отдельная ветка `contracts/<что>` и ревью обоих.
 
@@ -7,11 +7,11 @@
 ```
 src/contracts/
   generation.ts      GenerationRequest, GenerationStatus, ErrorCode
-  profile.ts         ProfileSnapshot (нормализованный скрейп)      — только BE
-  persona.ts         PersonaProfile (источник истины)             — только BE
-  artifact.ts        ArtifactContent, Artifact (публичный вид)    — BE пишет, FE рисует
+  profile.ts         ProfileSnapshot (нормализованный скрейп)      — только DAN
+  persona.ts         PersonaProfile (источник истины)             — только DAN
+  artifact.ts        ArtifactContent, Artifact (публичный вид)    — DAN пишет, SERJ рисует
   index.ts           реэкспорт + CONTRACT_VERSION
-  fixtures/          готовые JSON-примеры для моков FE и тестов BE
+  fixtures/          готовые JSON-примеры для моков SERJ и тестов DAN
     status-sequence.json   последовательность статусов от queued до ready
     status-failed.json
     artifact-dossier.json  полный готовый артефакт с картинками-плейсхолдерами
@@ -60,8 +60,8 @@ Artifact = {
 1. **Внутри фазы — только добавление** необязательных полей. Удалять и переименовывать поля нельзя.
 2. Ломающее изменение: `CONTRACT_VERSION` +1, обновить фикстуры, в PR отметить, что должна сделать другая сторона.
 3. Фикстуры обязаны проходить свои схемы. Тест `contracts.test.ts` это проверяет в CI.
-4. BE не отдаёт на фронт поля, которых нет в схеме. Ответ API прогоняется через `.parse()` перед отправкой.
+4. DAN не отдаёт на фронт поля, которых нет в схеме. Ответ API прогоняется через `.parse()` перед отправкой.
 
-## Моки на стороне FE
+## Моки на стороне SERJ
 
-`src/lib/client/api.ts` — единственная точка, через которую FE ходит в API. При `NEXT_PUBLIC_USE_MOCKS=1` он отдаёт фикстуры и проигрывает `status-sequence.json` с задержкой ~2 с на шаг. Экран ожидания, ошибки и готовый артефакт FE строит, не дожидаясь BE.
+`src/lib/client/api.ts` — единственная точка, через которую SERJ ходит в API. При `NEXT_PUBLIC_USE_MOCKS=1` он отдаёт фикстуры и проигрывает `status-sequence.json` с задержкой ~2 с на шаг. Экран ожидания, ошибки и готовый артефакт SERJ строит, не дожидаясь DAN.

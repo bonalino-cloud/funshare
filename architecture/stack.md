@@ -18,7 +18,7 @@
 | БД | **Postgres (Neon через Vercel Marketplace) + Drizzle ORM** | Схема в TypeScript, миграции в репо, отдельная ветка БД на превью |
 | Файлы | **Vercel Blob** | Картинки артефактов (public) и сырой скрейп (private) |
 | Защита | **Vercel BotID + rate limit** (Upstash Redis через Marketplace) | Каждая генерация стоит денег — боты и спам недопустимы |
-| Валидация | **zod** | Одна схема на границе FE↔BE и на выходе LLM |
+| Валидация | **zod** | Одна схема на границе SERJ↔DAN и на выходе LLM |
 | Тесты | **Vitest** (схемы, шаги конвейера), **Playwright** (сквозной флоу) | |
 | CI | **GitHub Actions**: typecheck, lint, test на каждый PR | |
 | Аналитика | **Vercel Web Analytics** + свои события в БД | Метрики из `business/INDEX.md` |
@@ -34,10 +34,10 @@
 
 | Переменная | Кто использует |
 |---|---|
-| `DATABASE_URL` | BE |
-| `BLOB_READ_WRITE_TOKEN` | BE |
-| `AI_GATEWAY_API_KEY` (локально; на Vercel — OIDC) | BE |
-| `APIFY_TOKEN` | BE |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | BE |
-| `NEXT_PUBLIC_USE_MOCKS` | FE (`1` — работать на фикстурах) |
-| `NEXT_PUBLIC_SITE_URL` | FE, BE (ссылки для шаринга) |
+| `DATABASE_URL` | DAN |
+| `BLOB_READ_WRITE_TOKEN` | DAN |
+| `AI_GATEWAY_API_KEY` (локально; на Vercel — OIDC) | DAN |
+| `APIFY_TOKEN` | DAN |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | DAN |
+| `NEXT_PUBLIC_USE_MOCKS` | SERJ (`1` — работать на фикстурах) |
+| `NEXT_PUBLIC_SITE_URL` | SERJ, DAN (ссылки для шаринга) |

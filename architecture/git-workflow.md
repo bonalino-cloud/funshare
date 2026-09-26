@@ -9,7 +9,7 @@
 | `main` | Продакшн. Всегда рабочий | Только merge PR из `dev` в конце фазы или релиза | Production на Vercel |
 | `dev` | Интеграция. Сюда сливаются все задачи | Только merge PR из рабочих веток | Preview-деплой (стейджинг) |
 
-Других долгоживущих веток нет. **Личных веток `fe` и `be` на всю фазу не заводим**: за неделю они расходятся с `dev`, и слияние превращается в потерю работы.
+Других долгоживущих веток нет. **Личных веток `serj` и `dan` на всю фазу не заводим**: за неделю они расходятся с `dev`, и слияние превращается в потерю работы.
 
 ## Рабочие ветки
 
@@ -17,8 +17,8 @@
 
 | Префикс | Кто | Пример |
 |---|---|---|
-| `fe/p<N>-<задача>` | Фронтенд | `fe/p1-landing`, `fe/p1-progress-screen` |
-| `be/p<N>-<задача>` | Бэкенд | `be/p1-scrape-step`, `be/p1-generations-api` |
+| `serj/p<N>-<задача>` | SERJ (Сергей) | `serj/p1-landing`, `serj/p1-progress-screen` |
+| `dan/p<N>-<задача>` | DAN (Денис) | `dan/p1-scrape-step`, `dan/p1-generations-api` |
 | `contracts/<что>` | Любой, ревью обоих | `contracts/artifact-v1`, `contracts/add-share-count` |
 | `fix/<что>` | Любой, в своей зоне | `fix/og-image-cyrillic` |
 | `docs/<что>` | Любой | `docs/phase-2-plan` |
@@ -28,9 +28,9 @@
 
 ```bash
 git switch dev && git pull
-git switch -c fe/p1-landing
+git switch -c serj/p1-landing
 # ... работа, коммиты ...
-git push -u origin fe/p1-landing
+git push -u origin serj/p1-landing
 gh pr create --draft --base dev --fill
 ```
 
@@ -58,6 +58,6 @@ gh pr create --draft --base dev --fill
 
 ## Сообщения коммитов
 
-`<тип>(<зона>): <что сделано>`, где тип — `feat | fix | refactor | test | chore | docs | wip`, зона — `fe | be | contracts | infra`.
+`<тип>(<зона>): <что сделано>`, где тип — `feat | fix | refactor | test | chore | docs | wip`, зона — `serj | dan | contracts | infra`.
 
-Пример: `feat(be): scrape step with 24h cache`.
+Пример: `feat(dan): scrape step with 24h cache`.

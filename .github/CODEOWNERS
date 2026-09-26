@@ -1,18 +1,18 @@
 # Владельцы зон (см. CLAUDE.md).
-# Сергей (@bonalino-cloud) — FE, Денис (@foxawear-lab) — BE.
+# SERJ — Сергей (@bonalino-cloud), фронтенд. DAN — Денис (@foxawear-lab), бэкенд.
 # Порядок важен: последнее совпадение побеждает.
 
-# По умолчанию — BE (конфиги, инфраструктура, всё, что не попало в зоны ниже)
+# По умолчанию — DAN (конфиги, инфраструктура, всё, что не попало в зоны ниже)
 *                    @foxawear-lab
 
-# FE — интерфейс, визуал, UX
+# SERJ — интерфейс, визуал, UX
 /src/app/(site)/     @bonalino-cloud
 /src/components/     @bonalino-cloud
 /src/styles/         @bonalino-cloud
 /src/lib/client/     @bonalino-cloud
 /public/             @bonalino-cloud
 
-# BE — API, конвейер, данные, инфраструктура
+# DAN — API, конвейер, данные, инфраструктура
 /src/app/api/        @foxawear-lab
 /src/server/         @foxawear-lab
 /src/workflows/      @foxawear-lab
