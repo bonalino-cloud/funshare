@@ -12,7 +12,7 @@
 | Превью для мессенджеров | **`next/og`** (`opengraph-image.tsx`) | Картинка-превью генерируется из данных артефакта, ссылка в Telegram/WhatsApp выглядит как открытка |
 | Хостинг | **Vercel** | Превью-деплой на каждый PR, env, логи, аналитика из коробки |
 | Конвейер | **Vercel Workflow** (`"use workflow"` / `"use step"`) | Генерация идёт 30–90 с и из нескольких шагов; каждый шаг ретраится отдельно, падение картинки не перезапускает скрейп |
-| LLM | **AI SDK + Vercel AI Gateway**, текст — `anthropic/claude-sonnet-5` | `generateObject` + zod дают структурированный JSON; Gateway — один ключ, фолбэки моделей, учёт расходов |
+| LLM | **AI SDK + `@ai-sdk/anthropic`**, текст — `claude-sonnet-5`, свой ключ Anthropic | `generateObject` + zod дают структурированный JSON; напрямую в Anthropic, расходы видны в console.anthropic.com |
 | Картинки | **GPT Image 2.5 через KIE API** (kie.ai) | Тот же API, что у команды Visual в Claude Code. Два варианта модели с одной ценой — `gpt-image-2-5-flare-text-to-image` и `gpt-image-2-5-sunburst-text-to-image`: 1K — $0.03, 2K — $0.05, 4K — $0.08 за картинку. Вариант выбираем тестом в фазе 2; id модели — одна строка в конфиге |
 | Скрейпинг | **Apify — Instagram Profile Scraper** (API) | Не держим свой скрейпер и прокси; платим за профиль |
 | БД | **Postgres (Neon через Vercel Marketplace) + Drizzle ORM** | Схема в TypeScript, миграции в репо, отдельная ветка БД на превью |
@@ -36,7 +36,7 @@
 |---|---|
 | `DATABASE_URL` | DAN |
 | `BLOB_READ_WRITE_TOKEN` | DAN |
-| `AI_GATEWAY_API_KEY` (локально; на Vercel — OIDC) | DAN |
+| `ANTHROPIC_API_KEY` — отдельный ключ проекта в console.anthropic.com | DAN |
 | `APIFY_TOKEN` | DAN |
 | `KIE_API_KEY` — отдельный ключ проекта, не личный ключ для Visual | DAN |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | DAN |
