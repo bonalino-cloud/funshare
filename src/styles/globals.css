@@ -1,26 +1,208 @@
 @import "tailwindcss";
 
-/* Нейтральная заготовка. Токены, шрифты и темы — задача serj/p0-design-system. */
+/*
+ * Funshare — дизайн-система. Правила и примеры: src/styles/DESIGN.md
+ * Живой стайлгайд: /design
+ *
+ * Холст всегда тёмный (фестивальная ночь), свет дают цветные блоки.
+ * Светлой темы нет намеренно: бренд держится на контрасте ink + насыщенные блоки.
+ */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* ── Цвета ─────────────────────────────────────────── */
+  --color-ink: #141414; /* холст */
+  --color-ink-2: #1f1f1f; /* приподнятые поверхности на холсте */
+  --color-ink-3: #2c2c2c; /* границы и разделители на холсте */
+  --color-paper: #f3ebdd; /* кремовый: светлые блоки и текст на тёмном */
+  --color-paper-dim: #b9b2a6; /* второстепенный текст на холсте */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
+  --color-cobalt: #2152c4;
+  --color-tomato: #e0463b;
+  --color-sun: #f5d133;
+  --color-mint: #3fa58f;
+  --color-violet: #7c4dff;
+  --color-bubblegum: #f7a8e0;
+  --color-lime: #33d17a;
+  --color-flame: #ff7a1a;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* ── Радиусы ───────────────────────────────────────── */
+  --radius-card: 1.75rem; /* большие цветные блоки */
+  --radius-tile: 1.125rem; /* вложенные плитки, инпуты-карточки */
+  --radius-chip: 9999px; /* кнопки, пилюли, теги */
+
+  /* ── Тени ──────────────────────────────────────────── */
+  --shadow-block: 0 22px 44px -18px rgb(0 0 0 / 0.75);
+  --shadow-sticker: 0 10px 22px -8px rgb(0 0 0 / 0.6);
+  --shadow-pop: 4px 4px 0 0 var(--color-ink);
+
+  /* ── Движение ──────────────────────────────────────── */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-marquee: marquee 28s linear infinite;
+  --animate-spin-slow: spin 18s linear infinite;
+  --animate-wiggle: wiggle 2.4s ease-in-out infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-4deg);
+    }
+    50% {
+      transform: rotate(4deg);
+    }
   }
 }
 
+/* Акцент мини-лендинга: <main data-accent="sun"> — один ведущий цвет на фичу */
+:root,
+[data-accent="sun"] {
+  --accent: var(--color-sun);
+  --on-accent: var(--color-ink);
+}
+[data-accent="cobalt"] {
+  --accent: var(--color-cobalt);
+  --on-accent: var(--color-paper);
+}
+[data-accent="tomato"] {
+  --accent: var(--color-tomato);
+  --on-accent: var(--color-ink);
+}
+[data-accent="mint"] {
+  --accent: var(--color-mint);
+  --on-accent: var(--color-ink);
+}
+[data-accent="violet"] {
+  --accent: var(--color-violet);
+  --on-accent: var(--color-paper);
+}
+[data-accent="bubblegum"] {
+  --accent: var(--color-bubblegum);
+  --on-accent: var(--color-ink);
+}
+[data-accent="lime"] {
+  --accent: var(--color-lime);
+  --on-accent: var(--color-ink);
+}
+[data-accent="flame"] {
+  --accent: var(--color-flame);
+  --on-accent: var(--color-ink);
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+
+  /*
+   * Шрифты. inline обязателен: переменные --font-inter-tight и др. ставит next/font
+   * на обёртку сайта (src/app/(site)/layout.tsx), а не на :root. Без inline токен
+   * вычислился бы на :root, где их ещё нет, и шрифт молча упал бы в системный.
+   */
+  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
+  --font-display: var(--font-inter-tight), system-ui, sans-serif;
+  --font-condensed: var(--font-sofia-condensed), "Arial Narrow", sans-serif;
+  --font-sticker: var(--font-dela-gothic), var(--font-inter-tight), sans-serif;
+}
+
+html {
+  background: var(--color-ink);
+  color-scheme: dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--color-sun);
+  color: var(--color-ink);
+}
+
+/* ── Типографика ─────────────────────────────────────── */
+@utility type-display {
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.055em;
+  line-height: 0.86;
+  font-size: clamp(3.25rem, 11vw, 8.5rem);
+}
+@utility type-title {
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+  font-size: clamp(2.25rem, 6vw, 4.25rem);
+}
+@utility type-condensed {
+  font-family: var(--font-sofia-condensed), "Arial Narrow", sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.88;
+  font-size: clamp(2.5rem, 8vw, 5rem);
+}
+@utility type-sticker {
+  font-family: var(--font-dela-gothic), var(--font-inter-tight), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--color-sun);
+  -webkit-text-stroke: 0.06em var(--color-ink);
+  paint-order: stroke fill;
+  text-shadow: 0.06em 0.07em 0 var(--color-ink);
+}
+@utility type-eyebrow {
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  font-size: 0.8125rem;
+}
+@utility type-body {
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+  font-size: 1.0625rem;
+}
+
+/* ── Фактура: зерно поверх цветных блоков, как в рефах ── */
+@utility grain {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.22;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Фото в стиле рефа HIPHOP NIGHT: ч/б, жёсткий контраст, ложится на цвет блока */
+@utility halftone {
+  filter: grayscale(1) contrast(1.35) brightness(1.05);
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
