@@ -22,7 +22,6 @@ export function VideoSection() {
       <div className="mx-auto grid max-w-6xl items-center gap-16 px-4 md:grid-cols-[minmax(0,1fr)_300px] md:gap-20 md:px-6">
         <div>
           <SectionHeading
-            label="9:16 · 15 сек"
             lines={[
               ["Прожарка,"],
               ["которая"],

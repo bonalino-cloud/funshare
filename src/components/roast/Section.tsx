@@ -32,17 +32,14 @@ export function Section({
 
 /** Заголовок секции: метка в углу + огромный condensed H2, проявляется по буквам */
 export function SectionHeading({
-  label,
   lines,
   className,
 }: {
-  label?: string;
   lines: RevealSegment[][];
   className?: string;
 }) {
   return (
     <div className={cx("relative", className)}>
-      {label && <p className="mb-4 type-label text-[color:var(--muted)]">{label}</p>}
       <RevealText as="h2" className="type-display-section" step={26} jitter lines={lines} />
     </div>
   );

@@ -14,7 +14,6 @@ export function StepsSection() {
     <Section id="how" surface="dark" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <SectionHeading
-          label="Три шага"
           lines={[["Как ", { br: "mobile" }, { text: "дела", className: "tilt" }, "ется"]]}
         />
 

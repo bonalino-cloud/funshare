@@ -135,7 +135,6 @@ export function LevelsSection() {
     <Section id="levels" surface="light" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <SectionHeading
-          label="Сборки"
           lines={[["Вот что ", { br: "mobile" }, { text: "полу", className: "tilt" }, "чится"]]}
         />
 
@@ -215,7 +214,7 @@ export function LevelsSection() {
             style={{ "--o": active * 2 + 1 } as CSSProperties}
           >
             <div>
-              <p className="type-label text-[color:var(--muted)]">Что входит · {level.name}</p>
+              <h3 className="type-display-m">Что входит в {level.name}</h3>
               <ul className="mt-5 space-y-3">
                 {level.includes.map((t) => (
                   <li
