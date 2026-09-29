@@ -163,7 +163,7 @@ export function LevelsSection() {
                 >
                   <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
                     {l.heat === 3 && (
-                      <CornerFlames className="absolute -right-4 -bottom-3 w-44 opacity-90 md:w-52" />
+                      <CornerFlames className="absolute -right-3 -bottom-2 w-32 md:w-36" />
                     )}
                     <Flames
                       trigger="hover"
@@ -197,7 +197,7 @@ export function LevelsSection() {
                   <span
                     className={cx(
                       "relative mt-1 type-body font-semibold",
-                      l.heat === 3 && "max-w-[58%]",
+                      l.heat === 3 && "max-w-[56%] md:max-w-[52%]",
                     )}
                   >
                     {l.sub}
