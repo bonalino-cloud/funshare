@@ -59,7 +59,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           width={82}
           depth={1.8}
           rotate={24}
-          className="bottom-[23%] left-[4%] max-md:hidden"
+          className="bottom-[23%] left-[calc(4%+60px)] max-md:hidden"
         />
         <Sticker
           src={flame}
