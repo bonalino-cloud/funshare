@@ -1,9 +1,8 @@
 import { cx } from "@/components/cx";
-import { Asterisk } from "@/components/brand/Asterisk";
+import { FunshareLogo } from "@/components/brand/FunshareLogo";
 
 /**
- * Шапка (DESIGN.md §8.11): знак + название слева, бургер справа, 56 px, прозрачная поверх hero.
- * Слот логотипа агрегатора — слева, логотип пришлёт Сергей.
+ * Шапка (DESIGN.md §8.11): логотип Funshare + «/ прожарка» слева, бургер справа, 56 px, прозрачная поверх hero.
  */
 export function RoastNav({ className }: { className?: string }) {
   return (
@@ -13,9 +12,11 @@ export function RoastNav({ className }: { className?: string }) {
         className,
       )}
     >
-      <a href="#" className="group/logo flex items-center gap-2 type-label text-sm text-on-surface">
-        <Asterisk className="size-6 text-red transition-transform duration-500 group-hover/logo:rotate-[120deg]" />
-        <span>Funshare</span>
+      <a
+        href="#"
+        className="group/logo flex items-center gap-2.5 type-label text-sm text-on-surface"
+      >
+        <FunshareLogo className="h-7 w-auto md:h-8" />
         <span className="opacity-60">/ прожарка</span>
       </a>
       <button

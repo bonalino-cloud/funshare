@@ -1,4 +1,4 @@
-import { Asterisk } from "@/components/brand/Asterisk";
+import { FunshareLogo } from "@/components/brand/FunshareLogo";
 import { ArrowNE } from "@/components/brand/Doodles";
 import { FlameVortex } from "../FlameVortex";
 
@@ -12,13 +12,9 @@ export function RoastFooter() {
       className="relative isolate overflow-hidden bg-surface text-on-surface"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pt-14 md:flex-row md:items-center md:justify-between md:px-6">
-        <div className="flex items-center gap-3">
-          <span className="flex gap-1 text-red" aria-hidden="true">
-            <Asterisk className="size-4 animate-spin-slow" />
-            <Asterisk className="size-4 animate-spin-slow [animation-delay:-4s]" />
-            <Asterisk className="size-4 animate-spin-slow [animation-delay:-8s]" />
-          </span>
-          <span className="type-meta">Funshare · Прожарка с любовью и огоньком · 2026 ©</span>
+        <div className="group/logo flex flex-wrap items-center gap-3">
+          <FunshareLogo className="h-8 w-auto" />
+          <span className="type-meta">· Прожарка с любовью и огоньком · 2026 ©</span>
         </div>
         <nav className="flex flex-wrap gap-2">
           {links.map((l) => (
