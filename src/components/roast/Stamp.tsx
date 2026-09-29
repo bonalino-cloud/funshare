@@ -1,8 +1,8 @@
 import { cx } from "@/components/cx";
 
 /**
- * Эмблема-штамп в духе нашивки: в центре жёлтый зубчатый «взрыв» с красным ✱ — он вращается;
- * вокруг надпись без фона: сверху по дуге главная, снизу мелкая подпись. Текст — currentColor.
+ * Эмблема-штамп в духе нашивки: в центре жёлтый зубчатый «взрыв» с оранжевым огоньком крутится против часовой,
+ * кольцо надписи без фона (сверху главная, снизу мелкая, между ними точки) — по часовой. Текст — currentColor.
  * Hover — взрыв крутится быстрее, эмблема чуть подпрыгивает.
  */
 
@@ -17,6 +17,9 @@ function burst(cx: number, cy: number, R: number, r: number, n: number) {
 }
 
 const STAR = burst(100, 100, 60, 44, 12);
+// Огонёк по центру взрыва: основание на y=124, кончик на y=74
+const FLAME =
+  "M100 124C84 122 76 110 81 97c3-8 9-12 7-23 10 7 14 16 13 25 4-5 7-11 6-18 11 11 15 25 9 35-4 6-10 8-16 8Z";
 
 export function Stamp({
   top,
@@ -42,7 +45,8 @@ export function Stamp({
           <path id="stamp-bottom" d="M 22 100 A 78 78 0 0 0 178 100" />
         </defs>
 
-        <g className="origin-center animate-spin-slow [transform-box:fill-box] group-hover/stamp:[animation-duration:3s]">
+        {/* Центр крутится против часовой */}
+        <g className="origin-[100px_100px] [animation:spin_16s_linear_infinite_reverse] [transform-box:view-box] group-hover/stamp:[animation-duration:3s]">
           <path
             d={STAR}
             className="fill-yellow"
@@ -50,54 +54,75 @@ export function Stamp({
             strokeWidth="4"
             strokeLinejoin="round"
           />
-          {/* ✱ — знак системы, радиально симметричный: хорошо смотрится в движении */}
-          <g className="fill-red" stroke="#111111" strokeWidth="3.5">
-            {Array.from({ length: 6 }, (_, i) => (
-              <ellipse
-                key={i}
-                cx="100"
-                cy="78"
-                rx="9"
-                ry="20"
-                transform={`rotate(${i * 60} 100 100)`}
-              />
-            ))}
-          </g>
-          <circle cx="100" cy="100" r="11" className="fill-red" />
+          {/* Оранжевый огонёк с красной сердцевиной */}
+          <path
+            d={FLAME}
+            className="fill-orange"
+            stroke="#111111"
+            strokeWidth="3.5"
+            strokeLinejoin="round"
+          />
+          <path
+            d={FLAME}
+            transform="translate(100 124) scale(0.55) translate(-100 -124)"
+            className="fill-red"
+          />
         </g>
 
-        <text
-          className="fill-current font-wide text-[17px] font-black uppercase"
-          letterSpacing="1"
-          // Обводка ink под заливкой: надпись читается и там, где ложится на кремовые буквы заголовка
-          stroke="#111111"
-          strokeWidth="5"
-          strokeLinejoin="round"
-          paintOrder="stroke"
-        >
-          <textPath href="#stamp-top" startOffset="50%" textAnchor="middle">
-            {top}
-          </textPath>
-        </text>
-        {bottom && (
+        {/* Кольцо надписей крутится по часовой */}
+        <g className="origin-[100px_100px] animate-spin-slow [transform-box:view-box] group-hover/stamp:[animation-duration:3s]">
           <text
-            className="fill-current font-wide text-[13px] font-extrabold uppercase"
-            letterSpacing="3"
+            className="fill-current font-wide text-[17px] font-black uppercase"
+            letterSpacing="1"
+            // Обводка ink под заливкой: надпись читается и там, где ложится на кремовые буквы заголовка
             stroke="#111111"
-            strokeWidth="4"
+            strokeWidth="5"
             strokeLinejoin="round"
             paintOrder="stroke"
           >
-            <textPath
-              href="#stamp-bottom"
-              startOffset="50%"
-              textAnchor="middle"
-              dominantBaseline="hanging"
-            >
-              {bottom}
+            <textPath href="#stamp-top" startOffset="50%" textAnchor="middle">
+              {top}
             </textPath>
           </text>
-        )}
+          {bottom && (
+            <text
+              className="fill-current font-wide text-[13px] font-extrabold uppercase"
+              letterSpacing="3"
+              stroke="#111111"
+              strokeWidth="4"
+              strokeLinejoin="round"
+              paintOrder="stroke"
+            >
+              <textPath
+                href="#stamp-bottom"
+                startOffset="50%"
+                textAnchor="middle"
+                dominantBaseline="hanging"
+              >
+                {bottom}
+              </textPath>
+            </text>
+          )}
+          {/* Точки-разделители между DNGR и надписью сверху */}
+          <circle
+            cx="156.6"
+            cy="156.6"
+            r="4.5"
+            className="fill-current"
+            stroke="#111111"
+            strokeWidth="2.5"
+            paintOrder="stroke"
+          />
+          <circle
+            cx="43.4"
+            cy="156.6"
+            r="4.5"
+            className="fill-current"
+            stroke="#111111"
+            strokeWidth="2.5"
+            paintOrder="stroke"
+          />
+        </g>
       </svg>
     </span>
   );

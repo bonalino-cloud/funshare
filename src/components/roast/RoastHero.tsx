@@ -99,7 +99,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
                   <Stamp
                     top="Осторожно горячо"
                     bottom="DNGR"
-                    className="absolute top-[-0.14em] right-[-0.82em] z-10 w-[1.3em] text-paper opacity-0 group-data-[shown=true]/reveal:[animation:stamp-in_420ms_var(--ease-poster)_1.2s_forwards]"
+                    className="absolute top-[calc(-0.14em+15px)] right-[calc(-0.82em-28px)] z-10 w-[1.3em] text-paper opacity-0 group-data-[shown=true]/reveal:[animation:stamp-in_420ms_var(--ease-poster)_1.2s_forwards]"
                   />
                 ),
               },
