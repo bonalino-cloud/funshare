@@ -13,16 +13,19 @@ import { jitterFor } from "./RevealText";
  */
 export function FireWord({ text, className }: { text: string; className?: string }) {
   const wrap = useRef<HTMLSpanElement>(null);
+  const layer = useRef<HTMLSpanElement>(null);
   const [mask, setMask] = useState<HTMLCanvasElement | null>(null);
   const [maskKey, setMaskKey] = useState(0);
 
   useEffect(() => {
     const el = wrap.current;
-    if (!el) return;
+    const over = layer.current;
+    if (!el || !over) return;
     const cv = document.createElement("canvas");
 
     const paint = () => {
-      const box = el.getBoundingClientRect();
+      // Трафарет в координатах слоя огня: он шире слова, растянутые крайние буквы не обрезаются
+      const box = over.getBoundingClientRect();
       if (!box.width) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       cv.width = Math.round(box.width * dpr);
@@ -50,6 +53,7 @@ export function FireWord({ text, className }: { text: string; className?: string
         ctx.fillText(ch, 0, 0);
         ctx.restore();
       });
+      el.dataset.masked = "true";
       setMask(cv);
       setMaskKey((n) => n + 1);
     };
@@ -66,7 +70,8 @@ export function FireWord({ text, className }: { text: string; className?: string
 
   return (
     <span ref={wrap} aria-label={text} className={cx("relative inline-block", className)}>
-      <span aria-hidden="true" className="text-ink">
+      {/* Запасной текст для браузеров без WebGL; когда трафарет готов — прячем, чтобы не было тёмной кромки */}
+      <span aria-hidden="true" className="text-ink in-data-[masked=true]:text-transparent">
         {Array.from(text).map((ch, i) => {
           const { k, w } = jitterFor(i);
           return (
@@ -87,9 +92,10 @@ export function FireWord({ text, className }: { text: string; className?: string
         })}
       </span>
       <span
+        ref={layer}
         aria-hidden="true"
         data-surface="dark"
-        className="pointer-events-none absolute inset-0 block bg-transparent"
+        className="pointer-events-none absolute -inset-x-[0.2em] -inset-y-[0.08em] block bg-transparent"
       >
         <FlameVortex mode="rise" mask={mask} maskKey={maskKey} scale={1.6} />
       </span>

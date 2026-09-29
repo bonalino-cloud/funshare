@@ -28,6 +28,7 @@ export function StepsSection() {
               <span className="font-wide text-lg font-extrabold text-ink">@</span>
               <Typewriter text="anya.travels" className="type-body font-semibold" />
             </div>
+            <Sticker src={flame} width={64} depth={1.8} rotate={-12} className="-top-8 -right-3" />
           </Step>
 
           <Step
@@ -53,7 +54,6 @@ export function StepsSection() {
               sizes="(max-width: 768px) 80vw, 320px"
               className="mt-6 h-auto w-full -rotate-2 transition-transform duration-300 ease-[var(--ease-poster)] hover:scale-105 hover:rotate-1"
             />
-            <Sticker src={flame} width={64} depth={1.8} rotate={-12} className="-top-8 -right-3" />
           </Step>
         </div>
       </div>
