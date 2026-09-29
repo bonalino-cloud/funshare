@@ -1,45 +1,52 @@
 @import "tailwindcss";
 
 /*
- * Funshare — дизайн-система. Правила и примеры: src/styles/DESIGN.md
- * Живой стайлгайд: /design
+ * Funshare — визуальная система «Night Poster». Источник правды: DESIGN.md в корне репо.
+ * Здесь только токены и утилиты. Номера параграфов в комментариях — разделы DESIGN.md.
  *
- * Холст всегда тёмный (фестивальная ночь), свет дают цветные блоки.
- * Светлой темы нет намеренно: бренд держится на контрасте ink + насыщенные блоки.
+ * Дефолтные палитра, радиусы и тени Tailwind сброшены: в коде доступны только токены системы.
  */
 
 @theme {
-  /* ── Цвета ─────────────────────────────────────────── */
-  --color-ink: #141414; /* холст */
-  --color-ink-2: #1f1f1f; /* приподнятые поверхности на холсте */
-  --color-ink-3: #2c2c2c; /* границы и разделители на холсте */
-  --color-paper: #f3ebdd; /* кремовый: светлые блоки и текст на тёмном */
-  --color-paper-dim: #b9b2a6; /* второстепенный текст на холсте */
+  /* ── §2 Цвет ───────────────────────────────────────── */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
 
-  --color-cobalt: #2152c4;
-  --color-tomato: #e0463b;
-  --color-sun: #f5d133;
-  --color-mint: #3fa58f;
-  --color-violet: #7c4dff;
-  --color-bubblegum: #f7a8e0;
-  --color-lime: #33d17a;
-  --color-flame: #ff7a1a;
+  --color-base: #0f0f0f; /* фон страницы */
+  --color-base-pattern: #1c1c1c; /* паттерн поверх фона, контраст 3–5 % */
+  --color-ink: #111111; /* чёрная карточка, текст на светлом и акцентах */
+  --color-paper: #ede0cf; /* крем: светлые поверхности, текст на тёмном */
+  --color-white: #ffffff; /* только обводки и редкий текст */
 
-  /* ── Радиусы ───────────────────────────────────────── */
-  --radius-card: 1.75rem; /* большие цветные блоки */
-  --radius-tile: 1.125rem; /* вложенные плитки, инпуты-карточки */
-  --radius-chip: 9999px; /* кнопки, пилюли, теги */
+  --color-cobalt: #1f4fd6;
+  --color-red: #c9302c;
+  --color-yellow: #f4d21b;
+  --color-teal: #3b9b8b;
+  --color-violet: #7a3fe0;
+  --color-acid: #2bcb5c;
+  --color-pink: #f8aedb; /* единственный цвет действия */
+  --color-orange: #f5871f; /* CTA второго уровня, огонь */
 
-  /* ── Тени ──────────────────────────────────────────── */
-  --shadow-block: 0 22px 44px -18px rgb(0 0 0 / 0.75);
-  --shadow-sticker: 0 10px 22px -8px rgb(0 0 0 / 0.6);
-  --shadow-pop: 4px 4px 0 0 var(--color-ink);
+  /* ── §4.1 Радиусы: lg = radius.l, md = radius.m, sm = radius.s ── */
+  --radius-*: initial;
+  --radius-lg: 24px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
 
-  /* ── Движение ──────────────────────────────────────── */
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --animate-marquee: marquee 28s linear infinite;
-  --animate-spin-slow: spin 18s linear infinite;
+  /* ── §4.3 Тени: только жёсткие, без blur ────────────── */
+  --shadow-*: initial;
+  --shadow-offset: 4px 4px 0 #111111;
+  --shadow-offset-hover: 2px 2px 0 #111111;
+  --shadow-offset-paper: 4px 4px 0 #ede0cf;
+
+  /* ── §9 Движение ───────────────────────────────────── */
+  --ease-poster: cubic-bezier(0.2, 0, 0, 1);
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-marquee-reverse: marquee 40s linear infinite reverse;
+  --animate-spin-slow: spin 16s linear infinite;
   --animate-wiggle: wiggle 2.4s ease-in-out infinite;
+  --animate-float: float 5s ease-in-out infinite;
 
   @keyframes marquee {
     to {
@@ -55,126 +62,190 @@
       transform: rotate(4deg);
     }
   }
-}
-
-/* Акцент мини-лендинга: <main data-accent="sun"> — один ведущий цвет на фичу */
-:root,
-[data-accent="sun"] {
-  --accent: var(--color-sun);
-  --on-accent: var(--color-ink);
-}
-[data-accent="cobalt"] {
-  --accent: var(--color-cobalt);
-  --on-accent: var(--color-paper);
-}
-[data-accent="tomato"] {
-  --accent: var(--color-tomato);
-  --on-accent: var(--color-ink);
-}
-[data-accent="mint"] {
-  --accent: var(--color-mint);
-  --on-accent: var(--color-ink);
-}
-[data-accent="violet"] {
-  --accent: var(--color-violet);
-  --on-accent: var(--color-paper);
-}
-[data-accent="bubblegum"] {
-  --accent: var(--color-bubblegum);
-  --on-accent: var(--color-ink);
-}
-[data-accent="lime"] {
-  --accent: var(--color-lime);
-  --on-accent: var(--color-ink);
-}
-[data-accent="flame"] {
-  --accent: var(--color-flame);
-  --on-accent: var(--color-ink);
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--float-r, 0deg));
+    }
+    50% {
+      transform: translateY(-10px) rotate(calc(var(--float-r, 0deg) * -1));
+    }
+  }
 }
 
 @theme inline {
-  --color-accent: var(--accent);
-  --color-on-accent: var(--on-accent);
-
   /*
-   * Шрифты. inline обязателен: переменные --font-inter-tight и др. ставит next/font
-   * на обёртку сайта (src/app/(site)/layout.tsx), а не на :root. Без inline токен
-   * вычислился бы на :root, где их ещё нет, и шрифт молча упал бы в системный.
+   * inline обязателен: переменные шрифтов ставит next/font на обёртку сайта
+   * (src/app/(site)/layout.tsx), а не на :root.
    */
-  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
-  --font-display: var(--font-inter-tight), system-ui, sans-serif;
-  --font-condensed: var(--font-sofia-condensed), "Arial Narrow", sans-serif;
-  --font-sticker: var(--font-dela-gothic), var(--font-inter-tight), sans-serif;
+  --font-wide: var(--font-unbounded), system-ui, sans-serif;
+  --font-cond: var(--font-yanone), "Arial Narrow", sans-serif;
+  --font-text: var(--font-onest), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-sans: var(--font-onest), system-ui, sans-serif;
+
+  /* Цвета поверхности секции — задаются data-surface, см. ниже */
+  --color-surface: var(--surface);
+  --color-on-surface: var(--on-surface);
+  --color-flame-a: var(--flame-a);
+  --color-flame-b: var(--flame-b);
+  --color-eye: var(--eye);
+}
+
+/*
+ * Поверхности секций: лендинг чередует тёмные, светлые и цветные этажи (§5.3).
+ * flame-a / flame-b — два слоя огня на этой поверхности, eye — «окно» под контент.
+ */
+[data-surface="dark"] {
+  --surface: var(--color-base);
+  --on-surface: var(--color-paper);
+  --flame-a: var(--color-red);
+  --flame-b: var(--color-orange);
+  --eye: var(--color-base);
+  --muted: color-mix(in oklab, var(--color-paper) 70%, transparent);
+}
+[data-surface="light"] {
+  --surface: var(--color-paper);
+  --on-surface: var(--color-ink);
+  --flame-a: var(--color-red);
+  --flame-b: var(--color-orange);
+  --eye: var(--color-paper);
+  --muted: color-mix(in oklab, var(--color-ink) 72%, transparent);
+}
+[data-surface="color"] {
+  --surface: var(--color-orange);
+  --on-surface: var(--color-ink);
+  --flame-a: var(--color-red);
+  --flame-b: var(--color-yellow);
+  --eye: var(--color-paper);
+  --muted: color-mix(in oklab, var(--color-ink) 75%, transparent);
 }
 
 html {
-  background: var(--color-ink);
+  background: var(--color-base);
   color-scheme: dark;
 }
 
 body {
-  background: var(--color-ink);
+  background: var(--color-base);
   color: var(--color-paper);
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv11";
+  font-family: var(--font-onest), system-ui, sans-serif;
 }
 
 ::selection {
-  background: var(--color-sun);
+  background: var(--color-pink);
   color: var(--color-ink);
 }
 
-/* ── Типографика ─────────────────────────────────────── */
-@utility type-display {
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: -0.055em;
-  line-height: 0.86;
-  font-size: clamp(3.25rem, 11vw, 8.5rem);
-}
-@utility type-title {
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.9;
-  font-size: clamp(2.25rem, 6vw, 4.25rem);
-}
-@utility type-condensed {
-  font-family: var(--font-sofia-condensed), "Arial Narrow", sans-serif;
+/* ── §3.2 Типографика ─────────────────────────────────── */
+/* Размеры тянутся от mobile к desktop между 390 и 1280 px */
+@utility type-display-hero {
+  /* Hero лендинга. Расширение шкалы по брифу: «огромные жирные заголовки» */
+  font-family: var(--font-unbounded), system-ui, sans-serif;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: -0.01em;
-  line-height: 0.88;
-  font-size: clamp(2.5rem, 8vw, 5rem);
+  line-height: 0.86;
+  letter-spacing: -0.03em;
+  font-size: clamp(2.9rem, 8.6vw, 8.5rem);
 }
-@utility type-sticker {
-  font-family: var(--font-dela-gothic), var(--font-inter-tight), sans-serif;
+@utility type-display-xl {
+  font-family: var(--font-unbounded), system-ui, sans-serif;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  color: var(--color-sun);
-  -webkit-text-stroke: 0.06em var(--color-ink);
-  paint-order: stroke fill;
-  text-shadow: 0.06em 0.07em 0 var(--color-ink);
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  font-size: clamp(2.5rem, 1.4rem + 4.5vw, 4.5rem);
 }
-@utility type-eyebrow {
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
+@utility type-display-l {
+  font-family: var(--font-unbounded), system-ui, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 1.3rem + 2.7vw, 3.5rem);
+}
+@utility type-display-m {
+  font-family: var(--font-unbounded), system-ui, sans-serif;
   font-weight: 800;
   text-transform: uppercase;
+  line-height: 0.95;
   letter-spacing: -0.01em;
-  line-height: 1.1;
-  font-size: 0.8125rem;
+  font-size: clamp(1.5rem, 1.15rem + 1.35vw, 2.25rem);
+}
+@utility type-cond-xl {
+  font-family: var(--font-yanone), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.82;
+  font-size: clamp(3rem, 1.6rem + 5.4vw, 6rem);
+}
+@utility type-cond-l {
+  font-family: var(--font-yanone), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.85;
+  font-size: clamp(2.25rem, 1.45rem + 3.1vw, 4rem);
+}
+@utility type-cond-m {
+  font-family: var(--font-yanone), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  font-size: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+}
+@utility type-label {
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  font-size: clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem);
 }
 @utility type-body {
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-family: var(--font-onest), system-ui, sans-serif;
   font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1.45;
-  font-size: 1.0625rem;
+  line-height: 1.4;
+  font-size: clamp(0.875rem, 0.82rem + 0.22vw, 1rem);
+}
+@utility type-lead {
+  /* body крупнее для подзаголовка hero */
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.35;
+  font-size: clamp(1rem, 0.9rem + 0.45vw, 1.25rem);
+}
+@utility type-meta {
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  font-size: clamp(0.75rem, 0.73rem + 0.1vw, 0.8125rem);
+}
+@utility type-mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.25rem, 0.95rem + 1.2vw, 2rem);
+}
+@utility type-ticker {
+  font-family: var(--font-yanone), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-size: clamp(0.875rem, 0.82rem + 0.22vw, 1rem);
 }
 
-/* ── Фактура: зерно поверх цветных блоков, как в рефах ── */
+/* §3.3 Наклонная часть слова */
+@utility tilt {
+  display: inline-block;
+  transform: skewX(-10deg);
+}
+
+/* ── §2.4 Текстура ────────────────────────────────────── */
 @utility grain {
   position: relative;
   isolation: isolate;
@@ -185,16 +256,44 @@ body {
     border-radius: inherit;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.22;
+    opacity: 0.08;
     mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
-/* Фото в стиле рефа HIPHOP NIGHT: ч/б, жёсткий контраст, ложится на цвет блока */
 @utility halftone {
   filter: grayscale(1) contrast(1.35) brightness(1.05);
   mix-blend-mode: multiply;
+}
+
+/* Частица пламени горящей кнопки (FireButton) */
+@keyframes fire-rise {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-96px) scale(0.1);
+  }
+}
+
+/* Обвод-овал рисуется от руки */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Появление заголовка по буквам (RevealText) */
+@keyframes reveal-char {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em) rotate(8deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -204,5 +303,6 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

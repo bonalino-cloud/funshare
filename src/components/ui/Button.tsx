@@ -1,45 +1,48 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/components/cx";
-import { ArrowUpRight } from "@/components/brand/Doodles";
+import { ArrowNE } from "@/components/brand/Doodles";
 
-type Variant = "accent" | "ink" | "paper" | "ghost";
+type Variant = "primary" | "secondary" | "inverse";
 
 const variants: Record<Variant, string> = {
-  accent: "bg-accent text-on-accent",
-  ink: "bg-ink text-paper [--btn-icon:var(--accent)] [--btn-icon-fg:var(--on-accent)]",
-  paper: "bg-paper text-ink",
-  ghost: "bg-transparent text-paper ring-2 ring-inset ring-paper/60 hover:ring-paper",
+  primary: "bg-pink",
+  secondary: "bg-orange",
+  inverse: "bg-white",
 };
 
 /**
- * Кнопка-пилюля: жирный капс + иконка в круге (реф Jiva «NOTIFY ME! ASAP»).
- * На hover чуть наклоняется и приподнимается — фестивальная «живость».
- * На блоке цвета акцента используй variant="ink", иначе кнопка сольётся с фоном.
+ * Кнопка (DESIGN.md §8.4): плоская заливка, ink-обводка 2px, radius.s, жёсткая offset-тень.
+ * Hover — тень 2px и сдвиг на 2px, active — тень 0 и сдвиг на 4px. Linear: жёсткость — часть характера.
  */
 export function Button({
-  variant = "accent",
-  icon = <ArrowUpRight className="size-4" />,
+  variant = "primary",
+  icon,
+  arrow = true,
   className,
   children,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; icon?: ReactNode | null }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: Variant;
+  icon?: ReactNode;
+  arrow?: boolean;
+}) {
   return (
     <button
       className={cx(
-        "group inline-flex min-h-13 items-center justify-center gap-3 rounded-chip py-2 pr-2 pl-6 type-eyebrow text-base",
-        "transition-transform duration-200 ease-bounce hover:-translate-y-0.5 hover:-rotate-1 active:translate-y-0 active:rotate-0",
-        "focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-sun disabled:opacity-50",
-        !icon && "pr-6",
+        "group inline-flex h-12 items-center justify-center gap-2 rounded-sm border-2 border-ink px-5 type-label text-sm text-ink shadow-offset",
+        "transition-[transform,box-shadow] duration-[120ms] ease-linear",
+        "hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-offset-hover active:translate-x-1 active:translate-y-1 active:shadow-none",
+        "focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-pink",
+        "disabled:pointer-events-none disabled:border-transparent disabled:bg-base-pattern disabled:text-[#555] disabled:shadow-none",
         variants[variant],
         className,
       )}
       {...props}
     >
+      {icon && <span className="size-5 shrink-0">{icon}</span>}
       <span>{children}</span>
-      {icon && (
-        <span className="grid size-9 place-items-center rounded-full bg-[var(--btn-icon,var(--color-ink))] text-[color:var(--btn-icon-fg,var(--color-paper))] transition-transform duration-300 ease-bounce group-hover:rotate-45">
-          {icon}
-        </span>
+      {arrow && (
+        <ArrowNE className="size-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       )}
     </button>
   );
