@@ -132,7 +132,8 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
         />
 
         <p className="mt-6 max-w-[30ch] type-lead text-[color:var(--muted)] md:max-w-[36ch]">
-          Кидай ссылку. ИИ прочитает сторис и выдаст роаст, которым не стыдно поделиться. Ну, почти.
+          Кидаешь профиль на открытый огонь. Получаешь прожаренный горячий результат, который не
+          оставит равнодушным.
         </p>
 
         <div className="relative mt-28 md:mt-36">

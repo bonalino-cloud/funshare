@@ -19,7 +19,7 @@ import pan from "@/components/roast/assets/sticker-pan.png";
 export const metadata: Metadata = {
   title: "Прожарка — Funshare",
   description:
-    "Кидай ссылку на Instagram. ИИ прочитает сторис и выдаст роаст, которым не стыдно поделиться.",
+    "Кидаешь профиль на открытый огонь. Получаешь прожаренный горячий результат, который не оставит равнодушным.",
 };
 
 const sticker = (src: typeof chili) => (
