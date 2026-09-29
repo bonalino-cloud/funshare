@@ -11,7 +11,16 @@ import { jitterFor } from "./RevealText";
  * реальным координатам из DOM, шейдер показывает пламя только в этих пикселях.
  * Под canvas лежит тот же текст цветом ink — если WebGL недоступен, слово всё равно читается.
  */
-export function FireWord({ text, className }: { text: string; className?: string }) {
+export function FireWord({
+  text,
+  jitter = true,
+  className,
+}: {
+  text: string;
+  /** Разброс ширины и жирности букв; false — ровный набор, как у заголовка hero */
+  jitter?: boolean;
+  className?: string;
+}) {
   const wrap = useRef<HTMLSpanElement>(null);
   const layer = useRef<HTMLSpanElement>(null);
   const [mask, setMask] = useState<HTMLCanvasElement | null>(null);
@@ -73,18 +82,24 @@ export function FireWord({ text, className }: { text: string; className?: string
       {/* Запасной текст для браузеров без WebGL; когда трафарет готов — прячем, чтобы не было тёмной кромки */}
       <span aria-hidden="true" className="text-ink in-data-[masked=true]:text-transparent">
         {Array.from(text).map((ch, i) => {
-          const { k, w } = jitterFor(i);
+          // Пробел — обычный текст: по нему строка переносится на узком экране
+          if (ch === " ") return " ";
+          const { k, w } = jitter ? jitterFor(i) : { k: 1, w: undefined };
           return (
             <span
               key={i}
               data-ch
               data-k={k}
               className="inline-block origin-center"
-              style={{
-                transform: `scaleX(${k})`,
-                margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
-                fontWeight: w,
-              }}
+              style={
+                jitter
+                  ? {
+                      transform: `scaleX(${k})`,
+                      margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
+                      fontWeight: w,
+                    }
+                  : undefined
+              }
             >
               {ch}
             </span>
