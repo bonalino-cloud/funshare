@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/components/cx";
 import { Asterisk } from "./Asterisk";
 
@@ -20,6 +20,9 @@ const tones: Record<Tone, string> = {
  * Пункты могут быть стикерами. Может лежать в наклоне (tilt, градусы).
  * Отклик: при наведении лента плавно замедляется, пункт под курсором подпрыгивает.
  */
+// Секунд на один набор: скорость не зависит от числа повторов (DESIGN.md §3.3: 40–60 px/с)
+const SECONDS_PER_SET = 40;
+
 export function Marquee({
   items,
   tone = "acid",
@@ -36,6 +39,26 @@ export function Marquee({
   className?: string;
 }) {
   const track = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  // Сколько раз повторить набор в половине дорожки, чтобы лента не обрывалась на любой ширине экрана
+  const [copies, setCopies] = useState(2);
+
+  useEffect(() => {
+    const el = box.current;
+    const half = track.current?.firstElementChild as HTMLElement | null;
+    if (!el || !half) return;
+    const fit = () => {
+      const setWidth = (half.scrollWidth / half.childElementCount) * items.length;
+      if (!setWidth) return;
+      // +1 набор про запас: лента в наклоне шире контейнера
+      const need = Math.max(2, Math.ceil((el.offsetWidth * 1.15) / setWidth) + 1);
+      setCopies((c) => (c === need ? c : need));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [items.length, copies]);
   const rate = useRef({ cur: 1, target: 1, raf: 0 });
 
   const ease = (target: number) => {
@@ -50,21 +73,29 @@ export function Marquee({
     tick();
   };
 
-  const row = (hidden: boolean) => (
-    <ul aria-hidden={hidden || undefined} className="flex shrink-0 items-center">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-center">
-          <span className="inline-flex items-center px-4 transition-transform duration-200 ease-[var(--ease-poster)] hover:-translate-y-1 hover:scale-110 hover:-rotate-3 md:px-6">
-            {item}
-          </span>
-          <Asterisk className={cx("shrink-0", size === "lg" ? "size-5 md:size-7" : "size-3.5")} />
-        </li>
-      ))}
+  // Половина дорожки = copies наборов подряд. Для скринридера видна только первая копия
+  const row = (half: number) => (
+    <ul aria-hidden={half > 0 || undefined} className="flex shrink-0 items-center">
+      {Array.from({ length: copies }, () => items)
+        .flat()
+        .map((item, i) => (
+          <li
+            key={i}
+            aria-hidden={(half === 0 && i >= items.length) || undefined}
+            className="flex items-center"
+          >
+            <span className="inline-flex items-center px-4 transition-transform duration-200 ease-[var(--ease-poster)] hover:-translate-y-1 hover:scale-110 hover:-rotate-3 md:px-6">
+              {item}
+            </span>
+            <Asterisk className={cx("shrink-0", size === "lg" ? "size-5 md:size-7" : "size-3.5")} />
+          </li>
+        ))}
     </ul>
   );
 
   return (
     <div
+      ref={box}
       className={cx(
         "group/mq relative overflow-hidden transition-transform duration-300 ease-[var(--ease-poster)] hover:scale-y-110",
         size === "lg"
@@ -80,9 +111,10 @@ export function Marquee({
       <div
         ref={track}
         className={cx("flex w-max", reverse ? "animate-marquee-reverse" : "animate-marquee")}
+        style={{ animationDuration: `${SECONDS_PER_SET * copies}s` }}
       >
-        {row(false)}
-        {row(true)}
+        {row(0)}
+        {row(1)}
       </div>
     </div>
   );

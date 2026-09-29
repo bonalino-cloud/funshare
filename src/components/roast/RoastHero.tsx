@@ -100,18 +100,11 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           delay={150}
           immediate
           lines={[
-            [
-              "ПРОЖА",
-              { text: "РЬ", className: "tilt" },
-              " ",
-              { br: "mobile" },
-              { text: "СЕБЯ", decor: "circled" },
-            ],
+            ["ПРОЖА", { text: "РЬ", className: "tilt" }, " ", { br: "mobile" }, "СЕБЯ"],
             [
               "ИЛИ ",
               {
                 text: "ДРУГА",
-                decor: "circled",
                 // Штамп прихлопывает последнюю букву заголовка
                 trail: (
                   <Stamp

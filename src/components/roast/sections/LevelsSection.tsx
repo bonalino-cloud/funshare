@@ -139,7 +139,7 @@ export function LevelsSection() {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         {/* «Получится Огонь»: по центру; в буквах «Огонь» горит огонь футера (маска по буквам) */}
         <h2 aria-label="Получится огонь" className="text-center">
-          <RevealText as="span" className="block type-display-m" lines={[["Получится"]]} />
+          <RevealText as="span" className="block type-display-m" jitter lines={[["Получится"]]} />
           <Reveal as="span" delay={300} className="block">
             <FireWord
               text="Огонь"
