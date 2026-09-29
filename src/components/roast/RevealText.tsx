@@ -21,9 +21,13 @@ export type RevealSegment =
 const WIDTHS = [1.16, 0.9, 1.04, 0.86, 1.2, 0.95, 1.08, 0.92];
 const WEIGHTS = [900, 800, 900, 700, 900, 850, 780, 900];
 
+/** Ширина (scaleX) и жирность i-й буквы. Общий для RevealText и FireWord, чтобы слова выглядели одной семьёй */
+export function jitterFor(i: number) {
+  return { k: WIDTHS[(i * 5 + 3) % WIDTHS.length], w: WEIGHTS[(i * 3 + 1) % WEIGHTS.length] };
+}
+
 function Jitter({ i, children }: { i: number; children: ReactNode }) {
-  const k = WIDTHS[(i * 5 + 3) % WIDTHS.length];
-  const w = WEIGHTS[(i * 3 + 1) % WEIGHTS.length];
+  const { k, w } = jitterFor(i);
   return (
     <span
       className="inline-block origin-center"

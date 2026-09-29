@@ -1,0 +1,98 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { cx } from "@/components/cx";
+import { FlameVortex } from "./FlameVortex";
+import { jitterFor } from "./RevealText";
+
+/**
+ * Слово, внутри которого горит огонь футера (FlameVortex rise, поверхность dark: base + red + orange).
+ * Буквы — маска: каждая буква с разбросом ширины и жирности рисуется на скрытом 2D-canvas по своим
+ * реальным координатам из DOM, шейдер показывает пламя только в этих пикселях.
+ * Под canvas лежит тот же текст цветом ink — если WebGL недоступен, слово всё равно читается.
+ */
+export function FireWord({ text, className }: { text: string; className?: string }) {
+  const wrap = useRef<HTMLSpanElement>(null);
+  const [mask, setMask] = useState<HTMLCanvasElement | null>(null);
+  const [maskKey, setMaskKey] = useState(0);
+
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const cv = document.createElement("canvas");
+
+    const paint = () => {
+      const box = el.getBoundingClientRect();
+      if (!box.width) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      cv.width = Math.round(box.width * dpr);
+      cv.height = Math.round(box.height * dpr);
+      const ctx = cv.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      el.querySelectorAll<HTMLElement>("[data-ch]").forEach((s) => {
+        const cs = getComputedStyle(s);
+        const b = s.getBoundingClientRect();
+        const k = Number(s.dataset.k);
+        const ch = s.textContent ?? "";
+        ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const m = ctx.measureText(ch);
+        // Базовая линия как у CSS: половина интерлиньяжа сверху + ascent шрифта
+        const content = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+        const baseline = b.top - box.top + (b.height - content) / 2 + m.fontBoundingBoxAscent;
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.translate(b.left - box.left + b.width / 2, baseline);
+        ctx.scale(k, 1);
+        ctx.fillText(ch, 0, 0);
+        ctx.restore();
+      });
+      setMask(cv);
+      setMaskKey((n) => n + 1);
+    };
+
+    let alive = true;
+    document.fonts.ready.then(() => alive && paint());
+    const ro = new ResizeObserver(() => paint());
+    ro.observe(el);
+    return () => {
+      alive = false;
+      ro.disconnect();
+    };
+  }, [text]);
+
+  return (
+    <span ref={wrap} aria-label={text} className={cx("relative inline-block", className)}>
+      <span aria-hidden="true" className="text-ink">
+        {Array.from(text).map((ch, i) => {
+          const { k, w } = jitterFor(i);
+          return (
+            <span
+              key={i}
+              data-ch
+              data-k={k}
+              className="inline-block origin-center"
+              style={{
+                transform: `scaleX(${k})`,
+                margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
+                fontWeight: w,
+              }}
+            >
+              {ch}
+            </span>
+          );
+        })}
+      </span>
+      <span
+        aria-hidden="true"
+        data-surface="dark"
+        className="pointer-events-none absolute inset-0 block bg-transparent"
+      >
+        <FlameVortex mode="rise" mask={mask} maskKey={maskKey} scale={1.6} />
+      </span>
+    </span>
+  );
+}

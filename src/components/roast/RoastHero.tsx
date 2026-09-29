@@ -48,36 +48,29 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
       <div className="pointer-events-none absolute inset-0 z-10 [&>*]:pointer-events-auto">
         <Sticker
           src={chili}
-          width={150}
+          width={112}
           depth={1.4}
           rotate={-14}
           priority
           className="top-[46%] left-[5%] max-md:hidden"
         />
         <Sticker
-          src={pan}
-          width={170}
-          depth={0.9}
-          rotate={10}
-          className="top-[3%] right-[13%] max-lg:hidden"
-        />
-        <Sticker
           src={match}
-          width={110}
+          width={82}
           depth={1.8}
           rotate={24}
-          className="bottom-[17%] left-[3%] max-md:hidden"
+          className="bottom-[23%] left-[4%] max-md:hidden"
         />
         <Sticker
           src={flame}
-          width={96}
+          width={72}
           depth={2.2}
           rotate={12}
           className="top-[40%] right-[3%] max-md:top-auto max-md:right-[-4%] max-md:bottom-[38%] max-md:scale-[0.55] lg:hidden"
         />
         <Sticker
           src={extinguisher}
-          width={120}
+          width={90}
           depth={1.1}
           rotate={-10}
           className="right-[27%] bottom-[20%] max-lg:hidden"

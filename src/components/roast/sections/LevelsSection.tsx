@@ -5,6 +5,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Asterisk } from "@/components/brand/Asterisk";
 import { cx } from "@/components/cx";
 import { cardTones, type CardTone } from "@/components/ui/Card";
+import { FireWord } from "../FireWord";
 import { Flames, flameOn } from "../Flames";
 import { Chili, Cup, Headphones, Play, Suitcase, Sunset } from "../Icons";
 import { Reveal } from "../Reveal";
@@ -136,13 +137,14 @@ export function LevelsSection() {
   return (
     <Section id="levels" surface="light" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* «Получится Огонь»: по центру; «Огонь» — окно в поднимающиеся языки пламени (маска по буквам) */}
+        {/* «Получится Огонь»: по центру; в буквах «Огонь» горит огонь футера (маска по буквам) */}
         <h2 aria-label="Получится огонь" className="text-center">
           <RevealText as="span" className="block type-display-m" lines={[["Получится"]]} />
           <Reveal as="span" delay={300} className="block">
-            <span className="inline-block fire-text font-wide text-[clamp(5rem,17vw,12.5rem)] leading-[0.95] font-black tracking-[-0.03em]">
-              Огонь
-            </span>
+            <FireWord
+              text="Огонь"
+              className="font-wide text-[clamp(5rem,17vw,12.5rem)] leading-[0.95] tracking-[-0.03em]"
+            />
           </Reveal>
         </h2>
 

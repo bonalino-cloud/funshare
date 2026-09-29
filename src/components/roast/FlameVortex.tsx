@@ -32,6 +32,8 @@ uniform int uMode;
 uniform int uFade;
 uniform vec2 uMouse;
 uniform float uScale;
+uniform int uUseMask;
+uniform sampler2D uMask;
 out vec4 outColor;
 
 // Simplex 3D noise — Ashima Arts / Stefan Gustavson, MIT
@@ -107,7 +109,9 @@ vec3 rise() {
 
 void main() {
   if (uMode == 1) {
-    outColor = vec4(rise(), 1.0);
+    // Маска: огонь виден только там, где трафарет непрозрачен (буквы слова)
+    float a = uUseMask == 1 ? texture(uMask, gl_FragCoord.xy / uRes).a : 1.0;
+    outColor = vec4(rise(), a);
     return;
   }
   float unit = min(uRes.x, uRes.y);
@@ -170,6 +174,8 @@ export function FlameVortex({
   mode = "vortex",
   fade = false,
   scale = 1,
+  mask,
+  maskKey = 0,
   className,
 }: {
   /** vortex — водоворот с окном под контент (hero); rise — поднимающиеся языки пламени (паттерн, футер) */
@@ -178,9 +184,14 @@ export function FlameVortex({
   fade?: boolean;
   /** rise: размер языков, больше — мельче */
   scale?: number;
+  /** Трафарет (2D-canvas): огонь рисуется только в его непрозрачных пикселях, фон canvas прозрачный */
+  mask?: HTMLCanvasElement | null;
+  /** Меняется, когда трафарет перерисован — перезаливаем текстуру */
+  maskKey?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const uploadMask = useRef<((src: HTMLCanvasElement) => void) | null>(null);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -196,6 +207,17 @@ export function FlameVortex({
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
     gl.useProgram(prog);
+
+    // Текстура трафарета (по умолчанию не используется)
+    const tex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.uniform1i(gl.getUniformLocation(prog, "uMask"), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, "uUseMask"), 0);
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -258,6 +280,15 @@ export function FlameVortex({
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
+    uploadMask.current = (src) => {
+      if (!src.width || !src.height) return;
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      gl.uniform1i(gl.getUniformLocation(prog, "uUseMask"), 1);
+      draw();
+    };
+
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
@@ -312,12 +343,23 @@ export function FlameVortex({
       mo.disconnect();
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("roast:heat", onHeat);
+      uploadMask.current = null;
       gl.deleteProgram(prog);
       gl.deleteBuffer(buf);
+      gl.deleteTexture(tex);
     };
   }, [mode, fade, scale]);
 
+  // Идёт после основного эффекта: GL уже готов. Перезаливаем при новом трафарете и при пересоздании GL
+  useEffect(() => {
+    if (mask) uploadMask.current?.(mask);
+  }, [mask, maskKey, mode, fade, scale]);
+
   return (
-    <canvas ref={ref} aria-hidden="true" className={cx("block size-full bg-surface", className)} />
+    <canvas
+      ref={ref}
+      aria-hidden="true"
+      className={cx("block size-full", !mask && "bg-surface", className)}
+    />
   );
 }
