@@ -107,7 +107,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           ]}
         />
 
-        <p className="mt-6 max-w-[34ch] type-body text-[0.9375rem] font-semibold text-[color:var(--muted)] md:max-w-[40ch] md:text-[1.0625rem] lg:max-w-[58ch]">
+        <p className="relative z-10 mt-[44px] max-w-[34ch] type-body text-[0.9375rem] font-semibold text-[color:var(--muted)] md:max-w-[40ch] md:text-[1.0625rem] lg:max-w-[58ch]">
           Кидаешь профиль на открытый огонь. Получаешь прожаренный горячий результат, который не
           оставит равнодушным.
         </p>
