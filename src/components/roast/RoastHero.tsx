@@ -79,19 +79,8 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
 
       {/* Контент в окне водоворота */}
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 [translate:calc(var(--mx,0)*-6px)_calc(var(--my,0)*-4px+var(--sy,0)*0.12px)] flex-col items-center justify-center px-4 pt-10 pb-48 text-center md:pb-44">
-        <p className="mb-5 inline-flex items-center gap-2 rounded-sm border-2 border-ink bg-paper px-3 py-1.5 type-label text-ink shadow-offset transition-transform duration-200 hover:-rotate-3">
-          Instagram
-          <svg
-            viewBox="0 0 24 12"
-            className="h-3 w-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            aria-hidden="true"
-          >
-            <path d="M1 6h20M16 1l5 5-5 5" />
-          </svg>
-          прожарка
+        <p className="mb-5 inline-flex items-center rounded-sm border-2 border-ink bg-paper px-3 py-1.5 type-label text-ink shadow-offset transition-transform duration-200 hover:-rotate-3">
+          Прожарим Instagram
         </p>
 
         <RevealText
@@ -128,7 +117,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           {/* Рукописная подсказка со стрелкой */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-full mr-3 hidden -translate-y-full items-end gap-1 md:flex"
+            className="pointer-events-none absolute top-[calc(50%-70px)] right-full mr-3 hidden -translate-y-full items-end gap-1 md:flex"
           >
             <span className="tilt -rotate-6 font-cond text-3xl font-bold whitespace-nowrap text-on-surface uppercase">
               не бойся, <br /> почти не больно

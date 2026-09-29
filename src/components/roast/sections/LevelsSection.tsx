@@ -137,16 +137,26 @@ export function LevelsSection() {
   return (
     <Section id="levels" surface="light" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* «Получится Огонь»: по центру; в буквах «Огонь» горит огонь футера (маска по буквам) */}
-        <h2 aria-label="Получится огонь" className="text-center">
-          <RevealText as="span" className="block type-display-m" jitter lines={[["Получится"]]} />
-          <Reveal as="span" delay={300} className="block">
-            <FireWord
-              text="Огонь"
-              className="font-wide text-[clamp(5rem,17vw,12.5rem)] leading-[0.95] tracking-[-0.03em]"
-            />
-          </Reveal>
-        </h2>
+        {/* «Получится Огонь» — плашка как у «Жарим, но не сжигаем дотла»; в буквах «Огонь» горит огонь футера */}
+        <div className="text-center">
+          <div className="inline-block -rotate-2 rounded-lg border-2 border-ink bg-paper px-6 py-5 text-ink shadow-offset transition-transform duration-200 hover:rotate-0 md:px-10 md:py-7">
+            <h2 aria-label="Получится огонь">
+              <RevealText
+                as="span"
+                className="block type-display-section"
+                step={26}
+                jitter
+                lines={[["Получится"]]}
+              />
+              <Reveal as="span" delay={300} className="block">
+                <FireWord
+                  text="Огонь"
+                  className="font-wide text-[clamp(4.5rem,14vw,10rem)] leading-[0.95] tracking-[-0.03em]"
+                />
+              </Reveal>
+            </h2>
+          </div>
+        </div>
 
         <div className="mt-14 grid gap-5 md:mt-20 md:grid-cols-3">
           {levels.map((l, i) => {
