@@ -4,21 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/cx";
 
 /** Срабатывает один раз, когда элемент попал в экран */
-function useInView<T extends HTMLElement>() {
+function useInView<T extends HTMLElement>(threshold = 0) {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        setInView(true);
-        io.disconnect();
-      }
-    });
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { threshold },
+    );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [threshold]);
   return [ref, inView] as const;
 }
 
@@ -46,20 +49,39 @@ export function Counter({ to, className }: { to: number; className?: string }) {
 }
 
 /** Печатает текст по буквам, когда попал в экран, и мигает кареткой */
+/**
+ * Печатает текст по буквам, когда поле целиком на экране: пауза, затем буква за буквой.
+ * Пока печатает — курсор горит ровно, после — мигает жёстко, как в настоящем поле ввода.
+ */
 export function Typewriter({ text, className }: { text: string; className?: string }) {
-  const [ref, inView] = useInView<HTMLSpanElement>();
+  const [ref, inView] = useInView<HTMLSpanElement>(1);
   const [len, setLen] = useState(0);
   useEffect(() => {
     if (!inView) return;
-    const id = setInterval(() => setLen((l) => (l >= text.length ? l : l + 1)), 70);
-    return () => clearInterval(id);
+    let id = 0;
+    const start = window.setTimeout(() => {
+      id = window.setInterval(() => {
+        setLen((l) => {
+          if (l + 1 >= text.length) window.clearInterval(id);
+          return Math.min(l + 1, text.length);
+        });
+      }, 110);
+    }, 500);
+    return () => {
+      window.clearTimeout(start);
+      window.clearInterval(id);
+    };
   }, [inView, text]);
+  const done = len >= text.length;
   return (
     <span ref={ref} className={className} aria-label={text}>
       <span aria-hidden="true">{text.slice(0, len)}</span>
       <span
         aria-hidden="true"
-        className="ml-0.5 inline-block h-[1em] w-0.5 translate-y-[0.15em] animate-pulse bg-current"
+        className={cx(
+          "ml-0.5 inline-block h-[1.1em] w-0.5 translate-y-[0.2em] bg-current",
+          done && "animate-[caret-blink_1s_steps(1)_infinite]",
+        )}
       />
     </span>
   );

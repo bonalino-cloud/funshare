@@ -25,7 +25,7 @@ export function StepsSection() {
             delay={0}
           >
             <div className="mt-6 flex h-12 items-center gap-2 rounded-sm border-2 border-paper bg-paper px-3 text-ink">
-              <span className="font-wide text-lg font-extrabold text-ink/40">@</span>
+              <span className="font-wide text-lg font-extrabold text-ink">@</span>
               <Typewriter text="anya.travels" className="type-body font-semibold" />
             </div>
           </Step>

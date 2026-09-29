@@ -338,6 +338,13 @@ body {
   }
 }
 
+/* Мигающий курсор поля ввода: жёстко вкл/выкл */
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* Смена содержимого вкладки */
 @keyframes swap-in {
   from {
