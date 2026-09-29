@@ -15,7 +15,6 @@ import extinguisher from "./assets/sticker-extinguisher.png";
 import flame from "./assets/sticker-flame.png";
 import match from "./assets/sticker-match.png";
 import pan from "./assets/sticker-pan.png";
-import thermo from "./assets/sticker-thermo.png";
 
 export type HeroSurface = "dark" | "light" | "color";
 
@@ -30,6 +29,7 @@ const tickerSticker = (src: typeof chili) => (
 export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
   return (
     <ParallaxScope
+      data-hero
       data-surface={surface}
       className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-surface text-on-surface"
     >
@@ -52,28 +52,21 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           depth={1.4}
           rotate={-14}
           priority
-          className="top-[13%] left-[4%] max-md:hidden"
+          className="top-[46%] left-[5%] max-md:hidden"
         />
         <Sticker
           src={pan}
           width={170}
           depth={0.9}
           rotate={10}
-          className="top-[12%] right-[5%] max-md:hidden"
+          className="top-[3%] right-[13%] max-lg:hidden"
         />
         <Sticker
           src={match}
           width={110}
           depth={1.8}
           rotate={24}
-          className="bottom-[22%] left-[9%] max-md:hidden"
-        />
-        <Sticker
-          src={thermo}
-          width={78}
-          depth={1.2}
-          rotate={-18}
-          className="top-[44%] left-[2%] max-lg:hidden"
+          className="bottom-[17%] left-[3%] max-md:hidden"
         />
         <Sticker
           src={flame}
@@ -112,10 +105,29 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           as="h1"
           className="type-display-hero"
           delay={150}
+          immediate
           lines={[
-            ["ПРОЖА", { text: "РЬ", className: "tilt" }],
-            [{ text: "СЕБЯ.", decor: "squiggle" }],
-            ["ИЛИ ", { text: "ДРУГА", decor: "circled" }],
+            [
+              "ПРОЖА",
+              { text: "РЬ", className: "tilt" },
+              " ",
+              { br: "mobile" },
+              { text: "СЕБЯ", decor: "circled" },
+            ],
+            [
+              "ИЛИ ",
+              {
+                text: "ДРУГА",
+                decor: "circled",
+                // Штамп прихлопывает последнюю букву заголовка
+                trail: (
+                  <Stamp
+                    text={"Осторожно\u00A0✱\u00A0огнеопасно\u00A0✱\u00A0"}
+                    className="absolute top-[0.02em] right-[-0.66em] z-10 w-[0.95em] opacity-0 group-data-[shown=true]/reveal:[animation:stamp-in_420ms_var(--ease-poster)_1.2s_forwards]"
+                  />
+                ),
+              },
+            ],
           ]}
         />
 
@@ -123,7 +135,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           Кидай ссылку. ИИ прочитает сторис и выдаст роаст, которым не стыдно поделиться. Ну, почти.
         </p>
 
-        <div className="relative mt-16 md:mt-20">
+        <div className="relative mt-28 md:mt-36">
           <FireButton type="button">Прожарить</FireButton>
           {/* Рукописная подсказка со стрелкой */}
           <div
@@ -138,7 +150,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
         </div>
 
         <p className="mt-6 type-meta text-[color:var(--muted)]">
-          Поджог бесплатно · Только открытые профили · Пара минут
+          Только открытые профили · Пара минут
         </p>
       </div>
 
@@ -155,10 +167,6 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           <span className="pointer-events-none absolute -top-2 left-[58%] origin-bottom-left scale-0 rounded-md border-2 border-ink bg-paper px-3 py-2 font-cond text-2xl font-bold whitespace-nowrap text-ink uppercase shadow-offset transition-transform duration-200 ease-[var(--ease-poster)] group-hover/imp:scale-100">
             Кого жарим?
           </span>
-          <Stamp
-            text="Осторожно ✱ огнеопасно ✱ "
-            className="absolute -top-6 -left-8 w-24 md:-left-12 md:w-32"
-          />
         </div>
       </div>
 

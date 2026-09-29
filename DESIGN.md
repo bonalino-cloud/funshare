@@ -98,6 +98,7 @@
 | `type.display.xl` | Unbounded | 40 → 72px | 900 | 0.88 | −0.02em | CAPS |
 | `type.display.l` | Unbounded | 32 → 56px | 900 | 0.9 | −0.02em | CAPS |
 | `type.display.m` | Unbounded | 24 → 36px | 800 | 0.95 | −0.01em | CAPS |
+| `type.cond.hero` | Yanone Kaffeesatz | 64 → 160px | 700 | 0.8 | 0 | CAPS |
 | `type.cond.xl` | Yanone Kaffeesatz | 48 → 96px | 700 | 0.82 | 0 | CAPS |
 | `type.cond.l` | Yanone Kaffeesatz | 36 → 64px | 700 | 0.85 | 0 | CAPS |
 | `type.cond.m` | Yanone Kaffeesatz | 24 → 32px | 700 | 0.9 | +0.01em | CAPS |

@@ -28,6 +28,10 @@ uniform vec3 uBg;
 uniform vec3 uA;
 uniform vec3 uB;
 uniform vec3 uEye;
+uniform int uMode;
+uniform int uFade;
+uniform vec2 uMouse;
+uniform float uScale;
 out vec4 outColor;
 
 // Simplex 3D noise — Ashima Arts / Stefan Gustavson, MIT
@@ -75,7 +79,37 @@ float snoise(vec3 v) {
   return 105.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
+// Режим rise: вертикальные языки пламени поднимаются вверх (паттерн пламени из рефа, в цветах поверхности).
+// uFade = 1 — огонь густой внизу и гаснет кверху (футер, низ секции).
+vec3 rise() {
+  float unit = min(uRes.x, uRes.y);
+  vec2 p = gl_FragCoord.xy / unit * uScale;
+  float t = uTime;
+  float warp = snoise(vec3(p.x * 1.2, p.y * 0.8 - t * 0.5, t * 0.1));
+  vec3 q = vec3(p.x * 2.6 + warp * 0.45, p.y * 0.9 - t * 0.9, t * 0.12);
+  float n = snoise(q) * 0.75 + snoise(q * 2.3 + vec3(0.0, -t, 0.0)) * 0.25;
+  float d = 1.0;
+  if (uFade == 1) {
+    float y = gl_FragCoord.y / uRes.y;
+    d = 1.0 - smoothstep(0.0, 0.85, y + snoise(vec3(p.x * 1.5, t * 0.3, 1.0)) * 0.08);
+  }
+  // Курсор подогревает пламя рядом с собой
+  vec2 m = (gl_FragCoord.xy - uMouse) / unit;
+  d = clamp(d + 0.45 * exp(-dot(m, m) / 0.02), 0.0, 1.0);
+  float aa = fwidth(n) * 1.1 + 0.002;
+  float thA = mix(1.3, -0.08, d);
+  float thB = mix(1.6, 0.5, d);
+  vec3 col = uBg;
+  col = mix(col, uA, smoothstep(thA - aa, thA + aa, n));
+  col = mix(col, uB, smoothstep(thB - aa, thB + aa, n));
+  return col;
+}
+
 void main() {
+  if (uMode == 1) {
+    outColor = vec4(rise(), 1.0);
+    return;
+  }
   float unit = min(uRes.x, uRes.y);
   vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / unit - uCenter;
   float r = length(p);
@@ -132,7 +166,20 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string) {
   return sh;
 }
 
-export function FlameVortex({ className }: { className?: string }) {
+export function FlameVortex({
+  mode = "vortex",
+  fade = false,
+  scale = 1,
+  className,
+}: {
+  /** vortex — водоворот с окном под контент (hero); rise — поднимающиеся языки пламени (паттерн, футер) */
+  mode?: "vortex" | "rise";
+  /** rise: огонь густой внизу и гаснет кверху */
+  fade?: boolean;
+  /** rise: размер языков, больше — мельче */
+  scale?: number;
+  className?: string;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -162,6 +209,11 @@ export function FlameVortex({ className }: { className?: string }) {
     const uTime = u("uTime");
     const uCenter = u("uCenter");
     const uEyeR = u("uEyeR");
+    const uMouse = u("uMouse");
+    gl.uniform1i(u("uMode"), mode === "rise" ? 1 : 0);
+    gl.uniform1i(u("uFade"), fade ? 1 : 0);
+    gl.uniform1f(u("uScale"), scale);
+    gl.uniform2f(uMouse, -9999, -9999);
 
     const applyColors = () => {
       gl.uniform3fv(u("uBg"), readColor(canvas, "--surface"));
@@ -186,7 +238,7 @@ export function FlameVortex({ className }: { className?: string }) {
       const unit = Math.min(w, h);
       const ax = w / unit;
       const ay = h / unit;
-      gl.uniform2f(uEyeR, ax * (w > h ? 0.35 : 0.56), ay * (w > h ? 0.36 : 0.34));
+      gl.uniform2f(uEyeR, ax * (w > h ? 0.42 : 0.56), ay * (w > h ? 0.36 : 0.34));
     };
     resize();
 
@@ -199,6 +251,13 @@ export function FlameVortex({ className }: { className?: string }) {
     let raf = 0;
     let last = performance.now();
 
+    // Один кадр без цикла: после ресайза canvas очищается, и вне экрана его некому перерисовать
+    const draw = () => {
+      gl.uniform1f(uTime, time);
+      gl.uniform2f(uCenter, center.x, center.y);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
@@ -206,9 +265,7 @@ export function FlameVortex({ className }: { className?: string }) {
       time += dt * speed;
       center.x += (center.tx - center.x) * 0.04;
       center.y += (center.ty - center.y) * 0.04;
-      gl.uniform1f(uTime, time);
-      gl.uniform2f(uCenter, center.x, center.y);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      draw();
       if (!reduce && visible) raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -218,6 +275,8 @@ export function FlameVortex({ className }: { className?: string }) {
       const unit = Math.min(w, h);
       center.tx = ((e.clientX - rect.left - w / 2) / unit) * 0.06;
       center.ty = (-(e.clientY - rect.top - h / 2) / unit) * 0.06;
+      const dpr = canvas.width / (w || 1);
+      gl.uniform2f(uMouse, (e.clientX - rect.left) * dpr, (h - (e.clientY - rect.top)) * dpr);
     };
     const onHeat = (e: Event) => {
       heat = (e as CustomEvent<number>).detail ?? 0;
@@ -233,13 +292,13 @@ export function FlameVortex({ className }: { className?: string }) {
     io.observe(canvas);
     const ro = new ResizeObserver(() => {
       resize();
-      if (reduce) requestAnimationFrame(frame);
+      draw();
     });
     ro.observe(canvas);
     // Тема меняется атрибутом data-surface у предка — перечитываем цвета
     const mo = new MutationObserver(() => {
       applyColors();
-      if (reduce) requestAnimationFrame(frame);
+      draw();
     });
     const surface = canvas.closest("[data-surface]");
     if (surface) mo.observe(surface, { attributes: true, attributeFilter: ["data-surface"] });
@@ -256,7 +315,7 @@ export function FlameVortex({ className }: { className?: string }) {
       gl.deleteProgram(prog);
       gl.deleteBuffer(buf);
     };
-  }, []);
+  }, [mode, fade, scale]);
 
   return (
     <canvas ref={ref} aria-hidden="true" className={cx("block size-full bg-surface", className)} />

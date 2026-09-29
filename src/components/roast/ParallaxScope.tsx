@@ -4,7 +4,8 @@ import { useEffect, useRef, type HTMLAttributes } from "react";
 
 /**
  * Секция с параллаксом: пишет в CSS-переменные положение курсора (--mx, --my от −1 до 1,
- * со сглаживанием) и прокрутку (--sy, px). Слои внутри сдвигаются на свою глубину через translate.
+ * со сглаживанием) и прокрутку секции (--sy, px: 0, когда верх секции у верха экрана; растёт при прокрутке вниз).
+ * Слои внутри сдвигаются на свою глубину через translate.
  */
 export function ParallaxScope(props: HTMLAttributes<HTMLElement>) {
   const ref = useRef<HTMLElement>(null);
@@ -19,7 +20,7 @@ export function ParallaxScope(props: HTMLAttributes<HTMLElement>) {
       s.y += (s.ty - s.y) * 0.08;
       el.style.setProperty("--mx", s.x.toFixed(4));
       el.style.setProperty("--my", s.y.toFixed(4));
-      el.style.setProperty("--sy", String(Math.round(window.scrollY)));
+      el.style.setProperty("--sy", String(Math.round(-el.getBoundingClientRect().top)));
       raf = requestAnimationFrame(tick);
     };
     const onMove = (e: PointerEvent) => {
