@@ -108,8 +108,9 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
                 // Штамп прихлопывает последнюю букву заголовка
                 trail: (
                   <Stamp
-                    text={"Осторожно\u00A0✱\u00A0огнеопасно\u00A0✱\u00A0"}
-                    className="absolute top-[0.02em] right-[-0.66em] z-10 w-[0.95em] opacity-0 group-data-[shown=true]/reveal:[animation:stamp-in_420ms_var(--ease-poster)_1.2s_forwards]"
+                    top="Осторожно горячо"
+                    bottom="DNGR"
+                    className="absolute top-[-0.14em] right-[-0.82em] z-10 w-[1.3em] text-paper opacity-0 group-data-[shown=true]/reveal:[animation:stamp-in_420ms_var(--ease-poster)_1.2s_forwards]"
                   />
                 ),
               },
