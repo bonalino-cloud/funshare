@@ -76,7 +76,7 @@ export function Squiggle({ children, className }: { children: ReactNode; classNa
   );
 }
 
-/** Обвод-овал (§3.3): рукописный эллипс red, не замкнут, перекрывает буквы */
+/** Обвод-овал (§3.3): рукописный эллипс red поверх слова, не замкнут, перекрывает буквы */
 export function Circled({
   children,
   className,
@@ -88,22 +88,25 @@ export function Circled({
 }) {
   return (
     <span className={cx("relative inline-block px-[0.1em]", className)} style={style}>
+      <span className="relative">{children}</span>
+      {/* Обвод поверх слова: рисуется после текста в разметке и лежит выше него */}
       <svg
         viewBox="0 0 200 80"
         preserveAspectRatio="none"
         aria-hidden="true"
-        className="absolute -inset-x-[0.18em] -inset-y-[0.12em] h-[124%] w-[calc(100%+0.36em)] text-red"
+        className="pointer-events-none absolute -inset-x-[0.18em] -inset-y-[0.12em] z-10 h-[124%] w-[calc(100%+0.36em)] text-red"
       >
         <path
           d="M18 44 C 10 14, 150 4, 186 26 C 204 40, 170 72, 96 74 C 34 76, 4 60, 22 34"
+          pathLength={1}
           fill="none"
           stroke="currentColor"
-          strokeWidth="4"
+          // Толщина от кегля: ~7 px на hero, не тоньше 4 px на мелких заголовках
+          className="[stroke-width:max(4px,0.06em)]"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      <span className="relative">{children}</span>
     </span>
   );
 }

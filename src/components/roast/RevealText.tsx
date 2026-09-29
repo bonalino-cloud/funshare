@@ -46,8 +46,9 @@ function decorate(seg: TextSegment, body: ReactNode, after: number) {
   if (seg.decor === "squiggle") return <Squiggle>{body}</Squiggle>;
   return (
     <Circled
-      className="[&>svg_path]:[stroke-dasharray:640] [&>svg_path]:[stroke-dashoffset:640] group-data-[shown=true]/reveal:[&>svg_path]:[animation:draw_700ms_var(--ease-poster)_var(--draw-delay)_forwards]"
-      style={{ "--draw-delay": `${after}ms` } as CSSProperties}
+      className="[&>svg_path]:[stroke-dasharray:1] [&>svg_path]:[stroke-dashoffset:1] group-data-[shown=true]/reveal:[&>svg_path]:[animation:draw_650ms_var(--ease-poster)_var(--draw-delay)_forwards]"
+      // after — старт последней буквы; +620 мс её появления и пауза: обвод рисуется, когда слово уже стоит
+      style={{ "--draw-delay": `${after + 700}ms` } as CSSProperties}
     >
       {body}
     </Circled>
