@@ -17,6 +17,28 @@ export type RevealSegment =
   /** Перенос строки только на мобиле: длинная строка desktop делится надвое */
   | { br: "mobile" };
 
+// Разброс по буквам: ширина 0.86–1.2, жирность 700–900. Детерминированно, чтобы SSR и клиент совпали
+const WIDTHS = [1.16, 0.9, 1.04, 0.86, 1.2, 0.95, 1.08, 0.92];
+const WEIGHTS = [900, 800, 900, 700, 900, 850, 780, 900];
+
+function Jitter({ i, children }: { i: number; children: ReactNode }) {
+  const k = WIDTHS[(i * 5 + 3) % WIDTHS.length];
+  const w = WEIGHTS[(i * 3 + 1) % WEIGHTS.length];
+  return (
+    <span
+      className="inline-block origin-center"
+      // scaleX не меняет ширину в раскладке — компенсируем отступами (~1em ширина буквы Unbounded 900)
+      style={{
+        transform: `scaleX(${k})`,
+        margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
+        fontWeight: w,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 type TextSegment = Exclude<RevealSegment, { br: "mobile" }>;
 
 function decorate(seg: TextSegment, body: ReactNode, after: number) {
@@ -44,6 +66,7 @@ export function RevealText({
   step = 32,
   delay = 0,
   immediate = false,
+  jitter = false,
 }: {
   as?: ElementType;
   lines: RevealSegment[][];
@@ -54,6 +77,8 @@ export function RevealText({
   delay?: number;
   /** Запуск сразу по CSS, без ожидания гидрации — для hero (первый экран, LCP) */
   immediate?: boolean;
+  /** Буквы разной ширины и жирности — «живой» плакатный заголовок (только для вариативного Unbounded) */
+  jitter?: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
 
@@ -99,7 +124,7 @@ export function RevealText({
                   className="inline-block [animation:reveal-char_620ms_var(--ease-poster)_both_paused] opacity-0 group-data-[shown=true]/reveal:[animation-play-state:running]"
                   style={{ animationDelay: `${d}ms` }}
                 >
-                  {ch === " " ? " " : ch}
+                  {jitter && ch !== " " ? <Jitter i={i}>{ch}</Jitter> : ch === " " ? " " : ch}
                 </span>
               );
             });

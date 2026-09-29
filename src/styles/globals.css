@@ -148,6 +148,15 @@ body {
   letter-spacing: -0.03em;
   font-size: clamp(2.9rem, 8.6vw, 8.5rem);
 }
+@utility type-display-section {
+  /* H2 секций лендинга: жирный wide, как hero. Буквы разной ширины и жирности — RevealText jitter */
+  font-family: var(--font-unbounded), system-ui, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  font-size: clamp(2.2rem, 5vw, 5.5rem);
+}
 @utility type-display-xl {
   font-family: var(--font-unbounded), system-ui, sans-serif;
   font-weight: 900;
@@ -279,11 +288,11 @@ body {
 @keyframes firecircle {
   0% {
     transform: translateY(0) scale(1);
-    background-color: var(--color-orange);
+    background-color: var(--flame-from, var(--color-orange));
   }
   100% {
     transform: translateY(var(--rise, -150px)) scale(0);
-    background-color: var(--color-yellow);
+    background-color: var(--flame-to, var(--color-yellow));
   }
 }
 @keyframes firecut-left {
@@ -315,6 +324,17 @@ body {
   100% {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Декоративные языки пламени колышутся */
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scaleY(1) skewX(0deg);
+  }
+  50% {
+    transform: scaleY(1.08) skewX(-3deg);
   }
 }
 

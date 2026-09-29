@@ -4,8 +4,8 @@ import { JetBrains_Mono, Onest, Unbounded, Yanone_Kaffeesatz } from "next/font/g
 
 /** Display Wide: H1, hero, названия событий */
 export const unbounded = Unbounded({
+  // Вариативный: заголовки секций берут разную жирность на каждую букву (RevealText jitter)
   subsets: ["latin", "cyrillic"],
-  weight: ["800", "900"],
   variable: "--font-unbounded",
   display: "swap",
 });

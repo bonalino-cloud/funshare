@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cx } from "@/components/cx";
 
 /**
@@ -7,6 +8,7 @@ import { cx } from "@/components/cx";
  * Размер и место задаёт className контейнера (absolute, высота = высота огня).
  * trigger="hover" — огонь появляется, когда курсор над ближайшим предком с классом group/flames.
  * cut — цвет вырезов = цвет фона под огнём (CSS-значение). null — без вырезов (огонь поверх пёстрого фона).
+ * from / to — цвет пламени у основания и на кончиках: подбирается под фон, чтобы огонь читался (flameOn).
  */
 
 const FLAMES = 40;
@@ -36,12 +38,16 @@ export function Flames({
   particle = "lg",
   trigger = "always",
   cut = "var(--eye, var(--surface))",
+  from,
+  to,
 }: {
   className?: string;
   /** lg — 56→80 px частицы (главная кнопка), sm — 40 px (карточки, маленькая кнопка) */
   particle?: "lg" | "sm";
   trigger?: "always" | "hover";
   cut?: string | null;
+  from?: string;
+  to?: string;
 }) {
   const size = particle === "lg" ? "-ml-7 size-14 md:-ml-10 md:size-20" : "-ml-5 size-10";
   const cutSize = particle === "lg" ? "size-14 md:size-20" : "size-10";
@@ -54,6 +60,7 @@ export function Flames({
           "scale-y-0 group-focus-within/flames:scale-y-100 group-hover/flames:scale-y-100",
         className,
       )}
+      style={{ "--flame-from": from, "--flame-to": to } as CSSProperties}
     >
       <svg aria-hidden="true" className="absolute size-0">
         <filter id="fire-goo">
@@ -67,12 +74,12 @@ export function Flames({
         </filter>
       </svg>
       <span className="absolute inset-0 [filter:url(#fire-goo)]">
-        <span className="absolute inset-x-[4%] bottom-0 h-10 rounded-full bg-orange" />
+        <span className="absolute inset-x-[4%] bottom-0 h-10 rounded-full bg-[var(--flame-from,var(--color-orange))]" />
         {flames.map((f, i) => (
           <span
             key={i}
             className={cx(
-              "absolute bottom-0 [animation:firecircle_1.2s_cubic-bezier(0.5,0.07,0.64,1)_infinite] rounded-full bg-orange group-hover/fire:[animation-duration:0.8s]",
+              "absolute bottom-0 [animation:firecircle_1.2s_cubic-bezier(0.5,0.07,0.64,1)_infinite] rounded-full bg-[var(--flame-from,var(--color-orange))] group-hover/fire:[animation-duration:0.8s]",
               size,
             )}
             style={{ left: `${f.left}%`, marginBottom: -f.sink, animationDelay: `${f.delay}s` }}
@@ -100,4 +107,17 @@ export function Flames({
         ))}
     </span>
   );
+}
+
+/** Пара цветов пламени под фон карточки: огонь должен контрастировать с заливкой */
+export function flameOn(tone: string): { from: string; to: string; cut: string } {
+  const cut = `var(--color-${tone})`;
+  switch (tone) {
+    case "yellow":
+      return { from: "var(--color-red)", to: "var(--color-orange)", cut };
+    case "red":
+      return { from: "var(--color-yellow)", to: "var(--color-paper)", cut };
+    default:
+      return { from: "var(--color-orange)", to: "var(--color-yellow)", cut };
+  }
 }

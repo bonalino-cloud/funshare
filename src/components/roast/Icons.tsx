@@ -77,18 +77,18 @@ export function Play(props: P) {
   );
 }
 
+/** Жирный комичный крестик: красная заливка, ink-обводка, чуть кривой — как стикер */
 export function Cross(props: P) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      {...props}
-    >
-      <path d="M5 5l14 14M19 5L5 19" />
+    <svg viewBox="0 0 48 48" aria-hidden="true" {...props}>
+      <path
+        d="M9 5.5 24 18 38.5 6l5 6.5L31 24.5l12.5 11-5.5 6.5L24 30 10.5 42.5 4.5 36 17 24.5 4 13.5Z"
+        fill="#C9302C"
+        stroke="#111111"
+        strokeWidth="3.5"
+        strokeLinejoin="round"
+      />
+      <path d="M11 11.5l4 3.5" stroke="#EDE0CF" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }

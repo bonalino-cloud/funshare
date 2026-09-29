@@ -43,7 +43,7 @@ export function SectionHeading({
   return (
     <div className={cx("relative", className)}>
       {label && <p className="mb-4 type-label text-[color:var(--muted)]">{label}</p>}
-      <RevealText as="h2" className="type-cond-hero" step={26} lines={lines} />
+      <RevealText as="h2" className="type-display-section" step={26} jitter lines={lines} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import Image, { type StaticImageData } from "next/image";
 import { cx } from "@/components/cx";
 import { cardTones, type CardTone } from "@/components/ui/Card";
-import { Flames } from "../Flames";
+import { Flames, flameOn } from "../Flames";
 import { Reveal } from "../Reveal";
 import { Section, SectionHeading } from "../Section";
 import dice from "../assets/when-dice.png";
@@ -9,62 +9,48 @@ import cake from "../assets/when-cake.png";
 import angry from "../assets/when-angry.png";
 import robot from "../assets/when-robot.png";
 import chat from "../assets/when-chat.png";
-import phone from "../assets/when-phone.png";
 
-const cases: { title: string; text: string; img: StaticImageData; tone: CardTone; cut: string }[] =
-  [
-    {
-      title: "В рандомный день",
-      text: "Рандомное время. Без повода. Так даже лучше.",
-      img: dice,
-      tone: "yellow",
-      cut: "var(--color-yellow)",
-    },
-    {
-      title: "На ДР другу",
-      text: "Которого особенно любишь. Вместо «с др, бро».",
-      img: cake,
-      tone: "cobalt",
-      cut: "var(--color-cobalt)",
-    },
-    {
-      title: "Когда кто-то взбесил",
-      text: "А ответить нужно красиво. Без мата, с огоньком.",
-      img: angry,
-      tone: "red",
-      cut: "var(--color-red)",
-    },
-    {
-      title: "Что ИИ думает обо мне",
-      text: "Самоирония в сторис заходит лучше селфи. «Меня прожарил ИИ. Он прав».",
-      img: robot,
-      tone: "teal",
-      cut: "var(--color-teal)",
-    },
-    {
-      title: "В общий чат",
-      text: "Всех по очереди. Заодно узнаешь, кто обидчивый.",
-      img: chat,
-      tone: "violet",
-      cut: "var(--color-violet)",
-    },
-    {
-      title: "Нечего постить",
-      text: "Готовая картинка и текст. Минимум два «это про тебя, да».",
-      img: phone,
-      tone: "orange",
-      cut: "var(--color-orange)",
-    },
-  ];
+const cases: { title: string; text: string; img: StaticImageData; tone: CardTone }[] = [
+  {
+    title: "В рандомный день",
+    text: "Рандомное время. Без повода. Так даже лучше.",
+    img: dice,
+    tone: "yellow",
+  },
+  {
+    title: "На ДР другу",
+    text: "Которого особенно любишь. Вместо «с др, бро».",
+    img: cake,
+    tone: "cobalt",
+  },
+  {
+    title: "Когда кто-то взбесил",
+    text: "А ответить нужно красиво — с огоньком!",
+    img: angry,
+    tone: "red",
+  },
+  {
+    title: "Что ИИ думает обо мне",
+    text: "Самоирония в сторис заходит лучше селфи.",
+    img: robot,
+    tone: "teal",
+  },
+  {
+    title: "В общий чат",
+    text: "Есть кто-то в прицеле? Тащи его на решётку — будет жарко.",
+    img: chat,
+    tone: "violet",
+  },
+];
 
 /** «Когда заходит»: шесть поводов, карточки загораются снизу при наведении */
 export function WhenSection() {
   return (
-    <Section id="when" surface="light" className="py-20 md:py-28">
+    <Section id="when" surface="light" className="pt-28 pb-20 md:pt-36 md:pb-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <SectionHeading
           label="Поводы"
-          lines={[["Когда ", { text: "заходит", decor: "circled" }]]}
+          lines={[["Когда ", { br: "mobile" }, { text: "заходит", decor: "circled" }]]}
         />
         <div className="mt-14 grid gap-x-5 gap-y-10 sm:grid-cols-2 md:mt-20 lg:grid-cols-3">
           {cases.map((c, i) => (
@@ -81,8 +67,8 @@ export function WhenSection() {
                   <Flames
                     trigger="hover"
                     particle="sm"
-                    cut={c.cut}
-                    className="inset-x-0 bottom-0 h-24 [--rise:-80px]"
+                    {...flameOn(c.tone)}
+                    className="inset-x-0 bottom-0 h-32 [--rise:-110px]"
                   />
                 </span>
                 <Image

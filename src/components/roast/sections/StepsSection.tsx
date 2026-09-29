@@ -1,11 +1,12 @@
-import { Asterisk } from "@/components/brand/Asterisk";
-import { Counter, DonenessMeter, Typewriter } from "../Live";
+import Image from "next/image";
+import { DonenessMeter, Typewriter } from "../Live";
 import { Reveal } from "../Reveal";
 import { Section, SectionHeading } from "../Section";
 import { Sticker } from "../Sticker";
 import thermo from "../assets/sticker-thermo.png";
 import flame from "../assets/sticker-flame.png";
 import pan from "../assets/sticker-pan.png";
+import share from "../assets/step-share.png";
 
 /** «Как делается»: три шага, в каждом — живая мини-сцена */
 export function StepsSection() {
@@ -14,7 +15,7 @@ export function StepsSection() {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <SectionHeading
           label="Три шага"
-          lines={[["Как ", { text: "дела", className: "tilt" }, "ется"]]}
+          lines={[["Как ", { br: "mobile" }, { text: "дела", className: "tilt" }, "ется"]]}
         />
 
         <div className="mt-12 grid gap-5 md:mt-16 md:grid-cols-3 md:gap-6">
@@ -37,16 +38,6 @@ export function StepsSection() {
             delay={120}
             className="md:-translate-y-6"
           >
-            <ul className="mt-6 space-y-2 type-meta text-[color:var(--muted)]">
-              <li className="flex items-center gap-2">
-                <Asterisk className="size-3 shrink-0 animate-spin-slow text-orange" />
-                Считаем закаты… <Counter to={47} className="type-mono text-acid text-base" />
-              </li>
-              <li className="flex items-center gap-2">
-                <Asterisk className="size-3 shrink-0 animate-spin-slow text-orange" />
-                Читаем подписи. Даже длинные…
-              </li>
-            </ul>
             <DonenessMeter className="mt-6" />
             <Sticker src={thermo} width={70} depth={1.4} rotate={16} className="-top-10 -right-4" />
           </Step>
@@ -57,14 +48,12 @@ export function StepsSection() {
             text="Делишься готовым артефактом. Осторожно, горячо!"
             delay={240}
           >
-            <div className="mt-6 flex items-end gap-2">
-              <span className="rounded-md rounded-bl-none border-2 border-paper bg-cobalt px-3 py-2 type-meta text-paper transition-transform duration-200 hover:-rotate-2">
-                Лови. Это про тебя
-              </span>
-              <span className="rounded-md rounded-br-none border-2 border-ink bg-yellow px-3 py-2 type-meta text-ink transition-transform duration-200 hover:rotate-2">
-                ЧТО?!
-              </span>
-            </div>
+            <Image
+              src={share}
+              alt="Палец тянется к кнопке «Отправить», во второй руке бомба с горящим письмом"
+              sizes="(max-width: 768px) 80vw, 320px"
+              className="mt-6 h-auto w-full -rotate-2 transition-transform duration-300 ease-[var(--ease-poster)] hover:scale-105 hover:rotate-1"
+            />
             <Sticker src={flame} width={64} depth={1.8} rotate={-12} className="-top-8 -right-3" />
           </Step>
         </div>
