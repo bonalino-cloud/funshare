@@ -48,9 +48,7 @@ export function WhenSection() {
   return (
     <Section id="when" surface="light" className="pt-28 pb-20 md:pt-36 md:pb-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <SectionHeading
-          lines={[["Когда ", { br: "mobile" }, { text: "заходит", decor: "circled" }]]}
-        />
+        <SectionHeading lines={[["Когда ", { br: "mobile" }, "заходит"]]} />
         <div className="mt-14 grid gap-x-5 gap-y-10 sm:grid-cols-2 md:mt-20 lg:grid-cols-3">
           {cases.map((c, i) => (
             <Reveal key={c.title} delay={(i % 3) * 90}>

@@ -33,6 +33,7 @@ uniform int uFade;
 uniform vec2 uMouse;
 uniform float uScale;
 uniform int uUseMask;
+uniform float uDensity;
 uniform sampler2D uMask;
 out vec4 outColor;
 
@@ -97,7 +98,7 @@ vec3 rise() {
   }
   // Курсор подогревает пламя рядом с собой
   vec2 m = (gl_FragCoord.xy - uMouse) / unit;
-  d = clamp(d + 0.45 * exp(-dot(m, m) / 0.02), 0.0, 1.0);
+  d = clamp(d * uDensity + 0.45 * exp(-dot(m, m) / 0.02), 0.0, 1.0);
   float aa = fwidth(n) * 1.1 + 0.002;
   float thA = mix(1.3, -0.08, d);
   float thB = mix(1.6, 0.5, d);
@@ -174,6 +175,7 @@ export function FlameVortex({
   mode = "vortex",
   fade = false,
   scale = 1,
+  density = 1,
   mask,
   maskKey = 0,
   className,
@@ -184,6 +186,8 @@ export function FlameVortex({
   fade?: boolean;
   /** rise: размер языков, больше — мельче */
   scale?: number;
+  /** rise: плотность огня 0–1. Меньше — реже заливка, отдельные языки читаются лучше */
+  density?: number;
   /** Трафарет (2D-canvas): огонь рисуется только в его непрозрачных пикселях, фон canvas прозрачный */
   mask?: HTMLCanvasElement | null;
   /** Меняется, когда трафарет перерисован — перезаливаем текстуру */
@@ -235,6 +239,7 @@ export function FlameVortex({
     gl.uniform1i(u("uMode"), mode === "rise" ? 1 : 0);
     gl.uniform1i(u("uFade"), fade ? 1 : 0);
     gl.uniform1f(u("uScale"), scale);
+    gl.uniform1f(u("uDensity"), density);
     gl.uniform2f(uMouse, -9999, -9999);
 
     const applyColors = () => {
@@ -348,12 +353,12 @@ export function FlameVortex({
       gl.deleteBuffer(buf);
       gl.deleteTexture(tex);
     };
-  }, [mode, fade, scale]);
+  }, [mode, fade, scale, density]);
 
   // Идёт после основного эффекта: GL уже готов. Перезаливаем при новом трафарете и при пересоздании GL
   useEffect(() => {
     if (mask) uploadMask.current?.(mask);
-  }, [mask, maskKey, mode, fade, scale]);
+  }, [mask, maskKey, mode, fade, scale, density]);
 
   return (
     <canvas
