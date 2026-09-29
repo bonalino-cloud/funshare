@@ -5,7 +5,7 @@ import { Section, SectionHeading } from "../Section";
 import { Sticker } from "../Sticker";
 import thermo from "../assets/sticker-thermo.png";
 import flame from "../assets/sticker-flame.png";
-import pan from "../assets/sticker-pan.png";
+import timer from "../assets/sticker-timer.png";
 import share from "../assets/step-share.png";
 
 /** «Как делается»: три шага, в каждом — живая мини-сцена */
@@ -58,11 +58,12 @@ export function StepsSection() {
         </div>
       </div>
       <Sticker
-        src={pan}
-        width={120}
-        depth={2}
-        rotate={-8}
-        className="top-16 right-[6%] max-md:hidden"
+        src={timer}
+        alt="Секундомер с молнией: делается быстро"
+        width={150}
+        depth={1.8}
+        rotate={10}
+        className="top-14 right-[8%] max-md:top-8 max-md:-right-4 max-md:scale-[0.6]"
       />
     </Section>
   );

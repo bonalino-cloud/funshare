@@ -85,7 +85,8 @@ const punches: { icon: ReactNode; text: string }[] = [
   { icon: <Headphones />, text: "Плейлист «для дороги» длиннее самой дороги" },
 ];
 
-/** Декоративные языки пламени в углу карточки Пекла: плоские, orange + yellow (DESIGN.md §7) */
+/** Декоративные языки пламени в углу карточки Кострища: плоские, red + yellow (DESIGN.md §7).
+ * При наведении прячутся — их сменяет живой огонь Flames */
 function CornerFlames({ className }: { className?: string }) {
   const tongue =
     "M50 160C18 154 4 124 16 94c6-15 10-28 4-48 20 12 32 30 30 52 8-8 14-22 12-38 22 22 38 58 30 84-6 16-20 24-42 16Z";
@@ -95,7 +96,7 @@ function CornerFlames({ className }: { className?: string }) {
         <path
           d={tongue}
           transform="translate(0 10) scale(0.9)"
-          className="fill-orange"
+          className="fill-red"
           stroke="#111"
           strokeWidth="4"
         />
@@ -105,7 +106,7 @@ function CornerFlames({ className }: { className?: string }) {
         <path
           d={tongue}
           transform="translate(80 -10) scale(1.05)"
-          className="fill-orange"
+          className="fill-red"
           stroke="#111"
           strokeWidth="4"
         />
@@ -115,7 +116,7 @@ function CornerFlames({ className }: { className?: string }) {
         <path
           d={tongue}
           transform="translate(160 30) scale(0.8)"
-          className="fill-orange"
+          className="fill-red"
           stroke="#111"
           strokeWidth="4"
         />
@@ -153,7 +154,7 @@ export function LevelsSection() {
                   aria-controls="level-details"
                   onClick={() => setActive(i)}
                   className={cx(
-                    "group/flames relative flex h-full w-full flex-col items-start overflow-visible rounded-lg border-2 p-5 pt-40 text-left transition-[transform,box-shadow] duration-200 ease-[var(--ease-poster)] md:p-6 md:pt-48",
+                    "group/flames relative flex h-full w-full flex-col items-start justify-end overflow-visible rounded-lg border-2 p-5 pt-40 text-left transition-[transform,box-shadow] duration-200 ease-[var(--ease-poster)] md:p-6 md:pt-48",
                     cardTones[l.tone],
                     i === active
                       ? "-translate-y-2 -rotate-1 border-ink shadow-offset"
@@ -161,8 +162,8 @@ export function LevelsSection() {
                   )}
                 >
                   <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
-                    {l.heat === 3 && (
-                      <CornerFlames className="absolute -right-3 -bottom-2 w-32 md:w-36" />
+                    {l.heat === 2 && (
+                      <CornerFlames className="absolute -right-2 -bottom-1 w-24 transition-opacity duration-200 group-hover/flames:opacity-0 md:w-28" />
                     )}
                     <Flames
                       trigger="hover"
@@ -193,14 +194,7 @@ export function LevelsSection() {
                     ))}
                   </span>
                   <span className="relative mt-2 type-cond-xl">{l.name}</span>
-                  <span
-                    className={cx(
-                      "relative mt-1 type-body font-semibold",
-                      l.heat === 3 && "max-w-[56%] md:max-w-[52%]",
-                    )}
-                  >
-                    {l.sub}
-                  </span>
+                  <span className="relative mt-1 type-body font-semibold">{l.sub}</span>
                 </button>
               </Reveal>
             );
