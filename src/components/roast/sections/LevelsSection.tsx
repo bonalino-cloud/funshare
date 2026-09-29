@@ -8,7 +8,8 @@ import { cardTones, type CardTone } from "@/components/ui/Card";
 import { Flames, flameOn } from "../Flames";
 import { Chili, Cup, Headphones, Play, Suitcase, Sunset } from "../Icons";
 import { Reveal } from "../Reveal";
-import { Section, SectionHeading } from "../Section";
+import { RevealText } from "../RevealText";
+import { Section } from "../Section";
 import ogon from "../assets/level-ogon.png";
 import koster from "../assets/level-koster.png";
 import peklo from "../assets/level-peklo.png";
@@ -135,9 +136,15 @@ export function LevelsSection() {
   return (
     <Section id="levels" surface="light" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <SectionHeading
-          lines={[["Вот что ", { br: "mobile" }, { text: "полу", className: "tilt" }, "чится"]]}
-        />
+        {/* «Получится Огонь»: по центру; «Огонь» — окно в поднимающиеся языки пламени (маска по буквам) */}
+        <h2 aria-label="Получится огонь" className="text-center">
+          <RevealText as="span" className="block type-display-m" lines={[["Получится"]]} />
+          <Reveal as="span" delay={300} className="block">
+            <span className="inline-block fire-text font-wide text-[clamp(5rem,17vw,12.5rem)] leading-[0.95] font-black tracking-[-0.03em]">
+              Огонь
+            </span>
+          </Reveal>
+        </h2>
 
         <div className="mt-14 grid gap-5 md:mt-20 md:grid-cols-3">
           {levels.map((l, i) => {

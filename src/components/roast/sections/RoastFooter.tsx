@@ -18,7 +18,7 @@ export function RoastFooter() {
             <Asterisk className="size-4 animate-spin-slow [animation-delay:-4s]" />
             <Asterisk className="size-4 animate-spin-slow [animation-delay:-8s]" />
           </span>
-          <span className="type-meta">Funshare · прожарка · 2026</span>
+          <span className="type-meta">Funshare · Прожарка с любовью и огоньком · 2026 ©</span>
         </div>
         <nav className="flex flex-wrap gap-2">
           {links.map((l) => (
