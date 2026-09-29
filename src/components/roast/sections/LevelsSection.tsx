@@ -241,7 +241,7 @@ function ResultCard({ level }: { level: Level }) {
   return (
     <article className="relative rounded-md border-2 border-ink bg-ink p-5 text-paper shadow-offset md:p-7">
       <div className="flex items-center justify-between gap-3">
-        <p className="type-label text-paper/70">Прожарка @anya.travels</p>
+        <p className="type-meta text-paper/70">Прожарка @anya.travels</p>
         <span className={cx("rounded-sm px-2 py-1 type-label", cardTones[level.tone])}>
           {level.name}
         </span>
