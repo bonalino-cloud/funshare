@@ -69,7 +69,7 @@ export function ResultScreen({ slug }: { slug: string }) {
 
   return (
     <>
-      <StepTitle accent="Смотри, что вышло" size="m">
+      <StepTitle accent="Смотри, что вышло" split>
         Готово.
       </StepTitle>
       <div className="flex flex-col gap-2">

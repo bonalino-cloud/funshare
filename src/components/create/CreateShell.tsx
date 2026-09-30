@@ -26,7 +26,7 @@ export function CreateShell({
         <FlameVortex />
         <div className="grain absolute inset-0" />
       </div>
-      <div className="relative z-10 mx-auto flex w-full max-w-[480px] flex-1 flex-col px-[18px] pt-4 pb-[max(56px,env(safe-area-inset-bottom))]">
+      <div className="relative z-10 mx-auto flex w-full max-w-[480px] flex-1 flex-col px-[18px] pt-8 pb-[max(56px,env(safe-area-inset-bottom))]">
         <StepHeader step={step} onBack={onBack} />
         <main className="flex flex-1 flex-col">{children}</main>
       </div>

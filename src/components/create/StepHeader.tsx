@@ -2,13 +2,13 @@ import { cx } from "@/components/cx";
 import { TOTAL_STEPS } from "./steps";
 
 /**
- * Шапка флоу: стрелка «назад» отдельной строкой, под ней прогресс из 7 сегментов и N/7.
+ * Шапка флоу: стрелка «назад» отдельной строкой по центру, под ней прогресс из 7 сегментов и N/7.
  * Сегмент текущего шага закрашен полностью. Без названия шага: его говорит заголовок экрана.
  */
 export function StepHeader({ step, onBack }: { step: number; onBack?: () => void }) {
   return (
-    <header className="mb-6 flex flex-col gap-4">
-      <div className="flex h-8 items-center">
+    <header className="mb-7 flex flex-col gap-5">
+      <div className="flex h-8 items-center justify-center">
         {onBack ? (
           <button
             type="button"

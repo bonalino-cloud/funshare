@@ -9,10 +9,15 @@ import { cx } from "@/components/cx";
  */
 export function TextArea({
   error,
+  size = "md",
   className,
   value,
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string }) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  error?: string;
+  /** lg — поле примерно на треть крупнее: факты на шаге 2 */
+  size?: "md" | "lg";
+}) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   // Высота по содержимому: сбрасываем и берём scrollHeight
@@ -31,7 +36,8 @@ export function TextArea({
         value={value}
         aria-invalid={error ? true : undefined}
         className={cx(
-          "block w-full resize-none rounded-sm border-2 border-ink bg-paper px-4 py-3.5 type-body font-semibold text-ink shadow-offset-paper outline-none placeholder:text-ink/45",
+          "block w-full resize-none rounded-sm border-2 border-ink bg-paper font-semibold text-ink shadow-offset-paper outline-none placeholder:text-ink/45",
+          size === "lg" ? "px-5 py-[18px] text-[19px] leading-[1.35]" : "px-4 py-3.5 type-body",
           "focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-pink",
           error && "outline-3 outline-offset-4 outline-red",
           props.disabled && "opacity-70",

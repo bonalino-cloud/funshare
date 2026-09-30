@@ -65,9 +65,7 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
         if (!tooLong) next();
       }}
     >
-      <StepTitle accent="факты" size="m">
-        Занимательные
-      </StepTitle>
+      <StepTitle accent="факты">Добавь</StepTitle>
       <StepLead>Чем больше пикантных фактов, тем точнее и смешнее получится прожарка</StepLead>
 
       <div className="flex flex-col gap-2">
@@ -79,6 +77,7 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
               name={`fact-${i + 1}`}
               aria-label={`Факт ${i + 1}`}
               placeholder={examples[i]}
+              size="lg"
               value={value}
               onChange={(e) => update(i, e.target.value)}
               error={
@@ -94,9 +93,19 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
             type="button"
             aria-label="Ещё факт"
             onClick={() => setFields((prev) => [...prev, ""])}
-            className="mx-auto mt-1 flex size-11 items-center justify-center rounded-full border-2 border-white font-wide text-[22px] leading-none font-extrabold text-paper focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
+            className="mx-auto mt-6 flex size-14 items-center justify-center rounded-full border-2 border-white text-paper focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
           >
-            +
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
           </button>
         )}
       </div>
