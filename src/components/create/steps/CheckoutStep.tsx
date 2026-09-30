@@ -173,6 +173,7 @@ export function CheckoutStep({
         >
           <LinkInput
             before={null}
+            tall
             name="promo"
             placeholder="Волшебное слово"
             autoCapitalize="characters"
@@ -206,14 +207,14 @@ export function CheckoutStep({
         </button>
       )}
 
-      <div className="mt-auto flex flex-col gap-2 pt-4">
+      <div className="mt-auto flex flex-col gap-3 pt-4">
         {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
         <Button
           type="button"
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-14 w-full"
+          className="h-16 w-full"
           onClick={start}
           disabled={busy || !quote}
           aria-busy={busy || undefined}

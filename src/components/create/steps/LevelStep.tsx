@@ -126,7 +126,7 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-14 w-full"
+          className="h-16 w-full"
           disabled={!agreed}
           onClick={agree}
         >

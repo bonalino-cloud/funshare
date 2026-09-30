@@ -153,7 +153,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-14 w-full"
+          className="h-16 w-full"
           disabled={!data || picked.length !== need || busy}
           onClick={submit}
           aria-busy={busy || undefined}

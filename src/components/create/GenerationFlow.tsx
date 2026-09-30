@@ -44,7 +44,7 @@ export function GenerationFlow({ id }: { id: string }) {
               variant="inverse"
               look="display"
               arrow={false}
-              className="h-14 w-full"
+              className="h-16 w-full"
               onClick={() => router.push("/create")}
             >
               Ещё раз

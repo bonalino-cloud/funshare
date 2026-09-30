@@ -2,7 +2,8 @@ import { cx } from "@/components/cx";
 
 /**
  * Переключатель из 2–3 коротких симметричных слов («Себя / Друга»).
- * Активный — pink с ink-обводкой и offset-тенью, остальные — прозрачные с белой обводкой.
+ * Шрифт как у главной кнопки (Unbounded, капс). Активный — pink с ink-обводкой и offset-тенью,
+ * остальные — прозрачные с белой обводкой.
  */
 export function Segmented<T extends string>({
   value,
@@ -24,7 +25,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cx("flex gap-2", disabled && "opacity-50", className)}
+      className={cx("flex gap-3", disabled && "opacity-50", className)}
     >
       {options.map((o) => {
         const on = o.value === value;
@@ -37,7 +38,7 @@ export function Segmented<T extends string>({
             disabled={disabled}
             onClick={() => onChange(o.value)}
             className={cx(
-              "h-12 flex-1 rounded-sm border-2 px-2 type-label transition-[transform,box-shadow,background-color] duration-[120ms] ease-linear",
+              "h-14 flex-1 rounded-sm border-2 px-2 font-wide text-sm font-black tracking-tight uppercase transition-[transform,box-shadow,background-color] duration-[120ms] ease-linear",
               "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink",
               on
                 ? "border-ink bg-pink text-ink shadow-offset-paper"

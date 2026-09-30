@@ -91,7 +91,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             variant="inverse"
             look="display"
             arrow={false}
-            className="h-14 w-full"
+            className="h-16 w-full"
             onClick={() => go("facts")}
           >
             Дальше
@@ -127,7 +127,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
         <ArtStage src={impInspect} scan={checking} />
       )}
 
-      <div className="mt-auto flex flex-col gap-2 pt-4">
+      <div className="mt-auto mb-5 flex flex-col gap-4 pt-4">
         <Segmented
           label="Кого жарим"
           value={draft.mode}
@@ -137,6 +137,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
         />
         <LinkInput
           name="instagram"
+          tall
           placeholder="username"
           value={value}
           disabled={checking}
@@ -152,7 +153,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             variant="inverse"
             look="display"
             arrow={false}
-            className="h-14 w-full"
+            className="h-16 w-full"
             aria-busy
           >
             <span className="inline-block animate-spin-slow [animation-duration:1.2s]">⟳</span>{" "}
@@ -164,7 +165,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             variant="inverse"
             look="display"
             arrow={false}
-            className="h-14 w-full"
+            className="h-16 w-full"
             disabled={!username}
           >
             {phase.kind === "error" ? "Проверить ещё раз" : "Проверить"}

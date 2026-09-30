@@ -68,7 +68,7 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
       <StepTitle accent="факты">Добавь</StepTitle>
       <StepLead>Чем больше пикантных фактов, тем точнее и смешнее получится прожарка</StepLead>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
         {fields.map((value, i) => {
           const len = value.trim().length;
           return (
@@ -110,13 +110,13 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
         )}
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 pt-4">
+      <div className="mt-auto flex flex-col gap-3 pt-4">
         <Button
           type="submit"
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-14 w-full"
+          className="h-16 w-full"
           disabled={tooLong}
         >
           Дальше

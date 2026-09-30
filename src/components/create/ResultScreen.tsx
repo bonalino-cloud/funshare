@@ -99,19 +99,19 @@ export function ResultScreen({ slug }: { slug: string }) {
           <p className="type-body text-paper/60">Открываем…</p>
         )}
       </div>
-      <div className="mt-auto flex flex-col gap-2 pt-4">
+      <div className="mt-auto flex flex-col gap-3 pt-4">
         <Button
           type="button"
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-14 w-full"
+          className="h-16 w-full"
           onClick={share}
           disabled={!artifact}
         >
           Поделиться
         </Button>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <Button type="button" variant="ghost" className="h-11" arrow={false} onClick={copy}>
             {copied ? "Скопировано. Кидай" : "Скопировать ссылку"}
           </Button>
