@@ -62,7 +62,7 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
       <StepTitle accent="прожарки" split>
         Степень
       </StepTitle>
-      <div className="flex flex-1 flex-col gap-3 pt-2 pb-6">
+      <div className="grid flex-1 auto-rows-fr gap-3 pt-2 pb-6">
         {(["rare", "medium", "well_done"] as const).map((level) => {
           const ui = LEVEL_UI[level];
           return (
@@ -70,7 +70,6 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
               key={level}
               tone={ui.tone}
               image={ui.image}
-              className="flex-1"
               onClick={() => pick(level)}
               corner={
                 level === "well_done" ? (

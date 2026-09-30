@@ -86,7 +86,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid auto-rows-fr gap-3">
           {([1, 2, 3] as const).map((tier) => {
             const ui = TIER_UI[tier];
             const info = pricing?.tiers.find((t) => t.tier === tier);
