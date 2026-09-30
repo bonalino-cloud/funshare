@@ -5,6 +5,7 @@ import type { ErrorCode, GenerationMode } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
 import { Segmented } from "@/components/ui/Segmented";
+import { Spinner } from "@/components/ui/Spinner";
 import extinguisher from "@/components/roast/assets/sticker-extinguisher.png";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
@@ -156,7 +157,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             className="h-16 w-full"
             aria-busy
           >
-            <span className="inline-block animate-spin-slow [animation-duration:1.2s]">⟳</span>{" "}
+            <Spinner />
             {statusLine}
           </Button>
         ) : (

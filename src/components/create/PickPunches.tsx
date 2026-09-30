@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CandidatesResponse } from "@/contracts";
 import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/ui/Spinner";
 import { cx } from "@/components/cx";
 import { api, toErrorCode } from "@/lib/client/api";
 import { errorLine } from "./errors";
@@ -158,7 +159,14 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
           onClick={submit}
           aria-busy={busy || undefined}
         >
-          {busy ? "Собираем…" : "Собрать артефакт"}
+          {busy ? (
+            <>
+              <Spinner />
+              Собираем…
+            </>
+          ) : (
+            "Собрать артефакт"
+          )}
         </Button>
       </div>
     </>

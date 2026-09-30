@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { Quote } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
+import { Spinner } from "@/components/ui/Spinner";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { formatRub } from "@/lib/client/money";
@@ -193,7 +194,14 @@ export function CheckoutStep({
               arrow={false}
               disabled={!promo.trim() || checkingPromo}
             >
-              {checkingPromo ? "Проверяем…" : "Применить"}
+              {checkingPromo ? (
+                <>
+                  <Spinner />
+                  Проверяем…
+                </>
+              ) : (
+                "Применить"
+              )}
             </Button>
           )}
         </form>
@@ -219,7 +227,14 @@ export function CheckoutStep({
           disabled={busy || !quote}
           aria-busy={busy || undefined}
         >
-          {busy ? "Разжигаем…" : cta}
+          {busy ? (
+            <>
+              <Spinner />
+              Разжигаем…
+            </>
+          ) : (
+            cta
+          )}
         </Button>
       </div>
     </>
