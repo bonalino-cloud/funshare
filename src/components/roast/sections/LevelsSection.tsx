@@ -61,7 +61,7 @@ const levels: Level[] = [
   {
     name: "Пекло",
     heat: 3,
-    sub: "Шутки + 4 картинки + видео для сторис",
+    sub: "Шутки + 4 картинки + огненное видео",
     img: peklo,
     tone: "red",
     images: 4,
