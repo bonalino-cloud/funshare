@@ -1,64 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { GenerationStatus } from "@/contracts";
-import { api, toErrorCode } from "@/lib/client/api";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import impChef from "@/components/roast/assets/imp-chef.png";
+import koster from "@/components/roast/assets/level-koster.png";
 import { resetDraft } from "@/lib/client/draft";
-import { pollUntil } from "@/lib/client/poll";
+import { useGeneration } from "@/lib/client/useGeneration";
 import { CreateShell } from "./CreateShell";
-import { StepLead, StepTitle } from "./StepTitle";
+import { errorLine } from "./errors";
+import { Loader } from "./Loader";
+import { ResultScreen } from "./ResultScreen";
+import { StepTitle } from "./StepTitle";
 import { WorkInProgress } from "./steps/Placeholder";
 
-/** Человеческие строки по статусу; коды только в логи (CLAUDE.md). */
-const LINES: Record<GenerationStatus["status"], string> = {
-  queued: "Разогреваем…",
-  writing: "Пишем панчи…",
-  awaiting_selection: "Панчи готовы. Выбирай",
-  drawing: "Рисуем…",
-  ready: "Готово. Смотри, что вышло",
-  failed: "У нас что-то сломалось. Уже чиним, попробуй через пару минут",
-};
+const NOTE = "Не закрывай вкладку. Закроешь: вернёшься по ссылке и увидишь результат";
 
 /**
- * Шаги 6–7 на /g/[id]: поллинг статуса раз в 2 с, экран зависит от статуса.
- * Здесь каркас; лоудер, выбор шуток и результат приходят в своих ветках.
+ * Шаги 6–7 на /g/[id]: экран зависит от статуса генерации. «Назад» нет: после запуска
+ * только вперёд, а по ссылке можно вернуться в любой момент.
  */
 export function GenerationFlow({ id }: { id: string }) {
-  const [status, setStatus] = useState<GenerationStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { status, error, startedAt } = useGeneration(id);
 
   // Генерация запущена: черновик шагов 1–5 больше не нужен
   useEffect(() => {
     resetDraft();
   }, []);
 
-  useEffect(() => {
-    const ac = new AbortController();
-    pollUntil(
-      () => api.getGeneration(id),
-      (s) => s.status === "ready" || s.status === "failed",
-      {
-        signal: ac.signal,
-        onTick: setStatus,
-      },
-    ).catch((e: unknown) => {
-      if (!(e instanceof DOMException && e.name === "AbortError")) setError(toErrorCode(e));
-    });
-    return () => ac.abort();
-  }, [id]);
-
+  const failed = error ?? (status?.status === "failed" ? status.errorCode : null);
   const step = status?.status === "ready" ? 7 : 6;
-  const line = error ? LINES.failed : status ? LINES[status.status] : "Открываем…";
 
   return (
     <CreateShell step={step}>
-      <StepTitle size="m">{line}</StepTitle>
-      {status?.hint && <StepLead>{status.hint}</StepLead>}
-      <WorkInProgress branch="fe/p1-generation-loader, fe/p1-pick-punches" />
-      <p className="mt-3 font-mono text-[13px] text-paper/50">
-        {id} · {status?.status ?? "…"}
-        {status?.artifactSlug && ` · /a/${status.artifactSlug}`}
-      </p>
+      {failed ? (
+        <>
+          <StepTitle size="m">Не вышло</StepTitle>
+          <p className="border-l-2 border-red pl-3 type-body text-paper">{errorLine(failed)}</p>
+          <div className="mt-auto pt-4">
+            <Button type="button" className="w-full" onClick={() => router.push("/create")}>
+              Ещё раз
+            </Button>
+          </div>
+        </>
+      ) : !status || status.status === "queued" ? (
+        <Loader image={koster} phase="queued" startedAt={startedAt} note={NOTE} />
+      ) : status.status === "writing" ? (
+        <Loader
+          image={koster}
+          phase="writing"
+          hint={status.hint}
+          startedAt={startedAt}
+          note={NOTE}
+        />
+      ) : status.status === "drawing" ? (
+        <Loader
+          image={impChef}
+          phase="drawing"
+          hint={status.hint}
+          startedAt={startedAt}
+          note="Картинки к твоим шуткам"
+        />
+      ) : status.status === "awaiting_selection" ? (
+        <>
+          <StepTitle size="m">Панчи готовы. Выбирай</StepTitle>
+          <WorkInProgress branch="fe/p1-pick-punches" />
+        </>
+      ) : (
+        <ResultScreen slug={status.artifactSlug ?? ""} />
+      )}
     </CreateShell>
   );
 }
