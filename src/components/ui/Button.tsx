@@ -19,6 +19,7 @@ const variants: Record<Variant, string> = {
  */
 export function Button({
   variant = "primary",
+  look = "label",
   icon,
   arrow = true,
   className,
@@ -26,13 +27,18 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
+  /** label — Onest капс с разрядкой; display — Unbounded, как у «Прожарить» на лендинге */
+  look?: "label" | "display";
   icon?: ReactNode;
   arrow?: boolean;
 }) {
   return (
     <button
       className={cx(
-        "group inline-flex h-12 items-center justify-center gap-2 rounded-sm border-2 px-5 type-label text-sm",
+        "group inline-flex h-12 items-center justify-center gap-2 rounded-sm border-2 px-5",
+        look === "display"
+          ? "font-wide font-black tracking-tight text-base uppercase"
+          : "type-label text-sm",
         "transition-[transform,box-shadow] duration-[120ms] ease-linear",
         "hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none",
         "focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-pink",

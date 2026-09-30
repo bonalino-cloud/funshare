@@ -86,7 +86,14 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
       <>
         <ProfileFound profile={draft.profile} />
         <div className="mt-auto pt-4">
-          <Button type="button" className="w-full" onClick={() => go("facts")}>
+          <Button
+            type="button"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 w-full"
+            onClick={() => go("facts")}
+          >
             Дальше
           </Button>
         </div>
@@ -140,12 +147,26 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
           error={phase.kind === "error" ? errorLine(phase.code) : undefined}
         />
         {checking ? (
-          <Button type="button" variant="inverse" className="w-full" arrow={false} aria-busy>
+          <Button
+            type="button"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 w-full"
+            aria-busy
+          >
             <span className="inline-block animate-spin-slow [animation-duration:1.2s]">⟳</span>{" "}
             {statusLine}
           </Button>
         ) : (
-          <Button type="submit" className="w-full" disabled={!username}>
+          <Button
+            type="submit"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 w-full"
+            disabled={!username}
+          >
             {phase.kind === "error" ? "Проверить ещё раз" : "Проверить"}
           </Button>
         )}

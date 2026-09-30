@@ -102,7 +102,14 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
       </div>
 
       <div className="mt-auto flex flex-col gap-2 pt-4">
-        <Button type="submit" className="w-full" disabled={tooLong}>
+        <Button
+          type="submit"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="h-14 w-full"
+          disabled={tooLong}
+        >
           Дальше
         </Button>
         <Button type="button" variant="ghost" className="h-11 w-full" arrow={false} onClick={skip}>

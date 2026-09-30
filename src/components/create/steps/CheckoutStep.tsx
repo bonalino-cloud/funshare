@@ -210,7 +210,10 @@ export function CheckoutStep({
         {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
         <Button
           type="button"
-          className="w-full"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="h-14 w-full"
           onClick={start}
           disabled={busy || !quote}
           aria-busy={busy || undefined}

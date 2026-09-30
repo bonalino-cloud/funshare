@@ -100,7 +100,15 @@ export function ResultScreen({ slug }: { slug: string }) {
         )}
       </div>
       <div className="mt-auto flex flex-col gap-2 pt-4">
-        <Button type="button" className="w-full" onClick={share} disabled={!artifact}>
+        <Button
+          type="button"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="h-14 w-full"
+          onClick={share}
+          disabled={!artifact}
+        >
           Поделиться
         </Button>
         <div className="grid grid-cols-2 gap-2">

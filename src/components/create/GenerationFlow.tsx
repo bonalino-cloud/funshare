@@ -39,7 +39,14 @@ export function GenerationFlow({ id }: { id: string }) {
           <StepTitle size="m">Не вышло</StepTitle>
           <p className="border-l-2 border-red pl-3 type-body text-paper">{errorLine(failed)}</p>
           <div className="mt-auto pt-4">
-            <Button type="button" className="w-full" onClick={() => router.push("/create")}>
+            <Button
+              type="button"
+              variant="inverse"
+              look="display"
+              arrow={false}
+              className="h-14 w-full"
+              onClick={() => router.push("/create")}
+            >
               Ещё раз
             </Button>
           </div>

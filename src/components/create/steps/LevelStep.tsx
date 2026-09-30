@@ -119,7 +119,15 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
             Мне есть 18, я понимаю, что будет жёстко
           </span>
         </button>
-        <Button type="button" className="w-full" disabled={!agreed} onClick={agree}>
+        <Button
+          type="button"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="h-14 w-full"
+          disabled={!agreed}
+          onClick={agree}
+        >
           Согласен
         </Button>
       </Sheet>

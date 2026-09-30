@@ -150,7 +150,10 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
         {error && <p className="mb-2 border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
         <Button
           type="button"
-          className="w-full"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="h-14 w-full"
           disabled={!data || picked.length !== need || busy}
           onClick={submit}
           aria-busy={busy || undefined}
