@@ -117,7 +117,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
           {/* Рукописная подсказка со стрелкой */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-[calc(50%-70px)] right-full mr-3 hidden -translate-y-full items-end gap-1 md:flex"
+            className="pointer-events-none absolute top-[calc(50%-70px)] right-full mr-3 hidden -translate-y-full items-end gap-1 lg:flex"
           >
             <span className="tilt -rotate-6 font-cond text-3xl font-bold whitespace-nowrap text-on-surface uppercase">
               не бойся, <br /> почти не больно

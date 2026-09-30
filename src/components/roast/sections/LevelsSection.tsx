@@ -136,11 +136,10 @@ export function LevelsSection() {
   return (
     <Section id="levels" surface="light" className="py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* «Получится огонь» — как первая строка hero: одна строка капсом, вся горит маской (огонь футера) */}
+        {/* «Получится огонь» — одна строка капсом Unbounded с разбросом букв, вся горит маской (огонь футера) */}
         <Reveal as="h2" aria-label="Получится огонь" className="text-center">
           <FireWord
             text="ПОЛУЧИТСЯ ОГОНЬ"
-            jitter={false}
             className="font-wide text-[clamp(2.6rem,5.8vw,6rem)] leading-[0.95] font-black tracking-[-0.03em]"
           />
         </Reveal>
