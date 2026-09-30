@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import type { Level } from "@/contracts";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +8,7 @@ import type { CardTone } from "@/components/ui/Card";
 import { Sheet } from "@/components/ui/Sheet";
 import { cx } from "@/components/cx";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
+import flame from "../assets/sticker-flame-plain.png";
 import rare from "../assets/level-rare.png";
 import medium from "../assets/level-medium.png";
 import well from "../assets/level-well.png";
@@ -14,6 +16,9 @@ import { LEVEL_NAME } from "../labels";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierName } from "../TierCard";
 import type { CreateStep } from "../steps";
+
+/** Огоньки над названием: один, два, три — как перчики у тарифов */
+const FLAMES: Record<Level, number> = { rare: 1, medium: 2, well_done: 3 };
 
 const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string }> = {
   rare: {
@@ -78,7 +83,16 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
                   </span>
                 ) : undefined
               }
-              title={<TierName>{LEVEL_NAME[level]}</TierName>}
+              title={
+                <>
+                  <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-4 -space-x-1">
+                    {Array.from({ length: FLAMES[level] }, (_, i) => (
+                      <Image key={i} src={flame} alt="" className="h-4 w-auto" sizes="16px" />
+                    ))}
+                  </span>
+                  <TierName>{LEVEL_NAME[level]}</TierName>
+                </>
+              }
             >
               <p className="relative z-10 mt-1.5 type-body font-semibold">{ui.desc}</p>
             </TierCard>
