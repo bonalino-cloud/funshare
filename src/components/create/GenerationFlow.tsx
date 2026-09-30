@@ -10,9 +10,9 @@ import { useGeneration } from "@/lib/client/useGeneration";
 import { CreateShell } from "./CreateShell";
 import { errorLine } from "./errors";
 import { Loader } from "./Loader";
+import { PickPunches } from "./PickPunches";
 import { ResultScreen } from "./ResultScreen";
 import { StepTitle } from "./StepTitle";
-import { WorkInProgress } from "./steps/Placeholder";
 
 const NOTE = "Не закрывай вкладку. Закроешь: вернёшься по ссылке и увидишь результат";
 
@@ -22,7 +22,7 @@ const NOTE = "Не закрывай вкладку. Закроешь: вернё
  */
 export function GenerationFlow({ id }: { id: string }) {
   const router = useRouter();
-  const { status, error, startedAt } = useGeneration(id);
+  const { status, error, resume, startedAt } = useGeneration(id);
 
   // Генерация запущена: черновик шагов 1–5 больше не нужен
   useEffect(() => {
@@ -63,10 +63,7 @@ export function GenerationFlow({ id }: { id: string }) {
           note="Картинки к твоим шуткам"
         />
       ) : status.status === "awaiting_selection" ? (
-        <>
-          <StepTitle size="m">Панчи готовы. Выбирай</StepTitle>
-          <WorkInProgress branch="fe/p1-pick-punches" />
-        </>
+        <PickPunches id={id} onDone={resume} />
       ) : (
         <ResultScreen slug={status.artifactSlug ?? ""} />
       )}
