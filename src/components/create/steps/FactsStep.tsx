@@ -44,16 +44,13 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
   const [fields, setFields] = useState(() => initialFields(draft.extraFacts));
   const examples = EXAMPLES[draft.mode];
   const tooLong = fields.some((f) => f.trim().length > MAX_LEN);
+  const hasFacts = fields.some((f) => f.trim().length > 0);
 
   const update = (i: number, value: string) =>
     setFields((prev) => prev.map((f, j) => (j === i ? value : f)));
 
   const next = () => {
     patchDraft({ extraFacts: fields.map((f) => f.trim()).filter(Boolean) });
-    go("tier");
-  };
-  const skip = () => {
-    patchDraft({ extraFacts: [] });
     go("tier");
   };
 
@@ -111,18 +108,16 @@ export function FactsStep({ draft, go }: { draft: CreateDraft; go: (step: Create
       </div>
 
       <div className="mt-auto flex flex-col gap-3 pt-4">
+        {/* Одна кнопка: без фактов — «Продолжить без фактов», с фактами — «Дальше» */}
         <Button
           type="submit"
-          variant="inverse"
+          variant="ghost"
           look="display"
           arrow={false}
           className="h-16 w-full"
           disabled={tooLong}
         >
-          Дальше
-        </Button>
-        <Button type="button" variant="ghost" className="h-11 w-full" arrow={false} onClick={skip}>
-          Пропустить, жарь так
+          {hasFacts ? "Дальше" : "Продолжить без фактов"}
         </Button>
       </div>
     </form>
