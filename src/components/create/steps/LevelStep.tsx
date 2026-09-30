@@ -10,31 +10,28 @@ import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import rare from "../assets/level-rare.png";
 import medium from "../assets/level-medium.png";
 import well from "../assets/level-well.png";
+import { LEVEL_NAME } from "../labels";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierName } from "../TierCard";
 import type { CreateStep } from "../steps";
 
-const LEVEL_UI: Record<Level, { name: string; tone: CardTone; image: typeof rare; desc: string }> =
-  {
-    rare: {
-      name: "Rare",
-      tone: "teal",
-      image: rare,
-      desc: "Мягко. Подколы, которые можно показать маме",
-    },
-    medium: {
-      name: "Medium",
-      tone: "orange",
-      image: medium,
-      desc: "Средне. Без мата, но острые шутки допускаются",
-    },
-    well_done: {
-      name: "Well done",
-      tone: "red",
-      image: well,
-      desc: "Шутки 18+ и мат. Ты сам просил",
-    },
-  };
+const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string }> = {
+  rare: {
+    tone: "teal",
+    image: rare,
+    desc: "Мягко. Подколы, которые можно показать маме",
+  },
+  medium: {
+    tone: "orange",
+    image: medium,
+    desc: "Средне. Без мата, но острые шутки допускаются",
+  },
+  well_done: {
+    tone: "red",
+    image: well,
+    desc: "Шутки 18+ и мат. Ты сам просил",
+  },
+};
 
 /**
  * Шаг 4. Три карточки-кнопки без «Дальше». Rare и Medium ведут сразу к итогу,
@@ -79,7 +76,7 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
                   </span>
                 ) : undefined
               }
-              title={<TierName>{ui.name}</TierName>}
+              title={<TierName>{LEVEL_NAME[level]}</TierName>}
             >
               <p className="relative z-10 mt-1.5 type-body font-semibold">{ui.desc}</p>
             </TierCard>

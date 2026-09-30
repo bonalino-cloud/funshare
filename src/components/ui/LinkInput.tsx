@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/components/cx";
 
 /**
@@ -8,9 +8,14 @@ import { cx } from "@/components/cx";
  */
 export function LinkInput({
   error,
+  before = "@",
   className,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { error?: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  error?: string;
+  /** Что стоит перед полем: «@» для ника, null — ничего (промокод) */
+  before?: ReactNode | null;
+}) {
   return (
     <label className={cx("block", className)}>
       <span
@@ -20,7 +25,9 @@ export function LinkInput({
           props.disabled && "opacity-70",
         )}
       >
-        <span className="font-wide text-xl font-extrabold text-ink">@</span>
+        {before !== null && (
+          <span className="font-wide text-xl font-extrabold text-ink">{before}</span>
+        )}
         <input
           type="text"
           inputMode="url"

@@ -52,10 +52,38 @@ type Gen = {
   punchIds?: string[];
 };
 
-const checks = new Map<string, Check>();
-const gens = new Map<string, Gen>();
-let seq = 0;
-let freeTrialUsed = false;
+/**
+ * Память мока переживает перезагрузку страницы: лежит в sessionStorage, как и черновик.
+ * Иначе после F5 на шаге 5 проверка профиля «теряется», и генерация падает.
+ */
+const STORE_KEY = "funshare.mock.v1";
+type Store = {
+  checks: [string, Check][];
+  gens: [string, Gen][];
+  seq: number;
+  freeTrialUsed: boolean;
+};
+
+function loadStore(): Store {
+  try {
+    const raw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(STORE_KEY) : null;
+    if (raw) return JSON.parse(raw) as Store;
+  } catch {}
+  return { checks: [], gens: [], seq: 0, freeTrialUsed: false };
+}
+
+const store = loadStore();
+const checks = new Map<string, Check>(store.checks);
+const gens = new Map<string, Gen>(store.gens);
+let seq = store.seq;
+let freeTrialUsed = store.freeTrialUsed;
+
+function persist() {
+  try {
+    const next: Store = { checks: [...checks], gens: [...gens], seq, freeTrialUsed };
+    sessionStorage.setItem(STORE_KEY, JSON.stringify(next));
+  } catch {}
+}
 
 const nextId = (prefix: string) => `${prefix}_mock_${String(++seq).padStart(2, "0")}`;
 const iso = () => new Date().toISOString();
@@ -115,6 +143,7 @@ export const mockApi: Api = {
     if (!username) throw new ApiError("invalid_url", 400);
     const checkId = nextId("chk");
     checks.set(checkId, { username, startedAt: Date.now(), fail: FAIL_BY_USERNAME[username] });
+    persist();
     return { id: checkId };
   },
 
@@ -166,6 +195,7 @@ export const mockApi: Api = {
       slug: `m${genId.replace(/\D/g, "")}`.padEnd(10, "x").slice(0, 10),
       startedAt: Date.now(),
     });
+    persist();
     return { id: genId };
   },
 
@@ -198,6 +228,7 @@ export const mockApi: Api = {
     }
     g.punchIds = punchIds;
     g.selectedAt = Date.now();
+    persist();
   },
 
   async getArtifact(slug) {

@@ -12,17 +12,17 @@ import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { formatRub } from "@/lib/client/money";
 import { errorLine } from "../errors";
+import { TIER_NAME } from "../labels";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierList, TierName } from "../TierCard";
 import type { CreateStep } from "../steps";
 
 /** Названия, цвета и маскоты живут у FE; цены и состав приходят из /api/pricing */
-const TIER_UI: Record<Tier, { name: string; tone: CardTone; image: typeof ogon; chilis: number }> =
-  {
-    1: { name: "Поджог", tone: "yellow", image: ogon, chilis: 1 },
-    2: { name: "Кострище", tone: "orange", image: koster, chilis: 2 },
-    3: { name: "Пекло", tone: "red", image: peklo, chilis: 3 },
-  };
+const TIER_UI: Record<Tier, { tone: CardTone; image: typeof ogon; chilis: number }> = {
+  1: { tone: "yellow", image: ogon, chilis: 1 },
+  2: { tone: "orange", image: koster, chilis: 2 },
+  3: { tone: "red", image: peklo, chilis: 3 },
+};
 
 const plural = (n: number, one: string, few: string, many: string) => {
   const m10 = n % 10;
@@ -117,7 +117,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                         />
                       ))}
                     </span>
-                    <TierName>{ui.name}</TierName>
+                    <TierName>{TIER_NAME[tier]}</TierName>
                   </>
                 }
                 footer={
