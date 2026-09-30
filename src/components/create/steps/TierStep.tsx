@@ -106,9 +106,9 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                 }
                 title={
                   <>
-                    <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-8 -space-x-1.5">
+                    <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-4 -space-x-1">
                       {Array.from({ length: ui.chilis }, (_, i) => (
-                        <Image key={i} src={chili} alt="" className="h-8 w-auto" sizes="32px" />
+                        <Image key={i} src={chili} alt="" className="h-4 w-auto" sizes="16px" />
                       ))}
                     </span>
                     <TierName>{TIER_NAME[tier]}</TierName>
