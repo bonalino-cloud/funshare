@@ -71,7 +71,7 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
               onClick={() => pick(level)}
               corner={
                 level === "well_done" ? (
-                  <span className="inline-block rounded-sm border-2 border-ink bg-paper px-2 py-1 type-label">
+                  <span className="inline-block origin-top-right rounded-sm border-2 border-ink bg-paper px-2 py-1 type-label transition-transform duration-200 ease-[var(--ease-poster)] group-hover:scale-[1.2]">
                     18+
                   </span>
                 ) : undefined

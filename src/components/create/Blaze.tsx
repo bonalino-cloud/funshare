@@ -7,10 +7,10 @@ import { Flames } from "@/components/roast/Flames";
 export function Blaze({ username, size = 112 }: { username: string; size?: number }) {
   return (
     <div className="relative h-[220px]" aria-hidden="true">
-      {/* Огонь шириной с аватар, чуть вытянут вверх и поднят на 10 px */}
+      {/* Огонь уже аватара, вытянут вверх и поднят на 10 px; заголовок над ним (z-20) */}
       <Flames
         particle="sm"
-        className="bottom-[66px] left-1/2 h-[170px] w-[120px] -translate-x-1/2 [--rise:-150px]"
+        className="bottom-[66px] left-1/2 h-[150px] w-[90px] -translate-x-1/2 [--rise:-130px]"
       />
       <div
         className="absolute bottom-7 left-1/2 flex -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-ink bg-pink font-wide text-[44px] leading-none font-black text-ink"

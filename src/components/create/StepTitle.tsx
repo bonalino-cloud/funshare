@@ -66,7 +66,7 @@ export function StepTitle({
   return (
     <h1
       className={cx(
-        "mb-2.5 text-center font-wide leading-[0.92] font-black tracking-tight text-paper uppercase",
+        "relative z-20 mb-2.5 text-center font-wide leading-[0.92] font-black tracking-tight text-paper uppercase",
         className,
       )}
     >

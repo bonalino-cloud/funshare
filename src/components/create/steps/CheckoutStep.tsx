@@ -131,12 +131,12 @@ export function CheckoutStep({
 
   return (
     <>
-      <StepTitle accent="к жарке" size="m">
+      <StepTitle accent="к жарке" split>
         Всё готово
       </StepTitle>
       {profile && <Blaze username={profile.username} />}
 
-      <div className="rounded-md border-2 border-white bg-ink px-4 py-2">
+      <div className="mt-[50px] rounded-md border-2 border-white bg-ink px-4 py-2">
         {tier !== undefined && (
           <Row label="Тариф" onClick={() => go("tier")}>
             {TIER_NAME[tier]}
