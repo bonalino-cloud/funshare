@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { useDraft, useHydrated } from "@/lib/client/draft";
+import { patchDraft, useDraft, useHydrated } from "@/lib/client/draft";
 import { CreateShell } from "./CreateShell";
 import {
   CREATE_STEPS,
@@ -53,8 +53,10 @@ export function CreateFlow() {
   };
   const back = () => {
     const i = CREATE_STEPS.indexOf(step);
-    if (i === 0) router.push("/roast");
-    else go(CREATE_STEPS[i - 1] ?? "profile");
+    if (i > 0) return go(CREATE_STEPS[i - 1] ?? "profile");
+    // На шаге 1 «назад» с экрана «Нашли!» возвращает к полю, а с поля — на лендинг
+    if (draft.profile) patchDraft({ profileCheckId: undefined, profile: undefined });
+    else router.push("/roast");
   };
 
   const Screen = STEP_SCREENS[step];
