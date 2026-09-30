@@ -132,7 +132,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
         })}
       </div>
 
-      <div className="sticky bottom-0 -mx-[18px] mt-auto border-t-2 border-white bg-ink px-[18px] pt-3 pb-[max(18px,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 -mx-[18px] mt-auto border-t-2 border-white bg-ink px-[18px] pt-3 pb-[max(56px,env(safe-area-inset-bottom))]">
         <div className="mb-2 flex items-baseline justify-between">
           <span className="font-mono text-[22px] leading-none font-extrabold text-yellow">
             {picked.length} / {need}
