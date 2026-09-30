@@ -1,0 +1,31 @@
+[
+  {
+    "id": "chk_mock_01",
+    "status": "checking",
+    "hint": "Открываем профиль…",
+    "updatedAt": "2026-09-30T12:00:00.000Z"
+  },
+  {
+    "id": "chk_mock_01",
+    "status": "checking",
+    "hint": "Листаем ленту…",
+    "updatedAt": "2026-09-30T12:00:05.000Z"
+  },
+  {
+    "id": "chk_mock_01",
+    "status": "checking",
+    "hint": "Смотрим, можно ли жарить…",
+    "updatedAt": "2026-09-30T12:00:12.000Z"
+  },
+  {
+    "id": "chk_mock_01",
+    "status": "ok",
+    "profile": {
+      "username": "anya.travels",
+      "displayName": "Аня Морозова",
+      "avatarUrl": "https://placehold.co/320x320.png?text=A",
+      "postsCount": 214
+    },
+    "updatedAt": "2026-09-30T12:00:19.000Z"
+  }
+]

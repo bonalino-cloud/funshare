@@ -1,0 +1,32 @@
+{
+  "tiers": [
+    {
+      "tier": 1,
+      "listAmount": 9900,
+      "currency": "RUB",
+      "candidateCount": 10,
+      "selectCount": 6,
+      "imageCount": 0,
+      "video": false
+    },
+    {
+      "tier": 2,
+      "listAmount": 19900,
+      "currency": "RUB",
+      "candidateCount": 20,
+      "selectCount": 6,
+      "imageCount": 2,
+      "video": false
+    },
+    {
+      "tier": 3,
+      "listAmount": 29900,
+      "currency": "RUB",
+      "candidateCount": 20,
+      "selectCount": 6,
+      "imageCount": 4,
+      "video": false
+    }
+  ],
+  "freeTrialAvailable": true
+}

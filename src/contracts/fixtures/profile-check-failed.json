@@ -1,0 +1,44 @@
+[
+  {
+    "id": "chk_mock_e1",
+    "status": "failed",
+    "errorCode": "invalid_url",
+    "updatedAt": "2026-09-30T12:00:01.000Z"
+  },
+  {
+    "id": "chk_mock_e2",
+    "status": "failed",
+    "errorCode": "profile_not_found",
+    "updatedAt": "2026-09-30T12:00:06.000Z"
+  },
+  {
+    "id": "chk_mock_e3",
+    "status": "failed",
+    "errorCode": "profile_private",
+    "updatedAt": "2026-09-30T12:00:07.000Z"
+  },
+  {
+    "id": "chk_mock_e4",
+    "status": "failed",
+    "errorCode": "not_enough_data",
+    "updatedAt": "2026-09-30T12:00:15.000Z"
+  },
+  {
+    "id": "chk_mock_e5",
+    "status": "failed",
+    "errorCode": "minor_detected",
+    "updatedAt": "2026-09-30T12:00:18.000Z"
+  },
+  {
+    "id": "chk_mock_e6",
+    "status": "failed",
+    "errorCode": "rate_limited",
+    "updatedAt": "2026-09-30T12:00:00.000Z"
+  },
+  {
+    "id": "chk_mock_e7",
+    "status": "failed",
+    "errorCode": "internal",
+    "updatedAt": "2026-09-30T12:00:30.000Z"
+  }
+]

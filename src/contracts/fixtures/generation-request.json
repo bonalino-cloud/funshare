@@ -1,0 +1,13 @@
+{
+  "profileCheckId": "chk_mock_01",
+  "mode": "friend",
+  "kind": "roast_v1",
+  "tier": 2,
+  "level": "medium",
+  "extraFacts": [
+    "Опаздывает на всё, кроме рейсов",
+    "Называет кофе бензином",
+    "Обещает «летом бросить соцсети»"
+  ],
+  "promoCode": "ПОГНАЛИ100"
+}
