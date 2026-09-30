@@ -93,11 +93,13 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
           </>
         }
       >
-        <p className="type-body text-paper/85">
+        <p className="text-center type-body text-paper/85">
           Шутки будут жёсткими. Про здоровье, национальность, религию и семью всё равно не шутим.
         </p>
         {draft.mode === "friend" && (
-          <p className="type-body font-bold text-paper">Получатель прочитает это сам.</p>
+          <p className="text-center type-body font-bold text-paper">
+            Получатель прочитает это сам.
+          </p>
         )}
         <button
           type="button"

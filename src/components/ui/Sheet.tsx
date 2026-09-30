@@ -65,7 +65,7 @@ export function Sheet({
             <path d="M3 3l10 10M13 3L3 13" />
           </svg>
         </button>
-        <h2 id="sheet-title" className="pr-11 type-display-m text-paper">
+        <h2 id="sheet-title" className="px-11 text-center type-display-m text-paper">
           {title}
         </h2>
         {children}

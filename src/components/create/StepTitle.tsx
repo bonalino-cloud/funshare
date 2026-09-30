@@ -18,7 +18,7 @@ export function StepTitle({
     <h1
       className={cx(
         size === "l" ? "type-display-l" : "type-display-m",
-        "mb-2.5 text-paper",
+        "mb-2.5 text-center text-paper",
         className,
       )}
     >
@@ -35,5 +35,5 @@ export function StepTitle({
 
 /** Подзаголовок шага */
 export function StepLead({ children }: { children: ReactNode }) {
-  return <p className="mb-3 type-lead text-paper/70">{children}</p>;
+  return <p className="mb-3 text-center type-lead text-paper/70">{children}</p>;
 }
