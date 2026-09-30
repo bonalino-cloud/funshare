@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * Всплывающее окно снизу: затемнение поверх экрана и ink-карточка с белой обводкой
+ * Всплывающее окно по центру экрана: затемнение и ink-карточка с белой обводкой
  * в колонке флоу (480 px). Закрывается крестиком, Escape и тапом по затемнению.
  */
 export function Sheet({
@@ -32,7 +32,7 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5">
       <button
         type="button"
         aria-label="Закрыть"
@@ -45,7 +45,7 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby="sheet-title"
         tabIndex={-1}
-        className="relative mx-2.5 mb-[max(10px,env(safe-area-inset-bottom))] flex w-full max-w-[460px] flex-col gap-3 rounded-lg border-2 border-white bg-ink p-[18px] text-paper outline-none"
+        className="relative flex w-full max-w-[460px] flex-col gap-3 rounded-lg border-2 border-white bg-ink p-[18px] text-paper outline-none"
       >
         <button
           type="button"
