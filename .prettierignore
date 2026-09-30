@@ -2,3 +2,6 @@ pnpm-lock.yaml
 .next
 drizzle/meta
 *.md
+
+# Вайрфреймы: одноразовые макеты, не код
+wireframes/
