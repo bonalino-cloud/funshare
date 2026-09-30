@@ -1,7 +1,7 @@
 import Image, { type StaticImageData } from "next/image";
 import type { ReactNode } from "react";
-import { ArrowNE } from "@/components/brand/Doodles";
 import { cx } from "@/components/cx";
+import { CornerArrow } from "./CornerArrow";
 import { cardTones, type CardTone } from "@/components/ui/Card";
 
 /**
@@ -45,10 +45,7 @@ export function TierCard({
     >
       <span className="absolute top-4 right-4 z-10">
         {corner ?? (
-          <ArrowNE
-            strokeWidth="3"
-            className="size-6 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-          />
+          <CornerArrow className="size-7 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         )}
       </span>
       {title}
