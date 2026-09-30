@@ -113,7 +113,7 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
         </p>
 
         <div className="relative mt-28 md:mt-36">
-          <FireButton type="button">Прожарить</FireButton>
+          <FireButton href="/create">Прожарить</FireButton>
           {/* Рукописная подсказка со стрелкой */}
           <div
             aria-hidden="true"
