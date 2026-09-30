@@ -15,9 +15,13 @@ export function Blaze({
 }) {
   return (
     <div className="relative h-[220px]" aria-hidden="true">
-      <Flames particle="sm" className="inset-x-16 bottom-14 h-[135px] [--rise:-120px]" />
+      {/* Огонь шириной с аватар, чуть вытянут вверх и поднят на 10 px */}
+      <Flames
+        particle="sm"
+        className="bottom-[66px] left-1/2 h-[170px] w-[120px] -translate-x-1/2 [--rise:-150px]"
+      />
       <div
-        className="absolute bottom-7 left-1/2 flex -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[3px] border-paper bg-pink font-wide text-[44px] leading-none font-black text-ink shadow-offset-paper"
+        className="absolute bottom-7 left-1/2 flex -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border-[3px] border-paper bg-pink font-wide text-[44px] leading-none font-black text-ink"
         style={{ width: size, height: size }}
       >
         {avatarUrl ? (
