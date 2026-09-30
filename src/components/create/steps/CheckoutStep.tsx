@@ -134,7 +134,7 @@ export function CheckoutStep({
       <StepTitle accent="к жарке" size="m">
         Всё готово
       </StepTitle>
-      {profile && <Blaze username={profile.username} avatarUrl={profile.avatarUrl} />}
+      {profile && <Blaze username={profile.username} />}
 
       <div className="rounded-md border-2 border-white bg-ink px-4 py-2">
         {tier !== undefined && (

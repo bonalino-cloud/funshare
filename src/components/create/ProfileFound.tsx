@@ -7,14 +7,9 @@ export function ProfileFound({ profile }: { profile: CheckedProfile }) {
     <>
       <StepTitle accent="!">Нашли</StepTitle>
       <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
-        <div className="mb-2 flex size-24 items-center justify-center overflow-hidden rounded-full border-[3px] border-paper bg-pink font-wide text-4xl font-black text-ink shadow-offset-paper">
-          {profile.avatarUrl ? (
-            // Аватар отдаёт Instagram с переменных хостов: next/image потребовал бы белый список доменов.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatarUrl} alt="" className="size-full object-cover" />
-          ) : (
-            profile.username[0]?.toUpperCase()
-          )}
+        {/* Пока розовый круг с буквой и ink-обводкой; аватар из Instagram подключим позже */}
+        <div className="mb-2 flex size-24 items-center justify-center rounded-full border-[3px] border-ink bg-pink font-wide text-4xl font-black text-ink">
+          {profile.username[0]?.toUpperCase()}
         </div>
         <div className="font-wide text-[22px] leading-none font-black tracking-tight text-paper">
           @{profile.username}
