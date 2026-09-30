@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { Pricing, Tier, TierInfo } from "@/contracts";
 import type { CardTone } from "@/components/ui/Card";
-import chili from "@/components/roast/assets/sticker-chili.png";
+import chili from "../assets/sticker-chili-plain.png";
 import ogon from "@/components/roast/assets/level-ogon.png";
 import koster from "@/components/roast/assets/level-koster.png";
 import peklo from "@/components/roast/assets/level-peklo.png";
@@ -86,7 +86,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
           </button>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {([1, 2, 3] as const).map((tier) => {
             const ui = TIER_UI[tier];
             const info = pricing?.tiers.find((t) => t.tier === tier);

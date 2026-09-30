@@ -36,8 +36,8 @@ export function TierCard({
       type="button"
       onClick={onClick}
       className={cx(
-        "group grain relative flex min-h-[150px] flex-1 flex-col overflow-hidden rounded-lg p-4 pr-[44%] text-left",
-        "transition-transform duration-[120ms] ease-linear active:scale-[0.98]",
+        "group grain relative flex min-h-[120px] flex-col overflow-hidden rounded-lg p-4 pr-[44%] text-left",
+        "transition-transform duration-200 ease-[var(--ease-poster)] hover:scale-[1.03] active:scale-[0.98]",
         "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-pink",
         cardTones[tone],
         className,

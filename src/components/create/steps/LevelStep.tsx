@@ -17,7 +17,7 @@ import type { CreateStep } from "../steps";
 
 const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string }> = {
   rare: {
-    tone: "teal",
+    tone: "yellow",
     image: rare,
     desc: "Мягко. Подколы, которые можно показать маме",
   },
@@ -60,7 +60,7 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
   return (
     <>
       <StepTitle accent="жарко?">Насколько</StepTitle>
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex flex-col gap-3">
         {(["rare", "medium", "well_done"] as const).map((level) => {
           const ui = LEVEL_UI[level];
           return (
