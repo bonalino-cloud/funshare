@@ -7,11 +7,7 @@ import { Sticker } from "../Sticker";
 import snowflake from "../assets/sticker-snowflake.png";
 import { RevealText } from "../RevealText";
 
-const never = [
-  "Семью и здоровье",
-  "Национальность, религию, политику",
-  "Ориентацию",
-];
+const never = ["Семью и здоровье", "Национальность, религию, политику", "Ориентацию"];
 const data = [
   "Только открытые профили. Закрытый значит закрытый",
   "Маленьких не обижаем",
