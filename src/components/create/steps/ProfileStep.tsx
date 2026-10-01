@@ -9,11 +9,11 @@ import { Spinner } from "@/components/ui/Spinner";
 import extinguisher from "@/components/roast/assets/sticker-extinguisher.png";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import { parseInstagramInput } from "@/lib/client/instagram";
+import { checkInstagramInput } from "@/lib/client/instagram";
 import { pollUntil } from "@/lib/client/poll";
 import { ArtStage } from "../ArtStage";
 import impInspect from "../assets/imp-inspect.png";
-import { errorLine } from "../errors";
+import { errorLine, inputHint } from "../errors";
 import { ProfileFound } from "../ProfileFound";
 import { StepLead, StepTitle } from "../StepTitle";
 import type { CreateStep } from "../steps";
@@ -39,8 +39,18 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
   const [tick, setTick] = useState(0);
   const abort = useRef<AbortController | null>(null);
 
-  const username = parseInstagramInput(value);
+  const [settled, setSettled] = useState(value);
+
+  const input = checkInstagramInput(value);
+  const username = input.ok ? input.username : null;
   const checking = phase.kind === "checking";
+
+  // Подсказку показываем, когда человек перестал печатать: не мигаем на «https://ins…»
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), 500);
+    return () => clearTimeout(t);
+  }, [value]);
+  const liveHint = settled === value && !input.ok ? inputHint(input.issue) : undefined;
 
   // Локальные строки ожидания, если бэк не прислал hint
   useEffect(() => {
@@ -146,7 +156,13 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             setValue(e.target.value);
             if (phase.kind === "error") setPhase({ kind: "idle" });
           }}
-          error={phase.kind === "error" ? errorLine(phase.code) : undefined}
+          error={
+            phase.kind === "error"
+              ? phase.code === "invalid_url" && liveHint
+                ? liveHint
+                : errorLine(phase.code)
+              : liveHint
+          }
         />
         {checking ? (
           <Button

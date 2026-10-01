@@ -1,4 +1,5 @@
 import type { ErrorCode } from "@/contracts";
+import type { InputIssue } from "@/lib/client/instagram";
 
 /**
  * Код ошибки → текст для человека (business/tone-of-voice.md §4.5).
@@ -31,5 +32,24 @@ export const ERROR_TEXT: Record<ErrorCode, { what: string; next: string }> = {
 
 export function errorLine(code: ErrorCode): string {
   const t = ERROR_TEXT[code];
+  return `${t.what} ${t.next}`;
+}
+
+/** Подсказка под полем, пока ссылка не ушла на сервер. Для `incomplete` молчим. */
+const INPUT_HINT: Record<Exclude<InputIssue, "incomplete">, { what: string; next: string }> = {
+  not_instagram: { what: "Это не Instagram.", next: "Нужно что-то вроде instagram.com/username" },
+  not_profile: {
+    what: "Это ссылка на пост, а не на профиль.",
+    next: "Открой профиль и скопируй его ссылку",
+  },
+  bad_username: {
+    what: "В нике что-то лишнее.",
+    next: "Только латиница, цифры, точка и подчёркивание, до 30 знаков",
+  },
+};
+
+export function inputHint(issue: InputIssue): string | undefined {
+  if (issue === "incomplete") return undefined;
+  const t = INPUT_HINT[issue];
   return `${t.what} ${t.next}`;
 }
