@@ -33,7 +33,23 @@ export function GenerationFlow({ id }: { id: string }) {
   const step = status?.status === "ready" ? 7 : 6;
 
   return (
-    <CreateShell step={step}>
+    <CreateShell
+      step={step}
+      action={
+        status?.status === "ready" ? (
+          <Button
+            type="button"
+            variant="ghost"
+            look="display"
+            arrow={false}
+            className="h-10 px-5 text-sm!"
+            onClick={() => router.push("/create")}
+          >
+            Ещё раз
+          </Button>
+        ) : undefined
+      }
+    >
       {failed ? (
         <>
           <StepTitle size="m">Не вышло</StepTitle>

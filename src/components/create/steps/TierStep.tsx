@@ -1,10 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { Pricing, Tier, TierInfo } from "@/contracts";
 import type { CardTone } from "@/components/ui/Card";
-import chili from "../assets/sticker-chili-plain.png";
 import ogon from "@/components/roast/assets/level-ogon.png";
 import koster from "@/components/roast/assets/level-koster.png";
 import peklo from "@/components/roast/assets/level-peklo.png";
@@ -13,6 +11,7 @@ import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { formatRub } from "@/lib/client/money";
 import { errorLine } from "../errors";
 import { TIER_NAME } from "../labels";
+import { ChilliIcon } from "../icons";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierList, TierName } from "../TierCard";
 import type { CreateStep } from "../steps";
@@ -70,7 +69,9 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
 
   return (
     <>
-      <StepTitle accent="получишь?">Что</StepTitle>
+      <StepTitle accent="генерацию" split>
+        Выбери
+      </StepTitle>
       {error ? (
         <div className="flex flex-1 flex-col items-start gap-3">
           <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>
@@ -106,9 +107,9 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                 }
                 title={
                   <>
-                    <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-4 -space-x-1">
+                    <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-5 gap-0.5">
                       {Array.from({ length: ui.chilis }, (_, i) => (
-                        <Image key={i} src={chili} alt="" className="h-4 w-auto" sizes="16px" />
+                        <ChilliIcon key={i} className="size-5" />
                       ))}
                     </span>
                     <TierName>{TIER_NAME[tier]}</TierName>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import type { Level } from "@/contracts";
 import { Button } from "@/components/ui/Button";
@@ -8,10 +7,10 @@ import type { CardTone } from "@/components/ui/Card";
 import { Sheet } from "@/components/ui/Sheet";
 import { cx } from "@/components/cx";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import flame from "../assets/sticker-flame-plain.png";
 import rare from "../assets/level-rare.png";
 import medium from "../assets/level-medium.png";
 import well from "../assets/level-well.png";
+import { HotIcon } from "../icons";
 import { LEVEL_NAME } from "../labels";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierName } from "../TierCard";
@@ -85,9 +84,9 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
               }
               title={
                 <>
-                  <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-4 -space-x-1">
+                  <span aria-hidden="true" className="relative z-10 mb-1.5 flex h-5 gap-0.5">
                     {Array.from({ length: FLAMES[level] }, (_, i) => (
-                      <Image key={i} src={flame} alt="" className="h-4 w-auto" sizes="16px" />
+                      <HotIcon key={i} className="size-5" />
                     ))}
                   </span>
                   <TierName>{LEVEL_NAME[level]}</TierName>

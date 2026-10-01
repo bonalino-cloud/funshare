@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cx } from "@/components/cx";
 import { TOTAL_STEPS } from "./steps";
 
@@ -5,23 +6,33 @@ import { TOTAL_STEPS } from "./steps";
  * Шапка флоу: стрелка «назад» отдельной строкой по центру, под ней прогресс из 7 сегментов и N/7.
  * Сегмент текущего шага закрашен полностью. Без названия шага: его говорит заголовок экрана.
  */
-export function StepHeader({ step, onBack }: { step: number; onBack?: () => void }) {
+export function StepHeader({
+  step,
+  onBack,
+  action,
+}: {
+  step: number;
+  onBack?: () => void;
+  /** Вместо стрелки «назад»: например, «Ещё раз» на экране результата */
+  action?: ReactNode;
+}) {
   return (
     <header className="mb-7 flex flex-col gap-5">
       <div className="flex h-8 items-center justify-center">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Назад"
-            className="flex size-8 shrink-0 items-center justify-center rounded-sm border-2 border-white font-wide text-lg font-black text-paper focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
-          >
-            {/* Глиф сидит низко в Unbounded: поднимаем на 2 px, чтобы был по центру */}
-            <span className="relative -top-0.5">‹</span>
-          </button>
-        ) : (
-          <span aria-hidden="true" className="size-8 shrink-0" />
-        )}
+        {action ??
+          (onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Назад"
+              className="flex size-8 shrink-0 items-center justify-center rounded-sm border-2 border-white font-wide text-lg font-black text-paper focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
+            >
+              {/* Глиф сидит низко в Unbounded: поднимаем на 2 px, чтобы был по центру */}
+              <span className="relative -top-0.5">‹</span>
+            </button>
+          ) : (
+            <span aria-hidden="true" className="size-8 shrink-0" />
+          ))}
       </div>
       <div className="flex items-center gap-3">
         <div

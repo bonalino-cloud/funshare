@@ -11,10 +11,12 @@ import { StepHeader } from "./StepHeader";
 export function CreateShell({
   step,
   onBack,
+  action,
   children,
 }: {
   step: number;
   onBack?: () => void;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -27,7 +29,7 @@ export function CreateShell({
         <div className="grain absolute inset-0" />
       </div>
       <div className="relative z-10 mx-auto flex w-full max-w-[480px] flex-1 flex-col px-[18px] pt-8 pb-[max(56px,env(safe-area-inset-bottom))]">
-        <StepHeader step={step} onBack={onBack} />
+        <StepHeader step={step} onBack={onBack} action={action} />
         <main className="flex flex-1 flex-col">{children}</main>
       </div>
     </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Artifact } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
 import { errorLine } from "./errors";
+import { IconCheck, IconCopy, IconDownload } from "./icons";
 import { StepTitle } from "./StepTitle";
 
 /**
@@ -13,10 +13,11 @@ import { StepTitle } from "./StepTitle";
  * шеринга придёт из Figma (fe/p2-share-cards), здесь простая вёрстка данных.
  */
 export function ResultScreen({ slug }: { slug: string }) {
-  const router = useRouter();
   const [artifact, setArtifact] = useState<Artifact | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -52,6 +53,30 @@ export function ResultScreen({ slug }: { slug: string }) {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       window.prompt("Скопируй ссылку", url);
+    }
+  }
+
+  /** Скачать все картинки артефакта. Чужой домен без CORS — открываем в новой вкладке */
+  async function downloadAll() {
+    if (!artifact || downloading) return;
+    setDownloading(true);
+    try {
+      for (const [i, img] of artifact.images.entries()) {
+        try {
+          const blob = await (await fetch(img.url)).blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${slug}-${i + 1}.${blob.type.split("/")[1] ?? "png"}`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch {
+          window.open(img.url, "_blank", "noopener");
+        }
+      }
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 2500);
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -112,17 +137,37 @@ export function ResultScreen({ slug }: { slug: string }) {
           Поделиться
         </Button>
         <div className="grid grid-cols-2 gap-3">
-          <Button type="button" variant="ghost" className="h-11" arrow={false} onClick={copy}>
-            {copied ? "Скопировано. Кидай" : "Скопировать ссылку"}
+          <Button
+            type="button"
+            variant="ghost"
+            look="display"
+            arrow={false}
+            className="h-14 gap-2 px-3 text-sm!"
+            onClick={copy}
+          >
+            {copied ? (
+              <IconCheck className="size-5 shrink-0" />
+            ) : (
+              <IconCopy className="size-5 shrink-0" />
+            )}
+            {copied ? "Скопировано" : "Скопировать ссылку"}
           </Button>
           <Button
             type="button"
             variant="ghost"
-            className="h-11"
+            look="display"
             arrow={false}
-            onClick={() => router.push("/create")}
+            className="h-14 gap-2 px-3 text-sm!"
+            onClick={downloadAll}
+            disabled={!artifact || artifact.images.length === 0 || downloading}
+            aria-busy={downloading || undefined}
           >
-            Ещё раз
+            {downloaded ? (
+              <IconCheck className="size-5 shrink-0" />
+            ) : (
+              <IconDownload className="size-5 shrink-0" />
+            )}
+            {downloaded ? "Успешно" : downloading ? "Скачиваем…" : "Скачать все"}
           </Button>
         </div>
       </div>
