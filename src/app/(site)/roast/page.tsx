@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Marquee } from "@/components/brand/Marquee";
 import { RoastHero } from "@/components/roast/RoastHero";
 import { StickyCta } from "@/components/roast/StickyCta";
+import { DegreesSection } from "@/components/roast/sections/DegreesSection";
 import { FaqSection } from "@/components/roast/sections/FaqSection";
 import { FinalCta } from "@/components/roast/sections/FinalCta";
 import { LevelsSection } from "@/components/roast/sections/LevelsSection";
@@ -28,7 +29,7 @@ const sticker = (src: typeof chili) => (
 
 /**
  * Мини-лендинг «Прожарка». Этажи чередуются по DESIGN.md §9.1:
- * dark (hero) → light → color → dark → лента → light → color → dark → color (CTA) → footer в огне.
+ * dark (hero) → light → color → light (степени) → dark → лента → light → color → dark → color (CTA) → footer в огне.
  */
 export default function RoastPage() {
   return (
@@ -36,6 +37,7 @@ export default function RoastPage() {
       <RoastHero />
       <LevelsSection />
       <VideoSection />
+      <DegreesSection />
       <StepsSection />
       <div className="relative z-10 -my-8 bg-transparent py-4">
         <Marquee

@@ -10,7 +10,7 @@ export function FinalCta() {
   return (
     <Section id="start" surface="color" className="flex min-h-[80svh] items-center py-24">
       <div aria-hidden="true" className="absolute inset-0 -z-10">
-        <FlameVortex mode="rise" fade scale={3.2} density={0.86} />
+        <FlameVortex mode="rise" fade scale={3.2} density={0.86} slot="final" />
       </div>
       <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center px-4 text-center md:px-6">
         <RevealText
@@ -25,7 +25,7 @@ export function FinalCta() {
           Прожарить
         </FireButton>
       </div>
-      <div className="absolute right-[3%] bottom-[6%] w-[min(24vw,300px)] [translate:calc(var(--mx,0)*22px)_calc(var(--my,0)*16px+var(--sy,0)*-0.1px)] max-md:hidden">
+      <div className="absolute right-[3%] bottom-[6%] w-[min(24vw,300px)] max-md:hidden">
         <Image
           src={peklo}
           alt="Чёртик мешает смайлик в чане"

@@ -36,9 +36,10 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
       {/* Фон: водоворот уезжает медленнее контента */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 [translate:0_calc(var(--sy,0)*0.35px)]"
+        data-parallax="0 0 0.35"
+        className="absolute inset-0 -z-10 will-change-transform"
       >
-        <FlameVortex />
+        <FlameVortex slot="hero" />
         <div className="grain pointer-events-none absolute inset-0" />
       </div>
 
@@ -78,7 +79,10 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
       </div>
 
       {/* Контент в окне водоворота */}
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 [translate:calc(var(--mx,0)*-6px)_calc(var(--my,0)*-4px+var(--sy,0)*0.12px)] flex-col items-center justify-center px-4 pt-10 pb-48 text-center md:pb-44">
+      <div
+        data-parallax="-6 -4 0.12"
+        className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 pt-10 pb-48 text-center will-change-transform md:pb-44"
+      >
         <p className="mb-5 inline-flex items-center rounded-sm border-2 border-ink bg-paper px-3 py-1.5 type-label text-ink shadow-offset transition-transform duration-200 hover:-rotate-3">
           Прожарим Instagram
         </p>
@@ -132,7 +136,10 @@ export function RoastHero({ surface = "dark" }: { surface?: HeroSurface }) {
       </div>
 
       {/* Чёртик-повар со штампом на углу */}
-      <div className="absolute right-[2%] bottom-[12%] z-10 w-[min(22vw,300px)] [translate:calc(var(--mx,0)*26px)_calc(var(--my,0)*18px+var(--sy,0)*-0.18px)] max-md:relative max-md:right-auto max-md:bottom-auto max-md:mx-auto max-md:-mt-28 max-md:mb-28 max-md:w-[62vw]">
+      <div
+        data-parallax="26 18 -0.18"
+        className="absolute right-[2%] bottom-[12%] z-10 w-[min(22vw,300px)] will-change-transform max-md:relative max-md:right-auto max-md:bottom-auto max-md:mx-auto max-md:-mt-28 max-md:mb-28 max-md:w-[62vw]"
+      >
         <div className="group/imp relative animate-float [--float-r:3deg]">
           <Image
             src={imp}

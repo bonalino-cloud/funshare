@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { cx } from "@/components/cx";
+import { fxDisabled } from "@/lib/client/fx";
 
 /**
  * Водоворот из языков пламени (WebGL2). Языки закручиваются спиралью и затягиваются к центру,
@@ -178,6 +179,8 @@ export function FlameVortex({
   density = 1,
   mask,
   maskKey = 0,
+  slot = "fx",
+  dprCap = 1,
   className,
 }: {
   /** vortex — водоворот с окном под контент (hero); rise — поднимающиеся языки пламени (паттерн, футер) */
@@ -192,6 +195,14 @@ export function FlameVortex({
   mask?: HTMLCanvasElement | null;
   /** Меняется, когда трафарет перерисован — перезаливаем текстуру */
   maskKey?: number;
+  /** Имя экземпляра для отладочного выключателя `?nofx=<slot>` */
+  slot?: string;
+  /**
+   * Потолок devicePixelRatio для внутреннего размера canvas. Стоимость кадра растёт квадратом:
+   * 1.5 → 1 дешевле в 2,25 раза. Шумовой огонь на полный экран не теряет в виде при 1;
+   * трафарет с буквами (FireWord) держим на 1.5, чтобы кромка букв была чёткой.
+   */
+  dprCap?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -200,6 +211,11 @@ export function FlameVortex({
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
+    if (fxDisabled(slot)) {
+      // Выключен отладкой: прячем canvas, чтобы под ним остался цвет поверхности или текст
+      canvas.style.display = "none";
+      return;
+    }
     const gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false });
     if (!gl) return; // фон секции остаётся цветом поверхности
 
@@ -253,10 +269,16 @@ export function FlameVortex({
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let w = 0;
     let h = 0;
+    // Положение canvas в документе: считаем при ресайзе, а не на каждое движение курсора (layout дорогой)
+    let left = 0;
+    let top = 0;
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      w = canvas.clientWidth;
-      h = canvas.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+      const rect = canvas.getBoundingClientRect();
+      left = rect.left + window.scrollX;
+      top = rect.top + window.scrollY;
+      w = rect.width;
+      h = rect.height;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -307,12 +329,14 @@ export function FlameVortex({
     raf = requestAnimationFrame(frame);
 
     const onMove = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
+      if (!visible) return;
+      const x = e.clientX + window.scrollX - left;
+      const y = e.clientY + window.scrollY - top;
       const unit = Math.min(w, h);
-      center.tx = ((e.clientX - rect.left - w / 2) / unit) * 0.06;
-      center.ty = (-(e.clientY - rect.top - h / 2) / unit) * 0.06;
+      center.tx = ((x - w / 2) / unit) * 0.06;
+      center.ty = (-(y - h / 2) / unit) * 0.06;
       const dpr = canvas.width / (w || 1);
-      gl.uniform2f(uMouse, (e.clientX - rect.left) * dpr, (h - (e.clientY - rect.top)) * dpr);
+      gl.uniform2f(uMouse, x * dpr, (h - y) * dpr);
     };
     const onHeat = (e: Event) => {
       heat = (e as CustomEvent<number>).detail ?? 0;
@@ -353,12 +377,12 @@ export function FlameVortex({
       gl.deleteBuffer(buf);
       gl.deleteTexture(tex);
     };
-  }, [mode, fade, scale, density]);
+  }, [mode, fade, scale, density, slot, dprCap]);
 
   // Идёт после основного эффекта: GL уже готов. Перезаливаем при новом трафарете и при пересоздании GL
   useEffect(() => {
     if (mask) uploadMask.current?.(mask);
-  }, [mask, maskKey, mode, fade, scale, density]);
+  }, [mask, maskKey, mode, fade, scale, density, dprCap]);
 
   return (
     <canvas

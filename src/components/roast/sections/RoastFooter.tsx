@@ -31,7 +31,7 @@ export function RoastFooter() {
       </div>
       <div className="relative mt-10 h-[22vw] max-h-[320px] min-h-36">
         <div aria-hidden="true" className="absolute inset-0 -z-10">
-          <FlameVortex mode="rise" fade scale={1.4} />
+          <FlameVortex mode="rise" fade scale={1.4} slot="footer" />
         </div>
         <p
           aria-hidden="true"

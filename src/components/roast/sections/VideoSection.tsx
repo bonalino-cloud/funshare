@@ -3,9 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/cx";
-import { Button } from "@/components/ui/Button";
 import { Flames } from "../Flames";
-import { Chili, Play } from "../Icons";
 import { Reveal } from "../Reveal";
 import { Section, SectionHeading } from "../Section";
 import { Sticker } from "../Sticker";
@@ -15,7 +13,7 @@ import flame from "../assets/sticker-flame.png";
 
 const SLIDE_MS = 2200;
 
-/** «В сторис или в рилс»: продаёт Пекло. Телефон проигрывает пример и наклоняется за курсором */
+/** «Прожарка, которой захочется поделиться»: продаёт сторис. Телефон проигрывает пример и наклоняется за курсором */
 export function VideoSection() {
   return (
     <Section id="video" surface="color" className="py-20 md:py-28">
@@ -24,29 +22,16 @@ export function VideoSection() {
           <SectionHeading
             lines={[
               ["Прожарка,"],
-              ["которая"],
-              ["сама себя"],
-              [{ text: "выкла", className: "tilt" }, "дывает"],
+              ["которой"],
+              ["захочется"],
+              [{ text: "поде", className: "tilt" }, "литься"],
             ]}
           />
           <Reveal>
             <p className="mt-6 max-w-[34ch] type-lead">
-              Вертикальное видео под сторис и рилс. Картинки в огне, вердикт в конце. Скачал и
-              выложил.
+              Вертикальные сторис для твоего инстаграма. Рассмеши своих подписчиков. Все оценят твою
+              самоиронию!
             </p>
-            <p className="mt-6 inline-flex items-center gap-2 rounded-sm border-2 border-ink bg-paper px-3 py-1.5 type-label text-ink">
-              Входит в сборку Пекло
-              <span className="flex">
-                <Chili className="size-5" />
-                <Chili className="size-5" />
-                <Chili className="size-5" />
-              </span>
-            </p>
-            <div className="mt-8">
-              <Button variant="inverse" arrow={false} icon={<Play className="size-5" />}>
-                Смотреть пример
-              </Button>
-            </div>
           </Reveal>
         </div>
         <div className="relative mx-auto w-full max-w-[300px] max-md:w-[72%]">

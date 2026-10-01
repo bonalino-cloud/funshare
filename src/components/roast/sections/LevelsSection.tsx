@@ -7,7 +7,7 @@ import { cx } from "@/components/cx";
 import { cardTones, type CardTone } from "@/components/ui/Card";
 import { FireWord } from "../FireWord";
 import { Flames, flameOn } from "../Flames";
-import { Chili, Cup, Headphones, Play, Suitcase, Sunset } from "../Icons";
+import { Cup, Headphones, Play, Suitcase, Sunset, Hot } from "../Icons";
 import { Reveal } from "../Reveal";
 import { Section } from "../Section";
 import ogon from "../assets/level-ogon.png";
@@ -140,7 +140,7 @@ export function LevelsSection() {
         <Reveal as="h2" aria-label="Получится огонь" className="text-center">
           <FireWord
             text="ПОЛУЧИТСЯ ОГОНЬ"
-            className="font-wide text-[clamp(2.6rem,5.8vw,6rem)] leading-[0.95] font-black tracking-[-0.03em]"
+            className="font-wide text-[clamp(2.6rem,5.8vw,5.25rem)] leading-[0.95] font-black tracking-[-0.03em]"
           />
         </Reveal>
 
@@ -192,7 +192,7 @@ export function LevelsSection() {
                   )}
                   <span className="relative flex -space-x-2.5">
                     {Array.from({ length: l.heat }, (_, k) => (
-                      <Chili
+                      <Hot
                         key={k}
                         className="size-7 transition-transform duration-200 group-hover/flames:-rotate-12"
                       />
