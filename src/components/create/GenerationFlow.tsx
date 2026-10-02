@@ -37,20 +37,6 @@ export function GenerationFlow({ id }: { id: string }) {
       step={step}
       progress={status?.status !== "ready"}
       flush={status?.status === "ready"}
-      action={
-        status?.status === "ready" ? (
-          <Button
-            type="button"
-            variant="inverse"
-            look="display"
-            arrow={false}
-            className="h-7 px-3 text-[11px]! shadow-none!"
-            onClick={() => router.push("/create")}
-          >
-            Ещё раз
-          </Button>
-        ) : undefined
-      }
     >
       {failed ? (
         <>

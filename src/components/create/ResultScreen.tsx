@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Artifact } from "@/contracts";
 import { ArtifactCards, cardFile, saveFile } from "@/components/artifact/ArtifactCards";
@@ -7,13 +8,14 @@ import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
 import { roastCards } from "@/lib/client/roast-card";
 import { errorLine } from "./errors";
-import { IconCheck, IconCopy, IconDownload } from "./icons";
+import { IconCheck, IconCopy, IconDownload, IconReload } from "./icons";
 import { StepTitle } from "./StepTitle";
 
 type Flash = "copied" | "saved" | "savedAll" | null;
 
 /** Шаг 7: карточки прожарки 9:16 и шеринг. Вёрстка карточек: `components/artifact`. */
 export function ResultScreen({ slug }: { slug: string }) {
+  const router = useRouter();
   const [artifact, setArtifact] = useState<Artifact | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
@@ -154,25 +156,38 @@ export function ResultScreen({ slug }: { slug: string }) {
         </div>
       )}
       {cards.length ? (
-        <ArtifactCards cards={cards} onIndex={setIndex} reserve={375} />
+        <ArtifactCards cards={cards} onIndex={setIndex} reserve={335} />
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>
       )}
       {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       {/* Кнопки закреплены внизу: колода крупная, на коротком экране страница прокручивается под ними */}
       <div className="sticky bottom-0 z-30 -mx-[18px] mt-auto flex flex-col gap-2 bg-linear-to-t from-surface from-70% to-transparent px-[18px] pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
-        <Button
-          type="button"
-          variant="inverse"
-          look="display"
-          arrow={false}
-          className="h-14 w-full"
-          onClick={share}
-          disabled={!cards.length}
-          aria-busy={busy === "share" || undefined}
-        >
-          Поделиться
-        </Button>
+        <div className="flex gap-3">
+          {/* «Ещё раз» = новая генерация: квадрат в стиле «Поделиться», только иконка */}
+          <Button
+            type="button"
+            variant="inverse"
+            arrow={false}
+            className="h-14 w-14 shrink-0 gap-0 px-0"
+            icon={<IconReload className="size-6" strokeWidth={2.75} />}
+            onClick={() => router.push("/create")}
+            aria-label="Ещё раз"
+            title="Ещё раз"
+          />
+          <Button
+            type="button"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 min-w-0 flex-1"
+            onClick={share}
+            disabled={!cards.length}
+            aria-busy={busy === "share" || undefined}
+          >
+            Поделиться
+          </Button>
+        </div>
         <div className="grid grid-cols-3 gap-2">
           <Button
             type="button"

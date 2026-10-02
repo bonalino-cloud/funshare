@@ -40,7 +40,7 @@ export function HotIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-/** Иконки Tabler (MIT): copy, download, check. Stroke 2, круглые концы */
+/** Иконки Tabler (MIT): copy, download, check, reload. Stroke 2, круглые концы */
 function Tabler({ children, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -78,6 +78,15 @@ export function IconCheck(props: SVGProps<SVGSVGElement>) {
   return (
     <Tabler {...props}>
       <path d="M5 12l5 5l10 -10" />
+    </Tabler>
+  );
+}
+
+export function IconReload(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Tabler {...props}>
+      <path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747" />
+      <path d="M20 4v5h-5" />
     </Tabler>
   );
 }

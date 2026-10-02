@@ -19,6 +19,8 @@ export function StepHeader({
   /** Вместо стрелки «назад»: например, «Ещё раз» на экране результата */
   action?: ReactNode;
 }) {
+  // Ни прогресса, ни кнопки (экран результата): шапки нет совсем, место отдаём контенту
+  if (!progress && !action && !onBack) return null;
   return (
     <header className={cx("flex flex-col gap-5", progress ? "mb-7" : "mb-3")}>
       <div className="flex h-8 items-center justify-center">
