@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ArtifactKind, GenerationMode } from "./generation";
+import { ArtifactKind, GenerationMode, PUNCH_MAX_CHARS } from "./generation";
 
 export const PredictionArea = z.enum(["love", "money", "travel", "career", "health", "wildcard"]);
 export type PredictionArea = z.infer<typeof PredictionArea>;
@@ -39,7 +39,7 @@ export type ArtifactImage = z.infer<typeof ArtifactImage>;
 export const Punch = z.object({
   id: z.string().min(1),
   emoji: z.string().min(1),
-  text: z.string().min(1),
+  text: z.string().min(1).max(PUNCH_MAX_CHARS),
 });
 export type Punch = z.infer<typeof Punch>;
 
@@ -56,6 +56,26 @@ export const RoastContent = z.object({
   shareText: z.string().min(1).max(140),
 });
 export type RoastContent = z.infer<typeof RoastContent>;
+
+/** Цвет `#rrggbb` в нижнем регистре. */
+export const HexColor = z.string().regex(/^#[0-9a-f]{6}$/);
+export type HexColor = z.infer<typeof HexColor>;
+
+/**
+ * Картинка к шутке для карточки 9:16. Шаг `draw` рисует один холст 2×3 на все шутки,
+ * режет его на квадраты и для каждого берёт цвет однотонного фона: карточка
+ * заливается этим цветом, и квадрат сливается с ней без шва.
+ */
+export const PunchImage = z.object({
+  /** id шутки из `content.punches`. */
+  punchId: z.string().min(1),
+  /** Квадрат, не меньше 1024×1024. */
+  url: z.url(),
+  alt: z.string().min(1),
+  /** Цвет фона квадрата (медиана по его краю). */
+  bg: HexColor,
+});
+export type PunchImage = z.infer<typeof PunchImage>;
 
 /** Только BE. Выход шага `write`: текст + промпты для шага `draw`. */
 export const ArtifactDraft = z.object({
@@ -89,6 +109,27 @@ export const Artifact = z.discriminatedUnion("kind", [
     kind: z.literal(ArtifactKind.enum.dossier_2027),
     content: ArtifactContent,
   }),
-  ArtifactBase.extend({ kind: z.literal(ArtifactKind.enum.roast_v1), content: RoastContent }),
+  ArtifactBase.extend({
+    kind: z.literal(ArtifactKind.enum.roast_v1),
+    content: RoastContent,
+    /**
+     * Картинки к шуткам, по одной на шутку. Поджог: пусто. Кострище и Пекло: по картинке
+     * на каждую выбранную шутку, при частичном сбое `draw` упавших нет (карточка без картинки).
+     */
+    punchImages: z.array(PunchImage).max(12),
+  }).superRefine((a, ctx) => {
+    const ids = new Set(a.content.punches.map((p) => p.id));
+    const seen = new Set<string>();
+    for (const [i, img] of a.punchImages.entries()) {
+      if (!ids.has(img.punchId) || seen.has(img.punchId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["punchImages", i, "punchId"],
+          message: "картинка не к выбранной шутке или вторая к той же",
+        });
+      }
+      seen.add(img.punchId);
+    }
+  }),
 ]);
 export type Artifact = z.infer<typeof Artifact>;
