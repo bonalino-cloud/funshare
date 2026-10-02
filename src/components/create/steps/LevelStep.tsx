@@ -7,11 +7,9 @@ import type { CardTone } from "@/components/ui/Card";
 import { Sheet } from "@/components/ui/Sheet";
 import { cx } from "@/components/cx";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import rare from "../assets/level-rare.png";
-import medium from "../assets/level-medium.png";
-import well from "../assets/level-well.png";
 import { HotIcon } from "../icons";
 import { LEVEL_NAME } from "../labels";
+import { LEVEL_ART } from "../levelArt";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierName } from "../TierCard";
 import type { CreateStep } from "../steps";
@@ -19,23 +17,24 @@ import type { CreateStep } from "../steps";
 /** Огоньки над названием: один, два, три — как перчики у тарифов */
 const FLAMES: Record<Level, number> = { rare: 1, medium: 2, well_done: 3 };
 
-const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string }> = {
-  rare: {
-    tone: "yellow",
-    image: rare,
-    desc: "Мягко. Подколы, которые можно показать маме",
-  },
-  medium: {
-    tone: "orange",
-    image: medium,
-    desc: "Средне. Без мата, но острые шутки допускаются",
-  },
-  well_done: {
-    tone: "red",
-    image: well,
-    desc: "Шутки 18+ и мат. Ты сам просил",
-  },
-};
+const LEVEL_UI: Record<Level, { tone: CardTone; image: (typeof LEVEL_ART)[Level]; desc: string }> =
+  {
+    rare: {
+      tone: "yellow",
+      image: LEVEL_ART.rare,
+      desc: "Мягко. Подколы, которые можно показать маме",
+    },
+    medium: {
+      tone: "orange",
+      image: LEVEL_ART.medium,
+      desc: "Средне. Без мата, но острые шутки допускаются",
+    },
+    well_done: {
+      tone: "red",
+      image: LEVEL_ART.well_done,
+      desc: "Шутки 18+ и мат. Ты сам просил",
+    },
+  };
 
 /**
  * Шаг 4. Три карточки-кнопки без «Дальше». Rare и Medium ведут сразу к итогу,

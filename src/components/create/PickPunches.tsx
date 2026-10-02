@@ -81,9 +81,9 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
       <StepTitle accent={data ? `из ${data.candidates.length}` : undefined} size="m">
         Выбери {need || "…"}
       </StepTitle>
-      <StepLead>Эти пойдут в артефакт. Остальные останутся у нас</StepLead>
+      <StepLead>Выбери {need || 6} самых смешных шуток</StepLead>
 
-      <div role="group" aria-label="Шутки" className="flex flex-col gap-2 pb-3">
+      <div role="group" aria-label="Шутки" className="flex flex-col gap-3 pb-3">
         {data?.candidates.map((c) => {
           const index = picked.indexOf(c.id);
           const on = index >= 0;
@@ -97,7 +97,8 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
               disabled={off || busy}
               onClick={() => toggle(c.id)}
               className={cx(
-                "relative flex items-start gap-3 rounded-md border-2 py-3 pr-9 pl-3 text-left type-body font-semibold transition-colors duration-[120ms]",
+                // Акцент на текст: без эмодзи, Unbounded крупнее, воздуха больше
+                "relative flex items-start gap-4 rounded-md border-2 py-5 pr-10 pl-4 text-left font-wide text-[17px] leading-[1.3] font-bold tracking-tight transition-colors duration-[120ms]",
                 "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink",
                 on && "border-ink bg-pink text-ink shadow-offset-paper",
                 !on && !off && "border-ink bg-paper text-ink shadow-offset-paper",
@@ -107,7 +108,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
               <span
                 aria-hidden="true"
                 className={cx(
-                  "mt-px flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-extrabold",
+                  "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-extrabold",
                   on
                     ? "border-ink bg-ink text-pink"
                     : off
@@ -117,13 +118,11 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
               >
                 {on && "✓"}
               </span>
-              <span>
-                {c.emoji} {c.text}
-              </span>
+              <span>{c.text}</span>
               {on && (
                 <span
                   aria-hidden="true"
-                  className="absolute top-2 right-2.5 font-mono text-xs font-bold"
+                  className="absolute top-2.5 right-3 font-mono text-xs font-bold"
                 >
                   {index + 1}
                 </span>
