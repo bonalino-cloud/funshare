@@ -114,10 +114,14 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
               onClick={() => toggle(c.id)}
               className={cx(
                 // Акцент на текст: без эмодзи, Unbounded крупнее, воздуха больше
-                "relative flex items-start gap-4 rounded-md border-2 py-5 pr-10 pl-4 text-left font-wide text-[17px] leading-[1.3] font-bold tracking-tight transition-colors duration-[120ms]",
+                "relative flex items-start gap-4 rounded-md border-2 py-5 pr-10 pl-4 text-left font-wide text-[17px] leading-[1.3] font-bold tracking-tight transition-[translate,box-shadow,background-color,color] duration-[120ms] ease-linear",
                 "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink",
-                on && "border-ink bg-pink text-ink shadow-offset-paper",
-                !on && !off && "border-ink bg-paper text-ink shadow-offset-paper",
+                // Выбранная — уже «вдавлена»: без тени и на месте тени
+                on && "translate-x-1 translate-y-1 border-ink bg-pink text-ink shadow-none",
+                // Наведение — имитация нажатия, как у кнопок: тень уходит, карточка садится на её место
+                !on &&
+                  !off &&
+                  "border-ink bg-paper text-ink shadow-offset-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none",
                 off && "border-[#2b2b2b] bg-base-pattern text-[#666]",
               )}
             >
@@ -166,11 +170,17 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
             )}
           </span>
         </div>
-        <div className="h-2 overflow-hidden rounded-[4px] bg-[#2b2b2b]" aria-hidden="true">
-          <div
-            className="h-full bg-white transition-[width] duration-200"
-            style={{ width: need ? `${(picked.length / need) * 100}%` : 0 }}
-          />
+        {/* Сегменты по числу шуток, как прогресс в шапке флоу */}
+        <div className="flex gap-1" aria-hidden="true">
+          {Array.from({ length: need }, (_, i) => (
+            <i
+              key={i}
+              className={cx(
+                "h-2 flex-1 rounded-[4px] transition-colors duration-200",
+                i < picked.length ? "bg-white" : "bg-[#2b2b2b]",
+              )}
+            />
+          ))}
         </div>
         {error && <p className="mt-2.5 border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       </div>

@@ -39,7 +39,7 @@ export function Button({
         look === "display"
           ? "font-wide font-black tracking-tight text-base uppercase"
           : "type-label text-sm",
-        "transition-[transform,box-shadow] duration-[120ms] ease-linear",
+        "transition-[translate,box-shadow] duration-[120ms] ease-linear",
         "hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none",
         "focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-pink",
         "disabled:pointer-events-none disabled:border-transparent disabled:bg-base-pattern disabled:text-[#555] disabled:shadow-none",
