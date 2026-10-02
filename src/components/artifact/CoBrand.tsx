@@ -16,7 +16,8 @@ export function CoBrand({ username }: { username: string }) {
   const label =
     "font-wide text-[10px] leading-none font-bold tracking-[-0.39px] text-white uppercase";
   return (
-    <div className="flex items-center justify-center gap-[18px]">
+    // Чуть крупнее макета: масштабом всей строки, чтобы SVG из Figma остались как есть
+    <div className="flex scale-120 items-center justify-center gap-[18px]">
       <span className="flex items-center gap-1.5">
         {/* SVG из макета: размеры берём из самого файла, не растягиваем */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

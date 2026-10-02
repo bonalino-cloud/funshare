@@ -139,14 +139,14 @@ export function ResultScreen({ slug }: { slug: string }) {
       {/* Карточки в фокусе: видимого заголовка нет, только для скринридера */}
       <h1 className="sr-only">Прожарка готова</h1>
       {artifact && (
-        <div className="mb-4">
+        <div className="mt-2 mb-9">
           <CoBrand username={artifact.subject.username} />
         </div>
       )}
       {cards.length ? (
         // Колода по центру свободной высоты: на высоких экранах ширину режет колонка, а не высота
         <div className="flex flex-1 flex-col justify-center">
-          <ArtifactCards cards={cards} slug={slug} onIndex={setIndex} reserve={330} />
+          <ArtifactCards cards={cards} slug={slug} onIndex={setIndex} reserve={356} />
         </div>
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>

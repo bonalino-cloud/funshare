@@ -96,7 +96,7 @@ export function ArtifactCards({
 
   return (
     <div
-      className="[container-type:inline-size] flex w-full flex-col items-center gap-3"
+      className="[container-type:inline-size] flex w-full flex-col items-center gap-5"
       style={
         {
           // Стопка шире передней на выглядывающие края: (1 + PEEK × SHIFT) × ширина
