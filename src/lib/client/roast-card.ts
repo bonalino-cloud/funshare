@@ -139,7 +139,7 @@ export async function renderCardPng(card: RoastCardData): Promise<Blob> {
     c.fillText(line, PAD_X, y);
   });
 
-  c.fillStyle = "rgba(255,255,255,0.9)";
+  c.fillStyle = "#fff";
   c.beginPath();
   const ly = labelY(card.image !== null);
   c.roundRect(LABEL.x, ly, LABEL.w, LABEL.h, LABEL.radius);

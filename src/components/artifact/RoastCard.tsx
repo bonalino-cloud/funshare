@@ -120,7 +120,7 @@ export function RoastCard({
           width: u(LABEL.w),
           height: u(LABEL.h),
           borderRadius: u(LABEL.radius),
-          backgroundColor: "rgba(255,255,255,0.9)",
+          backgroundColor: "#fff",
         }}
         aria-hidden
       >
