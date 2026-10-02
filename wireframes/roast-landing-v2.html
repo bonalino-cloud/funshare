@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funshare · Прожарка · wireframe v2</title>
+<style>
+  :root{--ink:#111;--line:#bbb;--fill:#eee;--muted:#777;--note:#c2410c}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.4 -apple-system,Helvetica,Arial,sans-serif;color:var(--ink);background:#fafafa}
+  .page{max-width:1080px;margin:0 auto;padding:16px}
+  section{border:2px solid var(--ink);margin:0 0 24px;padding:20px;position:relative;background:#fff}
+  section::before{content:attr(data-n) " · " attr(data-name);position:absolute;top:-11px;left:12px;background:#fff;padding:0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .note{font-size:12px;color:var(--note);border-left:3px solid var(--note);padding:2px 8px;margin:10px 0 0;background:#fff7ed}
+  .box{border:1.5px dashed var(--line);background:var(--fill);padding:12px;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1 1 200px}
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  h1{font-size:clamp(32px,6vw,56px);line-height:.95;margin:8px 0;text-transform:uppercase;letter-spacing:-.02em}
+  h2{font-size:26px;margin:0 0 12px;text-transform:uppercase;letter-spacing:-.01em}
+  h3{font-size:16px;margin:0 0 6px}
+  p{margin:6px 0}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+  .seg span{padding:8px 16px;font-size:13px;border-right:2px solid var(--ink)}
+  .seg span:last-child{border:0}
+  .seg .on{background:var(--ink);color:#fff}
+  .input{display:flex;gap:8px;margin:14px 0 6px}
+  .input .f{flex:1;border:2px solid var(--ink);border-radius:999px;padding:14px 18px;color:var(--muted)}
+  .btn{border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:14px 22px;font-weight:700;white-space:nowrap}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .card{border:2px solid var(--ink);border-radius:16px;padding:16px;background:#fff}
+  .card.dark{background:#111;color:#fff}
+  .card.dark .box{background:#222;border-color:#555;color:#aaa}
+  .micro{font-size:12px;color:var(--muted)}
+  ul{margin:6px 0;padding-left:18px}
+  li{margin:3px 0}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+  .kv b{color:var(--muted);font-weight:600}
+  .tag{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:12px;margin:2px 4px 2px 0}
+  header.top{display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;font-size:13px}
+  .legend{font-size:12px;color:var(--muted);margin-bottom:20px}
+  .big{font-size:22px;font-weight:800;line-height:1.1;margin:0 0 4px}
+  .status{font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.7;margin:0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="legend">
+  <b>Funshare · мини-лендинг «Прожарка» · wireframe v2 · 2026-09-29</b><br>
+  Тексты по <code>business/tone-of-voice.md</code>. Серые пунктирные блоки = визуал / декор. Оранжевые пометки = комментарии, в вёрстку не идут.
+</div>
+
+<header class="top">
+  <span><b>✱ FUNSHARE</b> <span class="micro">/ прожарка</span></span>
+  <span class="micro">[что ещё есть ↗] &nbsp; [☰]</span>
+</header>
+
+<!-- 01 HERO -->
+<section data-n="01" data-name="Hero">
+  <div class="row">
+    <div style="flex:2 1 380px">
+      <div class="eyebrow">Instagram → прожарка за 60 сек</div>
+      <h1>Прожарь себя.<br>Или друга.</h1>
+      <p>Кидай ссылку. ИИ прочитает сторис и выдаст роаст, которым не стыдно поделиться. Ну, почти.</p>
+
+      <div class="eyebrow" style="margin-top:14px">Кого</div>
+      <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+
+      <div class="eyebrow" style="margin-top:14px">Насколько</div>
+      <div class="seg"><span>Мягко</span><span class="on">Средне</span><span>Жёстко</span></div>
+      <p class="micro" style="margin-top:4px">Подпись под активным уровнем: «Для мамы и коллег» / «Для друзей» / «18+, ты сам просил»</p>
+
+      <div class="input">
+        <div class="f">@ instagram.com/username</div>
+        <div class="btn">Прожарить ↗</div>
+      </div>
+      <p class="micro">Только открытые профили · Удалить можно в один клик</p>
+    </div>
+    <div style="flex:1 1 260px" class="box">Главный визуал: маскот-ромашка с огнём / стикер / коллаж. На мобиле уходит под кнопку</div>
+  </div>
+  <p class="note">Заголовок 4 слова, подзаголовок одна строка, кнопка глагол. «Кого / Насколько» вместо «Кого жарим / Насколько жёстко»: слово «жарим» уже в H1, не повторяем. Уровень пока живёт только на FE, в контракт уйдёт задачей contracts/roast-level.</p>
+</section>
+
+<!-- 02 ПРИМЕР -->
+<section data-n="02" data-name="Пример">
+  <h2>Вот что получится</h2>
+  <div class="row">
+    <div style="flex:1 1 300px">
+      <div class="seg" style="margin-bottom:10px"><span>Мягко</span><span class="on">Средне</span><span>Жёстко</span></div>
+      <div class="card dark">
+        <div class="eyebrow" style="color:#aaa">Прожарка @anya.travels</div>
+        <p class="big">Человек, у которого 40 сторис из аэропорта и ноль из дома</p>
+        <div class="box" style="min-height:120px;margin:10px 0">Hero-иллюстрация артефакта (рисунок, не фото)</div>
+        <ul>
+          <li>🧳 «Пересадка 6 часов» звучит у тебя как достижение, а не как ошибка планирования</li>
+          <li>☕ Кофе фотографируешь чаще, чем пьёшь. Кофе в курсе</li>
+          <li>🌅 Закаты. Все. Даже из такси. Даже когда их нет</li>
+          <li>🎧 Плейлист «для дороги» длиннее самой дороги</li>
+        </ul>
+        <p><b>Но если честно:</b> ты та, кто знает, где продолжить вечер. Это уважение.</p>
+        <div class="row" style="margin-top:10px">
+          <div class="btn ghost" style="text-align:center">Кинуть Ане ↗</div>
+          <div class="btn ghost" style="text-align:center">Прожарить в ответ</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1 1 240px">
+      <h3>Внутри каждой</h3>
+      <ul>
+        <li>Вердикт в одну строку. Он же заголовок для сторис</li>
+        <li>4–6 панчей про привычки и вайб</li>
+        <li>«Но если честно» в конце, чтобы не обиделись</li>
+        <li>3–5 картинок в одном стиле</li>
+        <li>Ссылка с превью для Telegram и WhatsApp</li>
+      </ul>
+      <div class="box" style="min-height:80px;margin-top:10px">Переключатель уровня над карточкой меняет панчи того же профиля: видно разницу «Мягко / Жёстко» без прокрутки</div>
+    </div>
+  </div>
+  <p class="note">Пример это главный аргумент, текст настоящий, не lorem ipsum. Кнопки в примере те же, что будут в артефакте: «Кинуть Ане» (режим друга, имя подставляется) и «Прожарить в ответ» (вирусная механика).</p>
+</section>
+
+<!-- 03 КАК ЭТО ВООБЩЕ -->
+<section data-n="03" data-name="Три шага">
+  <h2>Как это вообще</h2>
+  <div class="grid g3">
+    <div class="card"><div class="eyebrow">01</div><h3>Кидаешь ссылку</h3><p>Свою или друга. Только открытые.</p></div>
+    <div class="card"><div class="eyebrow">02</div><h3>Ждёшь минуту</h3><p>ИИ читает подписи, хайлайты, всё. Мы пока развлекаем:</p>
+      <p class="status">Считаем закаты… 47<br>Читаем подписи. Даже длинные…<br>Ищем слабость. Нашли…</p></div>
+    <div class="card"><div class="eyebrow">03</div><h3>Кидаешь другу</h3><p>Ссылка в чат или картинка в сторис. Он может прожарить в ответ.</p></div>
+  </div>
+  <div class="box" style="margin-top:12px">Бегущая лента «✱ ПРОЖАРКА ✱ 60 СЕК ✱ БЕСПЛАТНО ✱ ОТВЕТКА ✱»</div>
+  <p class="note">Статусы ожидания показаны прямо в шаге 02: это превью характера сервиса и обещание, что минута не будет скучной.</p>
+</section>
+
+<!-- 04 КОГДА ЗАХОДИТ -->
+<section data-n="04" data-name="Юзкейсы">
+  <h2>Когда заходит</h2>
+  <div class="grid g2">
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Другу на днюху</h3>
+      <p>Вместо «с др, бро». Прожарка, которую он перешлёт всем.</p>
+      <span class="tag">Друга</span>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Что ИИ думает обо мне</h3>
+      <p>Самоирония в сторис заходит лучше селфи. «Меня прожарил ИИ. Он прав».</p>
+      <span class="tag">Себя</span>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>В общий чат</h3>
+      <p>Всех по очереди. Заодно узнаешь, кто обидчивый.</p>
+      <span class="tag">Друга</span> <span class="tag">Ответка</span>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Нечего постить</h3>
+      <p>Готовая картинка и текст. Минимум два «это про тебя, да».</p>
+      <span class="tag">Себя</span>
+    </div>
+  </div>
+  <p class="note">Клик по карточке ставит режим в hero и скроллит наверх. Тег на карточке это и есть подсказка, какой переключатель выбрать.</p>
+</section>
+
+<!-- 05 ПРАВИЛА -->
+<section data-n="05" data-name="Правила">
+  <h2>Жарим, но не сжигаем</h2>
+  <div class="grid g2">
+    <div>
+      <h3>Не трогаем. Никогда</h3>
+      <ul>
+        <li>Внешность, вес, здоровье</li>
+        <li>Национальность, религию, политику</li>
+        <li>Ориентацию, семью, деньги</li>
+      </ul>
+      <p class="micro">Даже на «Жёстко». Жёстко это про привычки, не про человека.</p>
+    </div>
+    <div>
+      <h3>С данными так</h3>
+      <ul>
+        <li>Только открытые профили. Закрытый значит закрытый</li>
+        <li>Похоже на подростка: не жарим, точка</li>
+        <li>Картинки рисуем, а не копируем лицо</li>
+        <li>Передумал: жми «Удалить», и прожарки нет</li>
+        <li>Сырое храним 30 дней, потом стираем</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Тот же голос, что и везде: объясняем другу, почему, а не перечисляем пункты. На мобиле можно свернуть в аккордеон, заголовок остаётся.</p>
+</section>
+
+<!-- 06 CTA -->
+<section data-n="06" data-name="Повторный CTA">
+  <div class="row" style="align-items:center">
+    <div style="flex:2 1 300px">
+      <h2 style="margin:0">Ну что, жарим?</h2>
+      <p class="micro">Минута. Бесплатно. Можно удалить.</p>
+    </div>
+    <div style="flex:2 1 320px" class="input">
+      <div class="f">@ instagram.com/username</div>
+      <div class="btn">Погнали ↗</div>
+    </div>
+  </div>
+  <p class="note">Форма помнит режим и уровень из hero. Кнопка здесь «Погнали», не второй «Прожарить»: пользователь уже всё прочитал, это финальный толчок. На мобиле после hero появляется sticky «Прожарить» снизу.</p>
+</section>
+
+<!-- 07 FOOTER -->
+<section data-n="07" data-name="Footer">
+  <div class="row" style="align-items:center">
+    <div class="micro">✱ ✱ ✱ &nbsp; Funshare · с любовью и огнём</div>
+    <div class="micro" style="text-align:right">[Что ещё есть] [Правила] [Удалить мою прожарку] [Telegram]</div>
+  </div>
+  <div class="box" style="margin-top:12px;min-height:60px">Пламя перед футером · тизер других генераций добавим позже</div>
+</section>
+
+</div>
+</body>
+</html>

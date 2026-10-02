@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funshare · Создание артефакта · wireframe v1</title>
+<style>
+  :root{--ink:#111;--line:#bbb;--fill:#eee;--muted:#777;--note:#c2410c;--ok:#166534}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.4 -apple-system,Helvetica,Arial,sans-serif;color:var(--ink);background:#fafafa}
+  .page{max-width:1400px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--muted);margin:0 0 20px;max-width:760px}
+  h2.grp{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:32px 0 12px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+  .strip{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:300px}
+  .cap{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .phone{width:300px;min-height:620px;border:2px solid var(--ink);border-radius:26px;background:#fff;padding:14px 16px 16px;display:flex;flex-direction:column;position:relative}
+  .note{font-size:12px;color:var(--note);border-left:3px solid var(--note);padding:2px 8px;margin:8px 0 0;background:#fff7ed}
+  /* progress line */
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px}
+  .back{border:1.5px solid var(--ink);border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .back.off{visibility:hidden}
+  .steplbl{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px}
+  .prog{display:flex;gap:4px;margin-bottom:16px}
+  .prog i{flex:1;height:5px;border-radius:3px;background:var(--fill);border:1px solid var(--line)}
+  .prog i.done{background:var(--ink);border-color:var(--ink)}
+  .prog i.cur{background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 4px,#666 4px,#666 8px);border-color:var(--ink)}
+  h3{font-size:24px;line-height:1;margin:2px 0 6px;text-transform:uppercase;letter-spacing:-.01em}
+  p{margin:4px 0}
+  .sub{color:var(--muted);font-size:13px}
+  .box{border:1.5px dashed var(--line);background:var(--fill);padding:10px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:12px}
+  .seg{display:flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;margin:10px 0}
+  .seg span{flex:1;text-align:center;padding:8px 6px;font-size:13px;border-right:2px solid var(--ink)}
+  .seg span:last-child{border:0}
+  .seg .on{background:var(--ink);color:#fff}
+  .field{border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin:8px 0;color:var(--muted);background:#fff}
+  .field.filled{color:var(--ink)}
+  .field.err{border-color:#b91c1c}
+  .btn{display:block;text-align:center;border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:13px 18px;font-weight:700;margin:10px 0 0}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn.dis{background:var(--fill);color:#999;border-color:var(--line)}
+  .btn.load{background:#fff;color:var(--ink)}
+  .push{margin-top:auto}
+  .card{border:2px solid var(--ink);border-radius:14px;padding:12px;margin:8px 0;background:#fff}
+  .card.sel{box-shadow:4px 4px 0 var(--ink)}
+  .row{display:flex;gap:10px;align-items:center}
+  .av{width:44px;height:44px;border-radius:50%;background:var(--fill);border:1.5px dashed var(--line);flex:none}
+  .chip{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700}
+  .chip.ok{border-color:var(--ok);color:var(--ok)}
+  .chip.free{background:var(--ink);color:#fff}
+  .chip.soon{border-style:dashed;color:var(--muted);border-color:var(--muted)}
+  .price{margin-left:auto;font-weight:800;font-size:18px}
+  .tag{font-size:11px;color:var(--muted)}
+  .warn{border:2px solid #b91c1c;background:#fef2f2;border-radius:12px;padding:10px 12px;margin:10px 0;font-size:12px}
+  .warn b{color:#b91c1c}
+  .chk{display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-size:13px}
+  .chk i{flex:none;width:18px;height:18px;border:2px solid var(--ink);border-radius:4px;margin-top:1px}
+  .chk i.on{background:var(--ink)}
+  .sum{border-top:1.5px dashed var(--line);margin:10px 0}
+  .sumrow{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+  .sumrow.big{font-weight:800;font-size:16px}
+  .strike{text-decoration:line-through;color:var(--muted)}
+  .loader{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+  .imp{width:140px;height:140px;border-radius:50%;border:2px dashed var(--line);background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+  .bar{width:100%;height:10px;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;width:38%;background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 6px,#666 6px,#666 12px)}
+  .status{font-size:20px;font-weight:800;line-height:1.1}
+  .jk{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--ink);border-radius:12px;padding:9px 10px;margin:6px 0;font-size:13px;background:#fff}
+  .jk.sel{background:var(--ink);color:#fff}
+  .jk i{flex:none;width:20px;height:20px;border:2px solid currentColor;border-radius:50%;margin-top:1px}
+  .jk.sel i{background:#fff;border-color:#fff}
+  .scroll{flex:1;overflow:hidden}
+  .sticky{position:sticky;bottom:0;margin:0 -16px -16px;padding:10px 16px 16px;background:#fff;border-top:2px solid var(--ink);border-radius:0 0 24px 24px}
+  .cnt{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px}
+  .meter{height:6px;border-radius:3px;background:var(--fill);border:1px solid var(--line);margin-bottom:8px;overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--ink)}
+  .share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .share .btn{margin:0;padding:10px;font-size:12px}
+  .cards{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .story{width:270px;height:480px;border:2px solid var(--ink);background:#fff;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .wide{width:480px;height:270px;border:2px solid var(--ink);background:#fff;padding:14px;display:flex;gap:12px}
+  .wide .l{width:44%}
+  .wide .r{flex:1;display:flex;flex-direction:column;gap:8px}
+  .pn{border:1.5px solid var(--ink);border-radius:10px;padding:6px 8px;font-size:12px}
+  .foot{margin-top:auto;font-size:11px;font-weight:700;display:flex;justify-content:space-between}
+  .tabs{display:flex;gap:6px;margin:8px 0}
+  .tabs span{border:1.5px solid var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700}
+  .tabs .on{background:var(--ink);color:#fff}
+  table{border-collapse:collapse;font-size:12px;background:#fff}
+  td,th{border:1.5px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+  th{background:var(--fill)}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Создание артефакта · wireframe v1</h1>
+  <p class="lead">Мобильный первый. Прогресс-линия из 7 сегментов: Профиль → Факты → Тариф → Прожарка → Итог → Шутки → Готово. Лоудер и выбор шуток живут внутри шестого сегмента, шеринг внутри седьмого. Серое = плейсхолдер: цвет, шрифты и стикеры берутся из DESIGN.md на этапе вёрстки.</p>
+
+  <!-- ============ 1. ПРОФИЛЬ ============ -->
+  <h2 class="grp">Шаг 1 · Профиль: ссылка и проверка</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">1a · пусто</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 1 из 7 · Профиль</span><span></span></div>
+        <div class="prog"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Кого<br>жарим?</h3>
+        <p class="sub">Кидай ссылку на открытый Instagram</p>
+        <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+        <div class="field">@ instagram.com/username</div>
+        <div class="btn dis">Проверить</div>
+        <p class="tag" style="margin-top:10px">Только открытые профили · Удалить можно в один клик</p>
+      </div>
+      <p class="note">Поле принимает ссылку, @ник и просто ник. Кнопка активна, когда формат валиден. Проверка ссылки на клиенте, ответ `invalid_url` от сервера как запасной.</p>
+    </div>
+    <div class="col">
+      <p class="cap">1b · идёт проверка</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 1 из 7 · Профиль</span><span></span></div>
+        <div class="prog"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Кого<br>жарим?</h3>
+        <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+        <div class="field filled">@anya.travels</div>
+        <div class="btn load">⟳ Листаем ленту…</div>
+        <p class="tag" style="margin-top:8px">Смотрим, можно ли жарить: профиль открыт, постов хватает, владельцу есть 16</p>
+      </div>
+      <p class="note">Проверка полная, 10–30 с (скрейп и анализ), до оплаты. Строка под кнопкой меняется каждые 3–5 с: «Открываем профиль…» → «Листаем ленту…» → «Смотрим, можно ли жарить…». Ввод заблокирован, «назад» доступен.</p>
+    </div>
+    <div class="col">
+      <p class="cap">1c · ошибка (закрытый)</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 1 из 7 · Профиль</span><span></span></div>
+        <div class="prog"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Кого<br>жарим?</h3>
+        <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+        <div class="field filled err">@anya.travels</div>
+        <div class="warn"><b>Профиль закрыт, а мы не взламываем.</b><br>Попробуй открытый</div>
+        <div class="btn">Другой профиль</div>
+        <p class="tag" style="margin-top:8px">Свой профиль? Открой его на минуту в настройках Instagram и жми «Проверить ещё раз»</p>
+      </div>
+      <p class="note">Тексты по коду ошибки из tone-of-voice §4.5: `profile_private`, `profile_not_found`, `not_enough_data`, `invalid_url`. Поле остаётся заполненным, красная рамка, действие под ошибкой.</p>
+    </div>
+    <div class="col">
+      <p class="cap">1d · успех</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 1 из 7 · Профиль</span><span></span></div>
+        <div class="prog"><i class="done"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Нашли!</h3>
+        <p class="sub">Профиль открытый, жарить можно</p>
+        <div class="card"><div class="row"><div class="av"></div><div><b>@anya.travels</b><br><span class="sub">Аня · 214 постов</span></div></div><div style="margin-top:8px"><span class="chip ok">✓ Открытый</span></div></div>
+        <div class="btn push">Дальше</div>
+        <p class="tag" style="text-align:center;margin-top:8px">Не тот? <u>Другой профиль</u></p>
+      </div>
+      <p class="note">Показываем аватар, ник, имя и число постов, чтобы человек убедился, что это тот. `minor_detected` («нет 16») определяется здесь же, до оплаты.</p>
+    </div>
+  </div>
+
+  <!-- ============ 2. ФАКТЫ ============ -->
+  <h2 class="grp">Шаг 2 · Факты: что ИИ не увидит в профиле</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">2a · форма</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 2 из 7 · Факты</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="cur"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Расскажи,<br>чем она живёт</h3>
+        <p class="sub">ИИ видит только профиль, а ты знаешь больше. Чем больше фактов, тем точнее и смешнее шутки</p>
+        <div class="field">Например: «опаздывает на всё, кроме рейсов»</div>
+        <div class="field">Например: «называет кофе бензином»</div>
+        <div class="field">+ ещё факт</div>
+        <p class="tag">Можно до 5 фактов, до 140 знаков каждый. Про внешность, здоровье и семью не пиши: не шутим</p>
+        <div class="btn push">Дальше</div>
+        <div class="btn ghost">Пропустить, жарь так</div>
+      </div>
+      <p class="note">Необязательный шаг. Подписи над полем зависят от «Себя / Друга» («чем ты живёшь» / «чем она живёт»). Кнопки-подсказки над полем: «Странная привычка», «Вечная отговорка», «Чего боится». Ввод пользователя проходит те же фильтры (красные линии), без раскрытия причины.</p>
+    </div>
+    <div class="col">
+      <p class="cap">2b · факты заполнены</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 2 из 7 · Факты</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="cur"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <h3>Расскажи,<br>чем она живёт</h3>
+        <div class="field filled">Опаздывает на всё, кроме рейсов</div>
+        <div class="field filled">Называет кофе «бензином»</div>
+        <div class="field filled">Обещает «летом бросить соцсети»</div>
+        <div class="field">+ ещё факт</div>
+        <p class="tag">3 из 5 · отлично, будет смешнее</p>
+        <div class="btn push">Дальше</div>
+      </div>
+      <p class="note">Счётчик и мотивирующая строка. Ни одного пустого поля не требуем.</p>
+    </div>
+  </div>
+
+  <!-- ============ 3. ТАРИФ ============ -->
+  <h2 class="grp">Шаг 3 · Тариф</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">3a · выбор тарифа</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 3 из 7 · Тариф</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i><i></i><i></i></div>
+        <h3>Что<br>получишь?</h3>
+        <div class="card"><div class="row"><b>Поджог</b><span class="chip free">Бесплатно</span><span class="price">99 ₽</span></div><p class="sub">Только шутки, только текст</p><span class="tag">Первый раз бесплатно</span></div>
+        <div class="card sel"><div class="row"><b>Кострище</b><span class="price">199 ₽</span></div><p class="sub">Шутки + 2 картинки</p></div>
+        <div class="card"><div class="row"><b>Пекло</b><span class="price">299 ₽</span></div><p class="sub">Шутки + 4 картинки + видео для сторис</p><span class="chip soon">Видео скоро</span></div>
+        <div class="btn push">Дальше · Кострище</div>
+      </div>
+      <p class="note">Карточки с маскотом из `level-*.png`. Если бесплатная проба уже была: у Поджога только «99 ₽», плашка «Бесплатно» уходит. У Пекла видео помечено «скоро»: кнопки видеогенерации в интерфейсе неактивна, а 4 картинки уже работают. Цены приходят из `/api/pricing`, не зашиты.</p>
+    </div>
+  </div>
+
+  <!-- ============ 4. ПРОЖАРКА ============ -->
+  <h2 class="grp">Шаг 4 · Степень прожарки</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">4a · выбор степени</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 4 из 7 · Прожарка</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i><i></i></div>
+        <h3>Насколько<br>жарко?</h3>
+        <div class="card"><div class="row"><b>Rare</b><span class="tag">мягко</span></div><p class="sub">Подколы, которые можно показать маме</p></div>
+        <div class="card sel"><div class="row"><b>Medium</b><span class="tag">средне</span></div><p class="sub">Без мата, но острые шутки допускаются</p></div>
+        <div class="card"><div class="row"><b>Well done</b><span class="chip">18+</span></div><p class="sub">Шутки 18+ и мат. Ты сам просил</p></div>
+        <div class="btn push">Дальше · Medium</div>
+      </div>
+      <p class="note">Степень не зависит от тарифа: любой тариф можно взять с любой степенью. Подписи-микрошутки по tone-of-voice §4.3. Красные линии (внешность, здоровье, национальность, религия, ориентация, семья) действуют на всех степенях.</p>
+    </div>
+    <div class="col">
+      <p class="cap">4b · Well done, предупреждение</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 4 из 7 · Прожарка</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i><i></i></div>
+        <h3>Насколько<br>жарко?</h3>
+        <div class="card"><div class="row"><b>Rare</b><span class="tag">мягко</span></div></div>
+        <div class="card"><div class="row"><b>Medium</b><span class="tag">средне</span></div></div>
+        <div class="card sel"><div class="row"><b>Well done</b><span class="chip">18+</span></div></div>
+        <div class="warn"><b>Тут 18+ и мат.</b> Шутки будут жёсткими. Про внешность, здоровье, национальность, религию и семью всё равно не шутим. Жёстко это про привычки, не про человека.<br><br><b>Получатель прочитает это сам</b> (режим «Друга»)</div>
+        <div class="chk"><i class="on"></i><span>Мне есть 18, я понимаю, что будет жёстко</span></div>
+        <div class="btn push">Дальше · Well done</div>
+      </div>
+      <p class="note">Кнопка неактивна, пока не стоит галочка. Плашка про получателя показывается только в режиме «Друга». Факт подтверждения возраста уходит в заказ (`ageConfirmed`). Возврат на Rare/Medium снимает плашку.</p>
+    </div>
+  </div>
+
+  <!-- ============ 5. ИТОГ ============ -->
+  <h2 class="grp">Шаг 5 · Итог: цена и волшебное слово</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">5a · итог</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 5 из 7 · Итог</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i></div>
+        <h3>Всё готово<br>к жарке</h3>
+        <div class="card">
+          <div class="sumrow"><span>Профиль</span><b>@anya.travels</b></div>
+          <div class="sumrow"><span>Тариф</span><b>Кострище</b></div>
+          <div class="sumrow"><span>Прожарка</span><b>Medium</b></div>
+          <div class="sumrow"><span>Фактов</span><b>3</b></div>
+          <div class="sum"></div>
+          <div class="sumrow big"><span>К оплате</span><span>199 ₽</span></div>
+        </div>
+        <p class="sub" style="margin-top:6px"><u>Есть волшебное слово?</u></p>
+        <div class="btn push">Прожарить за 199 ₽</div>
+      </div>
+      <p class="note">Профиль уже проверен и жарить его можно. Каждая строка сводки кликабельна и возвращает на нужный шаг. «Волшебное слово» раскрывает поле. Пока билинга нет, кнопка с ценой без промокода отвечает «Оплата скоро, есть волшебное слово?» и генерацию не запускает.</p>
+    </div>
+    <div class="col">
+      <p class="cap">5b · слово введено (100%)</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><span class="steplbl">Шаг 5 из 7 · Итог</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i></div>
+        <h3>Всё готово<br>к жарке</h3>
+        <div class="card">
+          <div class="sumrow"><span>Тариф</span><b>Кострище</b></div>
+          <div class="sumrow"><span>Прожарка</span><b>Medium</b></div>
+          <div class="sum"></div>
+          <div class="sumrow"><span>Цена</span><span class="strike">199 ₽</span></div>
+          <div class="sumrow"><span>Слово ПОГНАЛИ100</span><b>−100%</b></div>
+          <div class="sumrow big"><span>К оплате</span><span>0 ₽</span></div>
+        </div>
+        <div class="field filled" style="border-color:var(--ok)">ПОГНАЛИ100 <span class="chip ok" style="float:right">✓ работает</span></div>
+        <div class="btn push">Прожарить бесплатно</div>
+      </div>
+      <p class="note">Ошибка слова: красная рамка и «Такого слова нет. Проверь буквы» (одно сообщение на любую причину). Частичная скидка: зачёркнутая цена, новая сумма и на кнопке. Цену считает сервер (`/api/quotes`), клиент только показывает.</p>
+    </div>
+  </div>
+
+  <!-- ============ 6. ШУТКИ ============ -->
+  <h2 class="grp">Шаг 6 · Шутки: лоудер, выбор 6 из 10/20, картинки</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">6a · лоудер</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 6 из 7 · Шутки</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i></div>
+        <div class="loader">
+          <div class="imp">маскот-чёртик<br>жарит смайл<br>(анимация)</div>
+          <div class="bar"><i></i></div>
+          <div class="status">Считаем закаты…<br><span style="color:var(--muted)">47</span></div>
+          <p class="tag">Не закрывай вкладку. Закроешь: вернёшься по ссылке и увидишь результат</p>
+        </div>
+      </div>
+      <p class="note">Статусы меняются каждые 3–5 с, привязаны к реальному статусу генерации (`scraping` / `analyzing` / `writing`) и не врут процентами: полоса без чисел. «Назад» скрыт. Адрес страницы `/g/[id]`, после перезагрузки поллинг продолжается.</p>
+    </div>
+    <div class="col">
+      <p class="cap">Пул статусов (по фазам)</p>
+      <table>
+        <tr><th>Фаза</th><th>Строки (меняются каждые 3–5 с)</th></tr>
+        <tr><td>scraping</td><td>Открываем @anya.travels…<br>Листаем ленту вверх…<br>Смотрим хайлайты за 2019. Зачем они там…</td></tr>
+        <tr><td>analyzing</td><td>Считаем закаты… 47<br>Читаем подписи. Даже длинные…<br>Ищем слабость. Нашли три…</td></tr>
+        <tr><td>writing</td><td>Пишем панчи. Стираем слишком добрые…<br>Спорим сами с собой…<br>Почти. Точим панчи…</td></tr>
+        <tr><td>долго (&gt; 60 с)</td><td>Профиль оказался сложнее, чем казалось. Ещё чуть-чуть…</td></tr>
+        <tr><td>drawing</td><td>Рисуем…<br>Чёртик выбирает кисточку…</td></tr>
+      </table>
+      <p class="note">Текст только человеческими словами (правило CLAUDE.md). Конкретика («47») приходит с бэка необязательным полем `hint` статуса, если факт уже посчитан. Иначе общие строки.</p>
+    </div>
+    <div class="col">
+      <p class="cap">6b · выбор шуток</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 6 из 7 · Шутки</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i></div>
+        <h3>Выбери 6<br>из 20</h3>
+        <p class="sub">Эти пойдут в артефакт. Остальные останутся у нас</p>
+        <div class="scroll">
+          <div class="jk sel"><i></i><span>🧳 «Пересадка 6 часов» звучит у тебя как достижение, а не как ошибка планирования</span></div>
+          <div class="jk"><i></i><span>☕ Кофе фотографируешь чаще, чем пьёшь. Кофе в курсе</span></div>
+          <div class="jk sel"><i></i><span>🌅 Закаты. Все. Даже из такси. Даже когда их нет</span></div>
+          <div class="jk"><i></i><span>✈️ 40 сторис из аэропорта и ноль из дома</span></div>
+          <div class="jk"><i></i><span>🎧 Плейлист «В дорогу» длиннее, чем сами дороги</span></div>
+          <div class="jk"><i></i><span>· · · ещё 15 шуток, лента скроллится</span></div>
+        </div>
+        <div class="sticky">
+          <div class="cnt"><span>Выбрано 2 из 6</span><span>ещё 4</span></div>
+          <div class="meter"><i style="width:33%"></i></div>
+          <div class="btn dis" style="margin:0">Собрать артефакт</div>
+        </div>
+      </div>
+      <p class="note">Карточка нажимается целиком. Выбрано 6: остальные затемняются и не нажимаются (снять выбор можно). Кнопка активна только при ровно 6. Счётчик закреплён внизу. В артефакт попадают ровно выбранные, в порядке выбора. Кандидатов 10 (Поджог) или 20 (Кострище, Пекло). Версия 2: перетаскивание для порядка, «заменить одну шутку».</p>
+    </div>
+    <div class="col">
+      <p class="cap">6c · выбрано 6, сборка</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 6 из 7 · Шутки</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i><i></i></div>
+        <div class="loader">
+          <div class="imp">маскот-чёртик<br>рисует<br>(анимация)</div>
+          <div class="bar"><i style="width:70%"></i></div>
+          <div class="status">Рисуем…<br><span style="color:var(--muted)">1 из 2</span></div>
+          <p class="tag">Картинки к твоим 6 шуткам</p>
+        </div>
+      </div>
+      <p class="note">Тариф Кострище: 2 картинки, Пекло: 4 (по числу приходит с бэка). У Поджога этого экрана нет, сборка мгновенная. Здесь допустим счётчик «1 из 2», это реальные единицы.</p>
+    </div>
+  </div>
+
+  <!-- ============ 7. ШЕРИНГ ============ -->
+  <h2 class="grp">Шаг 7 · Готово: артефакт и шеринг</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">7a · результат</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 7 из 7 · Готово</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i></div>
+        <h3>Готово.<br>Смотри, что вышло</h3>
+        <div class="box" style="height:110px">hero-картинка</div>
+        <div class="pn" style="margin-top:8px"><b>Прожарка @anya.travels</b><br>Человек, у которого 40 сторис из аэропорта и ноль из дома</div>
+        <div class="pn" style="margin-top:6px">🌅 Закаты. Все. Даже из такси…</div>
+        <p class="tag" style="text-align:center;margin:6px 0"><u>Открыть страницу целиком ↗</u></p>
+        <div class="tabs push"><span class="on">В сторис</span><span>Кинуть другу</span></div>
+        <div class="btn">Поделиться</div>
+      </div>
+      <p class="note">Превью страницы `/a/[slug]` (6 шуток и картинки), ниже блок шеринга. Владелец видит «Удалить» и «Ещё раз» (это новая платная генерация с теми же настройками). Событие `share_click` и `copy_link` уходят в `events`.</p>
+    </div>
+    <div class="col">
+      <p class="cap">7b · шеринг: форматы</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><span class="steplbl">Шаг 7 из 7 · Готово</span><span></span></div>
+        <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="cur"></i></div>
+        <div class="tabs"><span class="on">Вертикально</span><span>Горизонтально</span></div>
+        <div class="box" style="height:250px">превью карточки 9:16<br>(1080×1920)</div>
+        <div class="share">
+          <div class="btn">Скачать</div>
+          <div class="btn">Поделиться</div>
+          <div class="btn ghost">Скопировать ссылку</div>
+          <div class="btn ghost">Telegram</div>
+        </div>
+      </div>
+      <p class="note">Переключатель формата меняет превью. «Поделиться» открывает Web Share API с файлом картинки (мобильные), на десктопе «Скачать» и «Скопировать ссылку». Telegram и WhatsApp: ссылка на артефакт с готовым текстом («Меня прожарил ИИ. Он прав»).</p>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px;margin:24px 0 10px;text-transform:uppercase;letter-spacing:.06em">Карточки шеринга (что генерируем)</h3>
+  <div class="cards">
+    <div>
+      <p class="cap">Вертикальная 9:16 · сторис</p>
+      <div class="story">
+        <div class="pn" style="text-align:center"><b>ПРОЖАРКА @anya.travels</b></div>
+        <div class="box" style="height:170px">hero-картинка</div>
+        <div class="pn">🧳 «Пересадка 6 часов» звучит как достижение</div>
+        <div class="pn">🌅 Закаты. Все. Даже из такси</div>
+        <div class="pn">☕ Кофе в курсе</div>
+        <div class="foot"><span>funshare.app</span><span>Прожарь в ответ ↗</span></div>
+      </div>
+    </div>
+    <div>
+      <p class="cap">Горизонтальная 16:9 · пост, X, Telegram</p>
+      <div class="wide">
+        <div class="l"><div class="box" style="height:100%">hero-картинка</div></div>
+        <div class="r">
+          <div class="pn"><b>ПРОЖАРКА @anya.travels</b></div>
+          <div class="pn">🧳 «Пересадка 6 часов» звучит как достижение</div>
+          <div class="pn">🌅 Закаты. Все. Даже из такси</div>
+          <div class="foot"><span>funshare.app</span><span>Прожарь в ответ ↗</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="max-width:760px">Карточки собираются на сервере из готового артефакта (`next/og`, кириллица нужны шрифты из DESIGN.md в TTF/WOFF). В карточку идут заголовок, hero-картинка и 3 лучших шутки из выбранных (порядок как в артефакте), внизу адрес и призыв. Тариф Поджог без картинок: на месте hero крупная типографика с самой сильной шуткой. Отдельно живёт OG-превью 1200×630 для ссылок в мессенджерах.</p>
+</div>
+</body>
+</html>

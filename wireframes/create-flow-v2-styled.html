@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funshare · Создание артефакта · дизайн v3 (Night Poster)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@800;900&family=Yanone+Kaffeesatz:wght@700&family=Onest:wght@500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* Токены из DESIGN.md / src/styles/globals.css */
+  :root{
+    --base:#0f0f0f; --pattern:#1c1c1c; --ink:#111; --paper:#ede0cf; --white:#fff;
+    --cobalt:#1f4fd6; --red:#c9302c; --yellow:#f4d21b; --teal:#3b9b8b; --violet:#7a3fe0; --acid:#2bcb5c; --pink:#f8aedb; --orange:#f5871f;
+    --r-l:24px; --r-m:12px; --r-s:8px;
+    --sh:4px 4px 0 var(--ink); --sh-paper:4px 4px 0 var(--paper);
+    --wide:'Unbounded',system-ui,sans-serif; --cond:'Yanone Kaffeesatz','Arial Narrow',sans-serif; --text:'Onest',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    /* единая сетка отступов внутри экрана */
+    --pad:18px; --gap:12px; --gap-s:8px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#161616;color:var(--paper);font:500 15px/1.4 var(--text)}
+  .page{max-width:1560px;margin:0 auto;padding:28px 20px 80px}
+  h1.pg{font:900 26px/1 var(--wide);text-transform:uppercase;margin:0 0 8px}
+  .lead{color:#9a9184;max-width:860px;margin:0 0 8px}
+  h2.grp{font:700 22px/1 var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--pink);margin:44px 0 14px;padding-bottom:8px;border-bottom:2px solid #333}
+  .strip{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:360px}
+  .cap{font:600 12px/1.2 var(--text);color:#9a9184;margin:0 0 8px}
+  .note{font-size:12px;color:#c9b9a3;border-left:3px solid var(--orange);padding:2px 10px;margin:10px 0 0}
+  .note code,.cap code{font-family:var(--mono);font-size:11px}
+
+  /* ---------- телефон ---------- */
+  .phone{width:360px;height:760px;background:var(--base);border:2px solid #3a3a3a;border-radius:34px;padding:var(--pad);display:flex;flex-direction:column;position:relative;overflow:hidden;
+    background-image:radial-gradient(#1c1c1c 1.5px,transparent 1.6px);background-size:22px 22px}
+  /* шапка: назад · прогресс · N/7, одна линия */
+  .top{display:flex;align-items:center;gap:var(--gap);margin-bottom:22px;height:32px}
+  .back{flex:none;width:32px;height:32px;border:2px solid var(--white);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;color:var(--paper);font-weight:700}
+  .back.off{visibility:hidden}
+  .prog{flex:1;display:flex;gap:4px}
+  .prog i{flex:1;height:6px;border-radius:3px;background:#2b2b2b}
+  .prog i.on{background:var(--pink)}
+  .num{flex:none;font:700 13px/1 var(--mono);color:var(--paper);min-width:30px;text-align:right}
+  h1{font:900 34px/.92 var(--wide);letter-spacing:-.02em;text-transform:uppercase;margin:0 0 10px;color:var(--paper)}
+  h1 .tilt{display:inline-block;transform:skewX(-10deg);color:var(--pink)}
+  h1.s{font-size:28px}
+  .sub{font:600 15px/1.35 var(--text);color:#b9ae9e;margin:0 0 var(--gap)}
+  .tiny{font:600 12px/1.35 var(--text);color:#8f8578;margin:0}
+  /* низ экрана: главная кнопка всегда под большим пальцем */
+  .bottom{margin-top:auto;display:flex;flex-direction:column;gap:var(--gap-s)}
+
+  /* ---------- иллюстрация ---------- */
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+  @keyframes glow{0%,100%{opacity:.45;transform:scale(.92)}50%{opacity:.75;transform:scale(1.05)}}
+  @keyframes scan{0%{top:8%}100%{top:88%}}
+  @keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  .art{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:200px}
+  .art::before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,var(--yellow) 0%,var(--orange) 45%,transparent 72%);opacity:.55;filter:blur(6px);animation:glow 4s ease-in-out infinite}
+  .art img{position:relative;width:250px;animation:float 5s ease-in-out infinite}
+  .art img.sm{width:200px}
+  .art img.wig{animation:wiggle 2.4s ease-in-out infinite}
+  .art .scan{position:absolute;left:12%;right:12%;height:3px;background:var(--pink);box-shadow:0 0 12px var(--pink);opacity:.9;animation:scan 1.6s linear infinite alternate}
+
+  /* ---------- контролы ---------- */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border:2px solid var(--ink);border-radius:var(--r-s);background:var(--pink);color:var(--ink);font:700 13px/1 var(--text);letter-spacing:.06em;text-transform:uppercase;box-shadow:var(--sh);margin:0}
+  .btn.orange{background:var(--orange)}
+  .btn.dis{background:var(--pattern);color:#555;border-color:transparent;box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--paper);border-color:var(--white);box-shadow:none}
+  .btn.load{background:var(--paper)}
+  .btn.sm{height:44px;font-size:12px}
+  .seg{display:flex;gap:var(--gap-s)}
+  .seg span{flex:1;text-align:center;padding:12px 8px;border:2px solid var(--white);border-radius:var(--r-s);font:700 13px/1 var(--text);letter-spacing:.06em;text-transform:uppercase;color:var(--paper)}
+  .seg .on{background:var(--pink);color:var(--ink);border-color:var(--ink);box-shadow:var(--sh-paper)}
+  .seg.dim{opacity:.5}
+  .inp{display:flex;align-items:center;gap:8px;height:56px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r-s);padding:0 14px;box-shadow:var(--sh-paper);font:600 15px/1 var(--text)}
+  .inp b{font:800 20px/1 var(--wide);color:var(--ink)}
+  .inp .ph{color:rgba(17,17,17,.45)}
+  .inp.err{outline:3px solid var(--red);outline-offset:2px}
+  .inp.ok{outline:3px solid var(--acid);outline-offset:2px}
+  .inp.area{height:auto;min-height:52px;padding:14px;align-items:flex-start;line-height:1.3}
+  .errmsg{font:600 13px/1.35 var(--text);color:#ff6a63;margin:0}
+  .tag{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:var(--r-s);padding:4px 9px;font:700 11px/1 var(--text);letter-spacing:.06em;text-transform:uppercase;background:var(--paper);color:var(--ink)}
+  .tag.pink{background:var(--pink)} .tag.acid{background:var(--acid)} .tag.dash{background:transparent;color:var(--ink);border-style:dashed}
+  .plus{width:44px;height:44px;border-radius:50%;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font:800 22px/1 var(--wide);color:var(--paper);align-self:center}
+  .facts{display:flex;flex-direction:column;gap:var(--gap-s)}
+
+  /* ---------- профиль найден ---------- */
+  .who{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+  .who .av{width:96px;height:96px;border-radius:50%;background:var(--pink);border:3px solid var(--paper);display:flex;align-items:center;justify-content:center;font:900 36px/1 var(--wide);color:var(--ink);margin-bottom:8px;box-shadow:var(--sh-paper)}
+  .who .nick{font:900 22px/1 var(--wide);letter-spacing:-.01em;color:var(--paper)}
+  .who .meta{font:600 14px/1.3 var(--text);color:#b9ae9e}
+  .who .ok{display:flex;align-items:center;gap:8px;margin-top:14px;font:700 13px/1 var(--text);letter-spacing:.06em;text-transform:uppercase;color:var(--paper)}
+  .who .ok svg{width:20px;height:20px}
+
+  /* ---------- карточки ---------- */
+  .card{position:relative;border-radius:var(--r-l);padding:16px;color:var(--ink);overflow:hidden}
+  .card.paper{background:var(--paper)} .card.yellow{background:var(--yellow)} .card.orange{background:var(--orange)} .card.red{background:var(--red)} .card.teal{background:var(--teal)}
+  .card.out{background:var(--ink);color:var(--paper);border:2px solid var(--white);border-radius:var(--r-m);overflow:visible}
+  .card.sel{outline:3px solid var(--pink);outline-offset:3px}
+  .card .nm{font:900 26px/.9 var(--wide);letter-spacing:-.02em;text-transform:uppercase}
+  .card .desc{font:600 13px/1.3 var(--text);margin-top:6px}
+  .stack{display:flex;flex-direction:column;gap:var(--gap)}
+  .stack.fill{flex:1}
+  .stack.fill>.card{flex:1}
+  /* карточка-кнопка (тариф, степень): текст слева, картинка в правом нижнем углу, нажимается целиком */
+  .tc{min-height:150px;padding-right:44%;display:flex;flex-direction:column}
+  .tc .im{position:absolute;right:-10px;bottom:-10px;width:46%}
+  .tc .li{list-style:none;margin:8px 0 0;padding:0;font:600 13px/1.4 var(--text)}
+  .tc .li li{padding-left:16px;position:relative}
+  .tc .li li::before{content:"+";position:absolute;left:0;font-weight:800}
+  .tc .pr{font:800 18px/1 var(--wide);margin-top:auto;padding-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tc .pr s{opacity:.55;font-weight:700}
+  .tc .corner{position:absolute;top:12px;right:12px}
+  .tc .arrow{position:absolute;right:14px;top:14px;font:800 18px/1 var(--wide)}
+  .chilis{display:flex;gap:2px;height:22px;margin-bottom:6px}
+  .chilis img{height:22px}
+  .warn{background:var(--ink);border:2px solid var(--red);border-radius:var(--r-m);padding:12px 14px;font:600 13px/1.35 var(--text);color:var(--paper)}
+  .warn b{color:#ff6a63}
+  .chk{display:flex;gap:10px;align-items:flex-start;font:600 14px/1.3 var(--text)}
+  .chk i{flex:none;width:22px;height:22px;border:2px solid var(--white);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;color:var(--ink)}
+  .chk i.on{background:var(--pink);border-color:var(--ink)}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font:600 14px/1.2 var(--text)}
+  .row span:first-child{color:#b9ae9e}
+  .row.big{font:800 18px/1 var(--wide);padding-top:12px;border-top:2px dashed #444;margin-top:6px}
+  .row .strike{text-decoration:line-through;color:#8f8578}
+
+  /* ---------- лоудер ---------- */
+  @keyframes stripes{to{background-position:32px 0}}
+  .loader{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+  .bar{width:100%;height:16px;background:#232323;border:2px solid var(--white);border-radius:var(--r-s);overflow:hidden}
+  .bar i{display:block;height:100%;width:42%;background:repeating-linear-gradient(45deg,var(--pink) 0 8px,var(--orange) 8px 16px);background-size:32px 32px;animation:stripes 1s linear infinite}
+  .status{font:900 22px/1 var(--wide);text-transform:uppercase;letter-spacing:-.01em}
+  .status small{display:block;font:700 26px/1 var(--mono);color:var(--yellow);margin-top:8px}
+
+  /* ---------- выбор шуток ---------- */
+  .list{flex:1;display:flex;flex-direction:column;gap:var(--gap-s);margin-bottom:var(--gap)}
+  .jk{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r-m);padding:12px 34px 12px 12px;font:600 14px/1.3 var(--text);box-shadow:var(--sh-paper)}
+  .jk .ck{flex:none;width:24px;height:24px;border:2px solid var(--ink);border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  .jk.sel{background:var(--pink)}
+  .jk.sel .ck{background:var(--ink);color:var(--pink)}
+  .jk.off{background:var(--pattern);color:#666;border-color:#2b2b2b;box-shadow:none}
+  .jk.off .ck{border-color:#444;background:transparent}
+  .jk .n{position:absolute;right:10px;top:8px;font:800 12px/1 var(--mono);color:var(--ink)}
+  .jk.more{justify-content:center;background:transparent;border-style:dashed;border-color:#444;color:#8f8578;box-shadow:none;padding-right:12px}
+  .dock{margin:0 calc(var(--pad) * -1) calc(var(--pad) * -1);padding:12px var(--pad) var(--pad);background:var(--ink);border-top:2px solid var(--white)}
+  .cnt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .cnt b{font:800 22px/1 var(--mono);color:var(--yellow)}
+  .cnt span{font:600 13px/1 var(--text);color:#b9ae9e}
+  .meter{height:8px;border-radius:4px;background:#2b2b2b;overflow:hidden;margin-bottom:10px}
+  .meter i{display:block;height:100%;background:var(--pink)}
+
+  /* ---------- результат ---------- */
+  .hero{position:relative;border-radius:var(--r-l);overflow:hidden;border:2px solid var(--ink);height:180px}
+  .hero img.bg{width:100%;height:100%;object-fit:cover;display:block}
+  .hero img.imp{position:absolute;right:6px;bottom:-4px;width:74px;transform:rotate(6deg)}
+  .pk{background:var(--paper);color:var(--ink);border-radius:var(--r-m);padding:10px 12px;font:600 13px/1.3 var(--text)}
+  .tabs{display:flex;gap:var(--gap-s)}
+  .tabs span{flex:1;text-align:center;padding:11px 6px;border:2px solid var(--white);border-radius:var(--r-s);font:700 12px/1 var(--text);letter-spacing:.06em;text-transform:uppercase}
+  .tabs .on{background:var(--pink);color:var(--ink);border-color:var(--ink)}
+  .share{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-s)}
+
+  /* ---------- карточки шеринга ---------- */
+  .cards{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+  .story{width:270px;height:480px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r-l);padding:16px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+  .story h4,.wide h4{font:900 22px/.92 var(--wide);letter-spacing:-.02em;text-transform:uppercase;margin:0}
+  .story .im{height:170px;border-radius:var(--r-m);border:2px solid var(--ink);overflow:hidden;position:relative}
+  .story .im img{width:100%;height:100%;object-fit:cover;display:block}
+  .story .p{background:var(--ink);color:var(--paper);border-radius:var(--r-m);padding:8px 10px;font:600 12px/1.25 var(--text)}
+  .story .ft{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font:700 11px/1 var(--text);letter-spacing:.06em;text-transform:uppercase}
+  .story .ft .cta{background:var(--pink);border:2px solid var(--ink);border-radius:var(--r-s);padding:7px 8px;white-space:nowrap;font-size:10px}
+  .wide{width:480px;height:270px;background:var(--base);border:2px solid var(--white);border-radius:var(--r-l);padding:14px;display:flex;gap:14px;position:relative;overflow:hidden;color:var(--paper)}
+  .wide .l{width:42%;border-radius:var(--r-m);overflow:hidden;border:2px solid var(--white);position:relative}
+  .wide .l img{width:100%;height:100%;object-fit:cover;display:block}
+  .wide .r{flex:1;display:flex;flex-direction:column;gap:7px}
+  .wide h4{font-size:18px;color:var(--yellow)}
+  .wide .p{background:var(--paper);color:var(--ink);border-radius:var(--r-m);padding:7px 9px;font:600 11.5px/1.25 var(--text)}
+  .wide .ft{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font:700 10px/1 var(--text);letter-spacing:.06em;text-transform:uppercase}
+  .wide .ft .cta{background:var(--pink);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r-s);padding:6px 8px}
+  /* ---------- всплывающее окно (well done) ---------- */
+  .veil{position:absolute;inset:0;background:rgba(15,15,15,.72);border-radius:32px}
+  .sheet{position:absolute;left:10px;right:10px;bottom:10px;background:var(--ink);border:2px solid var(--white);border-radius:var(--r-l);padding:18px;color:var(--paper);display:flex;flex-direction:column;gap:var(--gap)}
+  .sheet .x{position:absolute;top:12px;right:12px;width:32px;height:32px;border:2px solid var(--white);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--wide)}
+  .sheet h2{font:900 24px/.95 var(--wide);letter-spacing:-.02em;text-transform:uppercase;margin:0;padding-right:44px}
+  .sheet p{font:600 14px/1.4 var(--text);color:#d8ccb9;margin:0}
+  .sheet .chk{align-items:center;gap:12px;padding:6px 0}
+  .sheet .chk i{width:36px;height:36px;font-size:20px;border-radius:var(--r-s)}
+  .sheet .chk span{font:700 14px/1.3 var(--text);color:var(--paper)}
+
+  /* ---------- горящий аватар (техника Flames с лендинга: firecircle + gooey + вырезы) ---------- */
+  @keyframes firecircle{0%{transform:translateY(0) scale(1);background:var(--orange)}100%{transform:translateY(-120px) scale(0);background:var(--yellow)}}
+  @keyframes firecut-left{0%{transform:translateY(0) translateX(0) scale(.3)}100%{transform:translateY(-120px) translateX(40px) scale(1)}}
+  @keyframes firecut-right{0%{transform:translateY(0) translateX(0) scale(.3)}100%{transform:translateY(-120px) translateX(-40px) scale(1)}}
+  .blaze{position:relative;height:220px;margin:6px 0 var(--gap)}
+  .blaze .fire,.blaze .cuts{position:absolute;left:70px;right:70px;bottom:56px;height:135px;overflow:hidden;pointer-events:none}
+  .blaze .fire{filter:url(#fire-goo)}
+  .blaze .fire .base{position:absolute;left:4%;right:4%;bottom:0;height:40px;border-radius:999px;background:var(--orange)}
+  .blaze .fire i{position:absolute;bottom:0;width:44px;height:44px;margin-left:-22px;border-radius:50%;background:var(--orange);animation:firecircle 1.2s cubic-bezier(.5,.07,.64,1) infinite}
+  .blaze .cuts i{position:absolute;bottom:0;width:44px;height:44px;border-radius:50%;background:var(--base)}
+  .blaze .cuts i.l{animation:firecut-left 1.2s cubic-bezier(.5,.07,.64,1) infinite}
+  .blaze .cuts i.r{animation:firecut-right 1.2s cubic-bezier(.5,.07,.64,1) infinite}
+  .blaze .av{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);width:112px;height:112px;border-radius:50%;background:var(--pink);border:3px solid var(--paper);box-shadow:var(--sh-paper);display:flex;align-items:center;justify-content:center;font:900 44px/1 var(--wide);color:var(--ink)}
+  .blaze .nick{position:absolute;left:0;right:0;bottom:0;text-align:center;font:800 15px/1 var(--wide);color:var(--paper)}
+  .sum{background:var(--ink);border:2px solid var(--white);border-radius:var(--r-m);padding:6px 16px}
+  table{border-collapse:collapse;font-size:12px;width:100%}
+  td,th{border:1px solid #3a3a3a;padding:6px 8px;text-align:left;vertical-align:top;color:#d8ccb9}
+  th{background:#222;color:var(--pink)}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="pg">Создание артефакта · дизайн v3</h1>
+  <p class="lead">Стили «Night Poster» (DESIGN.md). Общие правила всех экранов: шапка в одну линию (назад · прогресс · N/7), сегмент текущего шага закрашен полностью, главная кнопка всегда внизу под большим пальцем, отступы по сетке 18 / 12 / 8 px. На экранах выбора (тариф, степень) кнопки «Дальше» нет: нажатие на карточку ведёт дальше, вернуться можно стрелкой. Иллюстрации шага 1 и степеней прожарки сгенерированы Nano Banana Pro 1K по референсу <code>imp-chef.png</code>, остальные картинки из <code>src/components/roast/assets</code>.</p>
+
+  <!-- ============ 1. ПРОФИЛЬ ============ -->
+  <h2 class="grp">Шаг 1 · Профиль</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">1a · пусто</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">1/7</span></div>
+        <h1>Кого <span class="tilt">жарим?</span></h1>
+        <p class="sub">Кидай ссылку на открытый Instagram</p>
+        <div class="art"><img src="assets/imp-inspect.png" alt=""></div>
+        <div class="bottom">
+          <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+          <div class="inp"><b>@</b><span class="ph">username</span></div>
+          <div class="btn dis">Проверить</div>
+        </div>
+      </div>
+      <p class="note">Иллюстрация анимирована: парение + пульсирующее жёлто-оранжевое свечение (единственный разрешённый градиент DESIGN.md §2.3). Поле принимает ник, @ник и ссылку, плейсхолдер только <code>username</code>. Кнопка активна при валидном формате.</p>
+    </div>
+    <div class="col">
+      <p class="cap">1b · идёт проверка (10–30 с, до оплаты)</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">1/7</span></div>
+        <h1>Кого <span class="tilt">жарим?</span></h1>
+        <p class="sub">Смотрим, можно ли жарить: открыт, постов хватает, есть 16</p>
+        <div class="art"><img src="assets/imp-inspect.png" alt=""><span class="scan"></span></div>
+        <div class="bottom">
+          <div class="seg dim"><span class="on">Себя</span><span>Друга</span></div>
+          <div class="inp"><b>@</b>anya.travels</div>
+          <div class="btn load">⟳ Листаем ленту…</div>
+        </div>
+      </div>
+      <p class="note">Та же иллюстрация плюс розовая линия сканера. Текст кнопки меняется каждые 3–5 с: «Открываем профиль…» → «Листаем ленту…» → «Смотрим, можно ли жарить…». Ввод заблокирован.</p>
+    </div>
+    <div class="col">
+      <p class="cap">1c · ошибка: закрытый профиль</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">1/7</span></div>
+        <h1>Кого <span class="tilt">жарим?</span></h1>
+        <p class="sub">Кидай ссылку на открытый Instagram</p>
+        <div class="art"><img class="sm wig" src="assets/sticker-extinguisher.png" alt=""></div>
+        <div class="bottom">
+          <div class="seg"><span class="on">Себя</span><span>Друга</span></div>
+          <div class="inp err"><b>@</b>anya.travels</div>
+          <p class="errmsg">Профиль закрыт, а мы не взламываем. Открой его на минуту или попробуй другой</p>
+          <div class="btn">Проверить ещё раз</div>
+        </div>
+      </div>
+      <p class="note">Поле снова доступно, ошибка одной строкой под ним: что случилось + что делать. Для <code>minor_detected</code>: «Похоже, владельцу нет 16. Таких не жарим. Попробуй другой профиль».</p>
+    </div>
+    <div class="col">
+      <p class="cap">1d · успех</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">1/7</span></div>
+        <h1>Нашли<span class="tilt">!</span></h1>
+        <div class="who">
+          <div class="av">А</div>
+          <div class="nick">@anya.travels</div>
+          <div class="meta">Аня · 214 постов</div>
+          <div class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>Готово к прожарке</div>
+        </div>
+        <div class="bottom"><div class="btn">Дальше</div></div>
+      </div>
+      <p class="note">Аватар по центру крупно, ник крупно, имя и посты мельче, ниже строка с открытым замком без цвета. «Другой профиль» убран: есть стрелка назад.</p>
+    </div>
+  </div>
+
+  <!-- ============ 2. ФАКТЫ ============ -->
+  <h2 class="grp">Шаг 2 · Занимательные факты</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">2a · форма</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">2/7</span></div>
+        <h1 class="s">Занимательные <span class="tilt">факты</span></h1>
+        <p class="sub">Чем больше пикантных фактов, тем точнее и смешнее получится прожарка</p>
+        <div class="facts">
+          <div class="inp area"><span class="ph">Опаздывает на всё, кроме рейсов</span></div>
+          <div class="inp area"><span class="ph">Называет кофе бензином</span></div>
+          <div class="plus">+</div>
+        </div>
+        <div class="bottom">
+          <div class="btn">Дальше</div>
+          <div class="btn ghost sm">Пропустить, жарь так</div>
+        </div>
+      </div>
+      <p class="note">Плейсхолдеры сразу примерами. Круглый плюс добавляет поле, исчезает после пятого. Подсказок про лимиты и темы нет: лимит показываем только при превышении (2b). Плейсхолдеры меняются от «Себя / Друга» (опаздываю / опаздывает).</p>
+    </div>
+    <div class="col">
+      <p class="cap">2b · заполнено, один факт длиннее 140</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><span class="num">2/7</span></div>
+        <h1 class="s">Занимательные <span class="tilt">факты</span></h1>
+        <p class="sub">Чем больше пикантных фактов, тем точнее и смешнее получится прожарка</p>
+        <div class="facts">
+          <div class="inp area">Опаздывает на всё, кроме рейсов</div>
+          <div class="inp area">Называет кофе «бензином»</div>
+          <div class="inp area err">Обещает «летом бросить соцсети», потом «осенью», потом «после Нового года», а сама уже третий год ведёт канал про то, как бросает соцсети</div>
+          <p class="errmsg">Слишком длинно, сократи до 140 знаков. Сейчас 158</p>
+          <div class="plus">+</div>
+        </div>
+        <div class="bottom">
+          <div class="btn dis">Дальше</div>
+          <div class="btn ghost sm">Пропустить, жарь так</div>
+        </div>
+      </div>
+      <p class="note">Единственное сообщение шага: превышение 140 знаков, с живым счётчиком. Пока есть длинное поле, «Дальше» неактивна.</p>
+    </div>
+  </div>
+
+  <!-- ============ 3. ТАРИФ ============ -->
+  <h2 class="grp">Шаг 3 · Тариф</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">3a · три карточки-кнопки, без «Дальше»</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div><span class="num">3/7</span></div>
+        <h1>Что <span class="tilt">получишь?</span></h1>
+        <div class="stack fill">
+          <div class="card yellow tc"><span class="arrow">↗</span><div class="chilis"><img src="assets/sticker-chili.png" alt=""></div><div class="nm">Поджог</div>
+            <ul class="li"><li>Шутки, только текст</li></ul>
+            <div class="pr"><s>99 ₽</s> Бесплатно</div><img class="im" src="assets/level-ogon.png" alt=""></div>
+          <div class="card orange tc"><span class="arrow">↗</span><div class="chilis"><img src="assets/sticker-chili.png" alt=""><img src="assets/sticker-chili.png" alt=""></div><div class="nm">Кострище</div>
+            <ul class="li"><li>Ещё больше шуток</li><li>2 картинки</li></ul>
+            <div class="pr">199 ₽</div><img class="im" src="assets/level-koster.png" alt=""></div>
+          <div class="card red tc"><span class="tag dash corner">Видео скоро</span><div class="chilis"><img src="assets/sticker-chili.png" alt=""><img src="assets/sticker-chili.png" alt=""><img src="assets/sticker-chili.png" alt=""></div><div class="nm">Пекло</div>
+            <ul class="li"><li>Ещё больше шуток</li><li>4 картинки</li><li>Видео для сторис</li></ul>
+            <div class="pr">299 ₽</div><img class="im" src="assets/level-peklo.png" alt=""></div>
+        </div>
+      </div>
+      <p class="note">Карточки растянуты на весь экран, кнопки нет: нажатие на карточку ведёт к шагу 4 (стрелка ↗ в углу как подсказка). Картинка в правом нижнем углу, цена в нижнем ряду, «Видео скоро» у Пекла в правом верхнем. Поджог при бесплатной пробе: <s>99 ₽</s> Бесплатно, после пробы просто 99 ₽. При нажатии карточка коротко раздувается (тап-анимация) и экран уходит вперёд.</p>
+    </div>
+  </div>
+
+  <!-- ============ 4. ПРОЖАРКА ============ -->
+  <h2 class="grp">Шаг 4 · Степень прожарки</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">4a · три карточки-кнопки с иллюстрациями</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="num">4/7</span></div>
+        <h1>Насколько <span class="tilt">жарко?</span></h1>
+        <div class="stack fill">
+          <div class="card teal tc"><span class="arrow">↗</span><div class="nm">Rare</div><div class="desc">Мягко. Подколы, которые можно показать маме</div><img class="im" src="assets/level-rare.png" alt=""></div>
+          <div class="card orange tc"><span class="arrow">↗</span><div class="nm">Medium</div><div class="desc">Средне. Без мата, но острые шутки допускаются</div><img class="im" src="assets/level-medium.png" alt=""></div>
+          <div class="card red tc"><span class="tag corner">18+</span><div class="nm">Well done</div><div class="desc">Шутки 18+ и мат. Ты сам просил</div><img class="im" src="assets/level-well.png" alt=""></div>
+        </div>
+      </div>
+      <p class="note">Rare и Medium ведут сразу к шагу 5. Well done открывает предупреждение (4b). Иллюстрации: смайл едва подрумянен / поджарен на вилке / обуглен в котле.</p>
+    </div>
+    <div class="col">
+      <p class="cap">4b · Well done: всплывающее окно</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="num">4/7</span></div>
+        <h1>Насколько <span class="tilt">жарко?</span></h1>
+        <div class="stack fill">
+          <div class="card teal tc"><span class="arrow">↗</span><div class="nm">Rare</div><div class="desc">Мягко. Подколы, которые можно показать маме</div><img class="im" src="assets/level-rare.png" alt=""></div>
+          <div class="card orange tc"><span class="arrow">↗</span><div class="nm">Medium</div><div class="desc">Средне. Без мата, но острые шутки допускаются</div><img class="im" src="assets/level-medium.png" alt=""></div>
+          <div class="card red tc"><span class="tag corner">18+</span><div class="nm">Well done</div><div class="desc">Шутки 18+ и мат. Ты сам просил</div><img class="im" src="assets/level-well.png" alt=""></div>
+        </div>
+        <div class="veil"></div>
+        <div class="sheet">
+          <span class="x">✕</span>
+          <h2>Тут 18+ <span class="tilt" style="display:inline-block;transform:skewX(-10deg);color:var(--pink)">и мат</span></h2>
+          <p>Шутки будут жёсткими. Про здоровье, национальность, религию и семью всё равно не шутим.</p>
+          <p><b style="color:var(--paper)">Получатель прочитает это сам.</b></p>
+          <div class="chk"><i></i><span>Мне есть 18, я понимаю, что будет жёстко</span></div>
+          <div class="btn dis">Согласен</div>
+        </div>
+      </div>
+      <p class="note">Нажатие на Well done открывает окно снизу. Чекбокс пустой по умолчанию, 36 px, чтобы легко попасть. «Согласен» неактивна без галочки. Крестик закрывает окно, можно выбрать Rare или Medium. Строка про получателя только в режиме «Друга».</p>
+    </div>
+    <div class="col">
+      <p class="cap">4b′ · галочка стоит</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="num">4/7</span></div>
+        <h1>Насколько <span class="tilt">жарко?</span></h1>
+        <div class="stack fill">
+          <div class="card teal tc"><div class="nm">Rare</div><img class="im" src="assets/level-rare.png" alt=""></div>
+          <div class="card orange tc"><div class="nm">Medium</div><img class="im" src="assets/level-medium.png" alt=""></div>
+          <div class="card red tc"><div class="nm">Well done</div><img class="im" src="assets/level-well.png" alt=""></div>
+        </div>
+        <div class="veil"></div>
+        <div class="sheet">
+          <span class="x">✕</span>
+          <h2>Тут 18+ <span class="tilt" style="display:inline-block;transform:skewX(-10deg);color:var(--pink)">и мат</span></h2>
+          <p>Шутки будут жёсткими. Про здоровье, национальность, религию и семью всё равно не шутим.</p>
+          <p><b style="color:var(--paper)">Получатель прочитает это сам.</b></p>
+          <div class="chk"><i class="on">✓</i><span>Мне есть 18, я понимаю, что будет жёстко</span></div>
+          <div class="btn">Согласен →</div>
+        </div>
+      </div>
+      <p class="note">«Согласен» закрывает окно и сразу ведёт на шаг 5. <code>ageConfirmed = true</code> уходит в заказ.</p>
+    </div>
+  </div>
+
+  <!-- ============ 5. ИТОГ ============ -->
+  <h2 class="grp">Шаг 5 · Итог: цена и волшебное слово</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">5a · итог: горящий аватар</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="num">5/7</span></div>
+        <h1 class="s">Всё готово <span class="tilt">к жарке</span></h1>
+        <div class="blaze"><div class="fire"><span class="base"></span></div><div class="cuts"></div><div class="av">А</div><div class="nick">@anya.travels</div></div>
+        <div class="sum">
+          <div class="row"><span>Тариф</span><b>Кострище</b></div>
+          <div class="row"><span>Прожарка</span><b>Medium</b></div>
+          <div class="row"><span>Фактов</span><b>3</b></div>
+          <div class="row big"><span style="color:var(--paper)">К оплате</span><span>199 ₽</span></div>
+        </div>
+        <p class="tiny" style="margin-top:var(--gap);color:var(--paper);text-align:center"><u>Есть волшебное слово?</u></p>
+        <div class="bottom"><div class="btn">Прожарить за 199 ₽ →</div></div>
+      </div>
+      <p class="note">Аватар из Instagram горит: та же техника, что у FireButton на лендинге (частицы firecircle + gooey-фильтр + вырезы цвета фона), огонь под шариком. Строки «профиль проверен» нет: горящий аватар и есть сигнал. Каждая строка сводки возвращает на свой шаг. Без промокода и без билинга кнопка отвечает «Оплата скоро. Есть волшебное слово?».</p>
+    </div>
+    <div class="col">
+      <p class="cap">5b · слово на 100%: сразу в генерацию</p>
+      <div class="phone">
+        <div class="top"><span class="back">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="num">5/7</span></div>
+        <h1 class="s">Всё готово <span class="tilt">к жарке</span></h1>
+        <div class="blaze" style="height:200px"><div class="fire"><span class="base"></span></div><div class="cuts"></div><div class="av" style="width:96px;height:96px;font-size:38px">А</div><div class="nick">@anya.travels</div></div>
+        <div class="sum">
+          <div class="row"><span>Тариф</span><b>Кострище</b></div>
+          <div class="row"><span>Прожарка</span><b>Medium</b></div>
+          <div class="row"><span>Цена</span><span class="strike">199 ₽</span></div>
+          <div class="row big"><span style="color:var(--paper)">К оплате</span><span>0 ₽</span></div>
+        </div>
+        <div class="inp ok" style="margin-top:var(--gap)">ПОГНАЛИ100 <span class="tag acid" style="margin-left:auto">✓ −100%</span></div>
+        <div class="bottom"><div class="btn">Прожарить бесплатно →</div></div>
+      </div>
+      <p class="note">Слово на 100%: кнопка переименовывается в «Прожарить бесплатно», нажатие сразу запускает генерацию (шаг 6), без экрана оплаты. Частичная скидка: зачёркнутая цена и новая сумма на кнопке. Неверное слово: красная обводка и «Такого слова нет. Проверь буквы».</p>
+    </div>
+  </div>
+
+  <!-- ============ 6. ШУТКИ ============ -->
+  <h2 class="grp">Шаг 6 · Шутки: лоудер, выбор, картинки</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">6a · лоудер</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="num">6/7</span></div>
+        <div class="loader">
+          <div class="art" style="flex:0 0 auto;min-height:0"><img src="assets/level-koster.png" alt=""></div>
+          <div class="bar"><i></i></div>
+          <div class="status">Считаем закаты…<small>47</small></div>
+          <p class="tiny" style="max-width:260px">Не закрывай вкладку. Закроешь: вернёшься по ссылке и увидишь результат</p>
+        </div>
+      </div>
+      <p class="note">Полоса без процентов. Строка меняется каждые 3–5 с. «Назад» скрыт.</p>
+    </div>
+    <div class="col">
+      <p class="cap">Пул статусов</p>
+      <table>
+        <tr><th>Фаза</th><th>Строки</th></tr>
+        <tr><td>writing</td><td>Пишем панчи. Стираем слишком добрые…<br>Спорим сами с собой…<br>Почти. Точим панчи…</td></tr>
+        <tr><td>долго (&gt; 60 с)</td><td>Профиль оказался сложнее, чем казалось. Ещё чуть-чуть…</td></tr>
+        <tr><td>drawing</td><td>Рисуем…<br>Чёртик выбирает кисточку…</td></tr>
+        <tr><td>проверка (шаг 1)</td><td>Открываем профиль…<br>Листаем ленту…<br>Смотрим, можно ли жарить…</td></tr>
+      </table>
+      <p class="note">Только человеческие слова. Конкретика («47») приходит с бэка необязательным полем <code>hint</code>.</p>
+    </div>
+    <div class="col">
+      <p class="cap">6b · выбор шуток (Кострище: 20, выбрать 6)</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="num">6/7</span></div>
+        <h1 class="s">Выбери 6 <span class="tilt">из 20</span></h1>
+        <p class="sub">Эти пойдут в артефакт. Остальные останутся у нас</p>
+        <div class="list">
+          <div class="jk sel"><span class="ck">✓</span><span>🧳 «Пересадка 6 часов» звучит у тебя как достижение, а не как ошибка планирования</span><span class="n">1</span></div>
+          <div class="jk"><span class="ck"></span><span>☕ Кофе фотографируешь чаще, чем пьёшь. Кофе в курсе</span></div>
+          <div class="jk sel"><span class="ck">✓</span><span>🌅 Закаты. Все. Даже из такси. Даже когда их нет</span><span class="n">2</span></div>
+          <div class="jk"><span class="ck"></span><span>✈️ 40 сторис из аэропорта и ноль из дома</span></div>
+          <div class="jk more">ещё 16 шуток, лента скроллится</div>
+        </div>
+        <div class="dock">
+          <div class="cnt"><b>2 / 6</b><span>ещё 4</span></div>
+          <div class="meter"><i style="width:33%"></i></div>
+          <div class="btn dis">Собрать артефакт</div>
+        </div>
+      </div>
+      <p class="note">Выбранные розовые с номером по порядку выбора: в этом порядке они попадут в артефакт. Нажимается вся карточка. Панель с кнопкой закреплена внизу.</p>
+    </div>
+    <div class="col">
+      <p class="cap">6b′ · выбрано 6</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="num">6/7</span></div>
+        <h1 class="s">Выбери 6 <span class="tilt">из 20</span></h1>
+        <div class="list">
+          <div class="jk sel"><span class="ck">✓</span><span>🧳 «Пересадка 6 часов» звучит как достижение</span><span class="n">1</span></div>
+          <div class="jk sel"><span class="ck">✓</span><span>🌅 Закаты. Все. Даже из такси</span><span class="n">2</span></div>
+          <div class="jk sel"><span class="ck">✓</span><span>✈️ 40 сторис из аэропорта и ноль из дома</span><span class="n">3</span></div>
+          <div class="jk off"><span class="ck"></span><span>☕ Кофе фотографируешь чаще, чем пьёшь</span></div>
+          <div class="jk off"><span class="ck"></span><span>🎧 Плейлист «В дорогу» длиннее дорог</span></div>
+          <div class="jk sel"><span class="ck">✓</span><span>🍜 Ужин остывает, пока ищешь ракурс</span><span class="n">4</span></div>
+        </div>
+        <div class="dock">
+          <div class="cnt"><b>6 / 6</b><span>готово</span></div>
+          <div class="meter"><i style="width:100%"></i></div>
+          <div class="btn">Собрать артефакт →</div>
+        </div>
+      </div>
+      <p class="note">Набрано 6: остальные затемнены и не нажимаются, выбранные можно снять.</p>
+    </div>
+    <div class="col">
+      <p class="cap">6c · рисуем (2 картинки)</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="num">6/7</span></div>
+        <div class="loader">
+          <div class="art" style="flex:0 0 auto;min-height:0"><img class="sm" src="assets/imp-chef.png" alt=""></div>
+          <div class="bar"><i style="width:70%"></i></div>
+          <div class="status">Рисуем…<small>1 из 2</small></div>
+          <p class="tiny">Картинки к твоим 6 шуткам</p>
+        </div>
+      </div>
+      <p class="note">Кострище: 2 картинки, Пекло: 4. У Поджога этого экрана нет.</p>
+    </div>
+  </div>
+
+  <!-- ============ 7. ШЕРИНГ ============ -->
+  <h2 class="grp">Шаг 7 · Готово и шеринг</h2>
+  <div class="strip">
+    <div class="col">
+      <p class="cap">7a · результат</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="num">7/7</span></div>
+        <h1 class="s">Готово. <span class="tilt">Смотри, что вышло</span></h1>
+        <div class="stack">
+          <div class="hero"><img class="bg" src="assets/result-suitcase.jpg" alt=""><img class="imp" src="assets/stamp-imp.png" alt=""></div>
+          <div class="pk"><b style="font:800 14px/1.2 var(--wide)">ПРОЖАРКА @ANYA.TRAVELS</b><br>Человек, у которого 40 сторис из аэропорта и ноль из дома</div>
+          <div class="pk">🌅 Закаты. Все. Даже из такси. Даже когда их нет</div>
+          <p class="tiny" style="text-align:center;color:var(--paper)"><u>Открыть страницу целиком ↗</u></p>
+        </div>
+        <div class="bottom">
+          <div class="btn">Поделиться</div>
+          <div class="btn ghost sm">Ещё раз</div>
+        </div>
+      </div>
+      <p class="note">Внешний вид артефакта здесь условный: дизайн страницы <code>/a/[slug]</code> и карточек делается отдельно в Figma. Механика: превью, «Поделиться» внизу, «Ещё раз» открывает новую платную генерацию с теми же настройками.</p>
+    </div>
+    <div class="col">
+      <p class="cap">7b · шеринг: форматы</p>
+      <div class="phone">
+        <div class="top"><span class="back off">‹</span><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="num">7/7</span></div>
+        <div class="tabs"><span class="on">Вертикально</span><span>Горизонтально</span></div>
+        <div style="display:flex;justify-content:center;margin-top:var(--gap)"><div class="story" style="transform:scale(.86);transform-origin:top center;margin-bottom:-66px">
+          <h4>Прожарка<br>@anya.travels</h4>
+          <div class="im"><img src="assets/result-suitcase.jpg" alt=""></div>
+          <div class="p">🧳 «Пересадка 6 часов» звучит как достижение</div>
+          <div class="p">🌅 Закаты. Все. Даже из такси</div>
+          <div class="p">☕ Кофе в курсе</div>
+          <div class="ft"><span>funshare.app</span><span class="cta">Прожарь в ответ ↗</span></div>
+        </div></div>
+        <div class="bottom">
+          <div class="share">
+            <div class="btn sm">Скачать</div>
+            <div class="btn sm orange">Поделиться</div>
+            <div class="btn sm ghost">Скопировать ссылку</div>
+            <div class="btn sm ghost">Telegram</div>
+          </div>
+        </div>
+      </div>
+      <p class="note">«Поделиться» открывает системное меню с файлом (Web Share API). На десктопе «Скачать» и «Скопировать ссылку».</p>
+    </div>
+  </div>
+
+  <h2 class="grp">Карточки шеринга: плейсхолдер, дизайн придёт из Figma</h2>
+  <div class="cards">
+    <div>
+      <p class="cap">Вертикальная 9:16 · сторис (1080×1920)</p>
+      <div class="story">
+        <h4>Прожарка<br>@anya.travels</h4>
+        <div class="im"><img src="assets/result-suitcase.jpg" alt=""></div>
+        <div class="p">🧳 «Пересадка 6 часов» звучит как достижение</div>
+        <div class="p">🌅 Закаты. Все. Даже из такси</div>
+        <div class="p">☕ Кофе в курсе</div>
+        <div class="ft"><span>funshare.app</span><span class="cta">Прожарь в ответ ↗</span></div>
+      </div>
+    </div>
+    <div>
+      <p class="cap">Горизонтальная 16:9 · пост, X, Telegram (1920×1080)</p>
+      <div class="wide">
+        <div class="l"><img src="assets/result-sunset.jpg" alt=""></div>
+        <div class="r">
+          <h4>Прожарка @anya.travels</h4>
+          <div class="p">🧳 «Пересадка 6 часов» звучит как достижение</div>
+          <div class="p">🌅 Закаты. Все. Даже из такси</div>
+          <div class="p">☕ Кофе в курсе</div>
+          <div class="ft"><span>funshare.app</span><span class="cta">Прожарь в ответ ↗</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="max-width:820px">В карточку идут заголовок, hero-картинка и 3 лучших из выбранных шуток. У Поджога без картинок на месте hero крупная типографика с сильнейшей шуткой. Шрифты для <code>next/og</code> из DESIGN.md (Unbounded, Onest) в TTF/WOFF, кириллица обязательна.</p>
+</div>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0"><filter id="fire-goo"><feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/><feBlend in="SourceGraphic" in2="goo"/></filter></svg>
+<script>
+// Частицы огня как в src/components/roast/Flames.tsx: 40 кругов + 12 вырезов, детерминированный «рандом»
+const rnd=(i,n)=>((Math.sin(i*12.9898+n*78.233)*43758.5453)%1+1)%1;
+document.querySelectorAll('.blaze').forEach(b=>{
+  const fire=b.querySelector('.fire'),cuts=b.querySelector('.cuts');
+  for(let i=0;i<40;i++){const e=document.createElement('i');e.style.left=Math.round(6+rnd(i,1)*88)+'%';e.style.marginBottom=-Math.round(14+rnd(i,2)*26)+'px';e.style.animationDelay=((i*0.37)%1.2).toFixed(2)+'s';fire.appendChild(e)}
+  for(let i=0;i<12;i++){const e=document.createElement('i');const left=i<6;e.className=left?'l':'r';e.style[left?'left':'right']=(Math.round((i%6)/6*44+rnd(i,3)*8)-6)+'%';e.style.marginBottom=-Math.round(10+rnd(i,4)*22)+'px';e.style.animationDelay=((i*0.53)%1.2).toFixed(2)+'s';cuts.appendChild(e)}
+});
+</script>
+</body>
+</html>

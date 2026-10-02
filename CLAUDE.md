@@ -60,3 +60,7 @@
    (скрейп, ответ LLM) + отправка наружу.
 
 Инварианты для проверок — `architecture/invariants.md`.
+
+## Next.js
+
+@AGENTS.md
