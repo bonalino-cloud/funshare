@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
 import { roastCards } from "@/lib/client/roast-card";
 import { errorLine } from "./errors";
-import { IconCheck, IconCopy, IconDownload, IconReload } from "./icons";
+import { IconCheck, IconDownload, IconLink, IconReload } from "./icons";
 import { StepTitle } from "./StepTitle";
 
-type Flash = "copied" | "saved" | "savedAll" | null;
+type Flash = "copied" | "savedAll" | null;
 
 /** Шаг 7: карточки прожарки 9:16 и шеринг. Вёрстка карточек: `components/artifact`. */
 export function ResultScreen({ slug }: { slug: string }) {
@@ -19,7 +19,7 @@ export function ResultScreen({ slug }: { slug: string }) {
   const [artifact, setArtifact] = useState<Artifact | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
-  const [busy, setBusy] = useState<"share" | "save" | "saveAll" | null>(null);
+  const [busy, setBusy] = useState<"share" | "saveAll" | null>(null);
   const [index, setIndex] = useState(0);
   /** Готовые PNG по номеру карточки: «Поделиться» на iOS теряет жест, если ждать отрисовку. */
   const files = useRef(new Map<number, Promise<File>>());
@@ -96,19 +96,6 @@ export function ResultScreen({ slug }: { slug: string }) {
     }
   }
 
-  async function save() {
-    if (busy) return;
-    setBusy("save");
-    try {
-      saveFile(await fileAt(index));
-      show("saved");
-    } catch {
-      setError("Не получилось сохранить картинку. Попробуй ещё раз");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function saveAll() {
     if (busy) return;
     setBusy("saveAll");
@@ -136,7 +123,7 @@ export function ResultScreen({ slug }: { slug: string }) {
   }
 
   /** Вторичные кнопки: иконка слева от подписи, линия толще стандартной Tabler */
-  const tool = "h-12 min-w-0 gap-1 px-1 text-[11px]!";
+  const tool = "h-12 min-w-0 gap-2 px-2 text-xs! whitespace-nowrap";
   const ico = (done: boolean, Icon: typeof IconDownload) =>
     done ? (
       <IconCheck className="size-5" strokeWidth={2.75} />
@@ -166,8 +153,8 @@ export function ResultScreen({ slug }: { slug: string }) {
             type="button"
             variant="inverse"
             arrow={false}
-            className="h-14 w-14 shrink-0 gap-0 px-0"
-            icon={<IconReload className="size-6" strokeWidth={2.75} />}
+            className="h-14 w-14 shrink-0 px-0"
+            icon={<IconReload className="size-5" strokeWidth={2.75} />}
             onClick={() => router.push("/create")}
             aria-label="Ещё раз"
             title="Ещё раз"
@@ -185,21 +172,7 @@ export function ResultScreen({ slug }: { slug: string }) {
             Поделиться
           </Button>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            look="display"
-            arrow={false}
-            className={tool}
-            icon={ico(flash === "saved", IconDownload)}
-            onClick={save}
-            disabled={!cards.length || busy !== null}
-            aria-busy={busy === "save" || undefined}
-            aria-label="Скачать эту карточку"
-          >
-            Эту
-          </Button>
+        <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -208,11 +181,10 @@ export function ResultScreen({ slug }: { slug: string }) {
             className={tool}
             icon={ico(flash === "savedAll", IconDownload)}
             onClick={saveAll}
-            disabled={cards.length < 2 || busy !== null}
+            disabled={!cards.length || busy !== null}
             aria-busy={busy === "saveAll" || undefined}
-            aria-label="Скачать все карточки"
           >
-            {busy === "saveAll" ? "…" : "Все"}
+            {busy === "saveAll" ? "Качаем…" : "Скачать все"}
           </Button>
           <Button
             type="button"
@@ -220,7 +192,7 @@ export function ResultScreen({ slug }: { slug: string }) {
             look="display"
             arrow={false}
             className={tool}
-            icon={ico(flash === "copied", IconCopy)}
+            icon={ico(flash === "copied", IconLink)}
             onClick={copy}
             aria-label="Скопировать ссылку"
           >

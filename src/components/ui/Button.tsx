@@ -49,7 +49,8 @@ export function Button({
       {...props}
     >
       {icon && <span className="size-5 shrink-0">{icon}</span>}
-      <span>{children}</span>
+      {/* Без подписи (кнопка-иконка) пустой span не рисуем: иначе gap сдвигает иконку от центра */}
+      {children != null && children !== false && <span>{children}</span>}
       {arrow && (
         <ArrowNE className="size-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       )}
