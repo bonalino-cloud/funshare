@@ -82,8 +82,8 @@ export const ArtifactDraft = z.object({
   content: z.union([ArtifactContent, RoastContent]),
   imagePrompts: z
     .array(z.object({ role: ImageRole, prompt: z.string().min(1), alt: z.string().min(1) }))
-    .min(3)
-    .max(5),
+    // Столько, сколько выбрано шуток, до 6; у Поджога ни одной
+    .max(6),
 });
 export type ArtifactDraft = z.infer<typeof ArtifactDraft>;
 
@@ -116,7 +116,7 @@ export const Artifact = z.discriminatedUnion("kind", [
      * Картинки к шуткам, по одной на шутку. Поджог: пусто. Кострище и Пекло: по картинке
      * на каждую выбранную шутку, при частичном сбое `draw` упавших нет (карточка без картинки).
      */
-    punchImages: z.array(PunchImage).max(12),
+    punchImages: z.array(PunchImage).max(6),
   }).superRefine((a, ctx) => {
     const ids = new Set(a.content.punches.map((p) => p.id));
     const seen = new Set<string>();

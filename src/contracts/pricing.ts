@@ -17,10 +17,16 @@ export const TierInfo = z.object({
   tier: Tier,
   listAmount: Amount,
   currency: Currency,
-  /** Сколько шуток сгенерируем и сколько из них человек выберет в артефакт. */
+  /**
+   * Максимумы (roast-engine §7.1a, все числа «до»): сколько новых шуток сгенерируем, сколько
+   * человек выберет в артефакт (от 1 до `selectCount`) и сколько картинок — по одной на
+   * выбранную шутку, не больше `imageCount`.
+   */
   candidateCount: z.number().int().positive(),
   selectCount: z.number().int().positive(),
   imageCount: z.number().int().nonnegative(),
+  /** Тариф можно купить. Пекло в MVP — заглушка: `false`, карточка «скоро», цену не показываем. */
+  available: z.boolean(),
   /** Видео для сторис доступно сейчас (у Пекла пока false: кнопка есть, но неактивна). */
   video: z.boolean(),
 });
