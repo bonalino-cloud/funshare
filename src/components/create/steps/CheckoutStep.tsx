@@ -11,6 +11,7 @@ import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { formatRub } from "@/lib/client/money";
 import { Blaze } from "../Blaze";
 import { ERROR_TEXT, errorLine } from "../errors";
+import { IconSquareRoundedCheck, IconX } from "../icons";
 import { LEVEL_NAME, TIER_NAME } from "../labels";
 import { StepTitle } from "../StepTitle";
 import type { CreateStep } from "../steps";
@@ -98,6 +99,19 @@ export function CheckoutStep({
     }
   }
 
+  /** Крестик на зелёной плашке: снимаем слово и пересчитываем цену без него. */
+  async function removePromo() {
+    if (tier === undefined) return;
+    setPromo("");
+    setPromoError(null);
+    patchDraft({ promoCode: undefined });
+    try {
+      setQuote(await api.createQuote({ tier }));
+    } catch (e) {
+      setError(errorLine(toErrorCode(e)));
+    }
+  }
+
   async function start() {
     if (!profileCheckId || tier === undefined || level === undefined) return;
     setBusy(true);
@@ -164,7 +178,25 @@ export function CheckoutStep({
         </Row>
       </div>
 
-      {promoOpen ? (
+      {quote?.promo ? (
+        // Слово применилось: зелёная плашка вместо поля, галочка подтверждает скидку
+        <div className="mt-3 flex h-16 items-center gap-3 rounded-md bg-acid pr-3 pl-5 text-ink">
+          <IconSquareRoundedCheck
+            className="size-6 shrink-0"
+            strokeWidth={2.5}
+            aria-hidden="true"
+          />
+          <span className="min-w-0 flex-1 truncate text-lg font-bold">{quote.promo.code}</span>
+          <button
+            type="button"
+            onClick={() => void removePromo()}
+            aria-label="Убрать волшебное слово"
+            className="flex size-10 shrink-0 items-center justify-center rounded-sm text-ink/45 transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-ink"
+          >
+            <IconX className="size-4" strokeWidth={2.5} />
+          </button>
+        </div>
+      ) : promoOpen ? (
         <form
           className="mt-3 flex flex-col gap-2"
           onSubmit={(e) => {
