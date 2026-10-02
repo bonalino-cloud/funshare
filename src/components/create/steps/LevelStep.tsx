@@ -41,7 +41,7 @@ const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string
  * Шаг 4. Три карточки-кнопки без «Дальше». Rare и Medium ведут сразу к итогу,
  * Well done открывает окно: 18+ и мат, красные линии, большой чекбокс, «Согласен».
  */
-export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: CreateStep) => void }) {
+export function LevelStep({ go }: { draft: CreateDraft; go: (step: CreateStep) => void }) {
   const [warn, setWarn] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
@@ -111,11 +111,6 @@ export function LevelStep({ draft, go }: { draft: CreateDraft; go: (step: Create
         <p className="text-center type-body text-paper/85">
           Шутки будут жёсткими. Про здоровье, национальность, религию и семью всё равно не шутим.
         </p>
-        {draft.mode === "friend" && (
-          <p className="text-center type-body font-bold text-paper">
-            Получатель прочитает это сам.
-          </p>
-        )}
         <button
           type="button"
           role="checkbox"
