@@ -14,8 +14,6 @@ import { PickPunches } from "./PickPunches";
 import { ResultScreen } from "./ResultScreen";
 import { StepTitle } from "./StepTitle";
 
-const NOTE = "Не закрывай вкладку. Закроешь: вернёшься по ссылке и увидишь результат";
-
 /**
  * Шаги 6–7 на /g/[id]: экран зависит от статуса генерации. «Назад» нет: после запуска
  * только вперёд, а по ссылке можно вернуться в любой момент.
@@ -56,23 +54,11 @@ export function GenerationFlow({ id }: { id: string }) {
           </div>
         </>
       ) : !status || status.status === "queued" ? (
-        <Loader image={koster} phase="queued" startedAt={startedAt} note={NOTE} />
+        <Loader image={koster} phase="queued" startedAt={startedAt} />
       ) : status.status === "writing" ? (
-        <Loader
-          image={koster}
-          phase="writing"
-          hint={status.hint}
-          startedAt={startedAt}
-          note={NOTE}
-        />
+        <Loader image={koster} phase="writing" hint={status.hint} startedAt={startedAt} />
       ) : status.status === "drawing" ? (
-        <Loader
-          image={impChef}
-          phase="drawing"
-          hint={status.hint}
-          startedAt={startedAt}
-          note="Картинки к твоим шуткам"
-        />
+        <Loader image={impChef} phase="drawing" hint={status.hint} startedAt={startedAt} />
       ) : status.status === "awaiting_selection" ? (
         <PickPunches id={id} onDone={resume} />
       ) : (

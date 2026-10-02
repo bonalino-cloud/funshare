@@ -2,9 +2,8 @@ import Image, { type StaticImageData } from "next/image";
 import { cx } from "@/components/cx";
 
 /**
- * Иллюстрация в середине экрана шага: парит над пульсирующим жёлто-оранжевым свечением
- * (единственный разрешённый градиент, DESIGN.md §2.3). `scan` — розовая линия сканера
- * на время проверки, `wiggle` — покачивание для ошибки.
+ * Иллюстрация в середине экрана шага: парит без подложки (свечение за маскотом убрали).
+ * `scan` — розовая линия сканера на время проверки, `wiggle` — покачивание для ошибки.
  */
 export function ArtStage({
   src,
@@ -24,7 +23,6 @@ export function ArtStage({
       aria-hidden="true"
       className={cx("relative flex min-h-[200px] flex-1 items-center justify-center", className)}
     >
-      <span className="absolute size-[210px] animate-glow rounded-full bg-[radial-gradient(circle,var(--color-yellow)_0%,var(--color-orange)_45%,transparent_72%)] opacity-55 blur-[6px]" />
       <Image
         src={src}
         alt=""
