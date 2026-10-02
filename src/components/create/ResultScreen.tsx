@@ -146,17 +146,14 @@ export function ResultScreen({ slug }: { slug: string }) {
 
   return (
     <>
-      {artifact && (
-        <div className="mb-4 flex w-full flex-col items-center gap-1 text-center">
-          <Avatar url={artifact.subject.avatarUrl} name={artifact.subject.username} />
-          <div className="text-sm text-paper/80">{artifact.subject.displayName}</div>
-          <StepTitle size="s" className="mb-0! w-full">
-            Прожарен
-          </StepTitle>
-        </div>
-      )}
+      {/* Карточки в фокусе: видимого заголовка нет, только для скринридера */}
+      <h1 className="sr-only">Прожарка готова</h1>
+      <div className="h-3" aria-hidden="true" />
       {cards.length ? (
-        <ArtifactCards cards={cards} onIndex={setIndex} reserve={335} />
+        // Колода по центру свободной высоты: на высоких экранах ширину режет колонка, а не высота
+        <div className="flex flex-1 flex-col justify-center">
+          <ArtifactCards cards={cards} onIndex={setIndex} reserve={215} />
+        </div>
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>
       )}
@@ -233,22 +230,4 @@ export function ResultScreen({ slug }: { slug: string }) {
       </div>
     </>
   );
-}
-
-/** Аватар из профиля; не загрузился (Instagram режет хотлинк) — розовый круг с буквой, как на шаге 1. */
-function Avatar({ url, name }: { url: string | null; name: string }) {
-  const [broken, setBroken] = useState(false);
-  const cls = "size-11 rounded-full border-[3px] border-ink";
-  if (!url || broken) {
-    return (
-      <div
-        className={`${cls} flex items-center justify-center bg-pink font-wide text-xl font-black text-ink`}
-        aria-hidden="true"
-      >
-        {name[0]?.toUpperCase()}
-      </div>
-    );
-  }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="" className={`${cls} object-cover`} onError={() => setBroken(true)} />;
 }

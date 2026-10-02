@@ -58,7 +58,7 @@ export function ArtifactCards({
       style={
         {
           // Запас по бокам под повёрнутые края задних карточек
-          "--card-w": `max(150px, min(calc(100cqw - 48px), calc((100dvh - ${reserve}px) * 9 / 16)))`,
+          "--card-w": `max(150px, min(calc(100cqw - 32px), calc((100dvh - ${reserve}px) * 9 / 16)))`,
         } as CSSProperties
       }
     >
