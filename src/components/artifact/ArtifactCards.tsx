@@ -10,6 +10,8 @@ const PEEK = 2;
 /** Сдвиг вправо (доля ширины) и уменьшение каждой следующей карточки в стопке. */
 const SHIFT = 0.06;
 const SHRINK = 0.06;
+/** Затемнение по глубине: передняя, первая задняя, вторая задняя. */
+const DIM = [0, 0.3, 0.55] as const;
 /** Свайп дальше этого (px) листает стопку. */
 const SWIPE = 60;
 /** Сколько длится улёт передней карточки, мс. */
@@ -122,10 +124,13 @@ export function ArtifactCards({
               }}
               aria-hidden={!front}
             >
-              <RoastCard
-                card={card}
-                priority={d <= PEEK}
-                className="rounded-lg shadow-[-6px_8px_24px_rgba(0,0,0,0.45)]"
+              <RoastCard card={card} priority={d <= PEEK} className="rounded-lg" />
+              {/* Задние темнее с глубиной: передняя читается первой. Слоем сверху, а не в самой
+                  карточке, чтобы затемнение не попало в PNG */}
+              <div
+                aria-hidden="true"
+                className="bg-black pointer-events-none absolute inset-0 rounded-lg transition-opacity duration-300 ease-out"
+                style={{ backgroundColor: "#000", opacity: DIM[depth] ?? 0 }}
               />
             </div>
           );

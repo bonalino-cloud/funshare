@@ -174,14 +174,14 @@ export function ResultScreen({ slug }: { slug: string }) {
             Поделиться
           </Button>
         </div>
-        {/* «Скачать все» забирает свободное место, «Ссылка» по своей подписи */}
+        {/* «Скачать все» и «Ссылка» делят ряд 1,25 : 1 */}
         <div className="flex gap-2">
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className={cx(tool, "flex-1")}
+            className={cx(tool, "flex-[1.25]")}
             icon={ico(flash === "savedAll", IconDownload)}
             onClick={saveAll}
             disabled={!cards.length || busy !== null}
@@ -194,7 +194,7 @@ export function ResultScreen({ slug }: { slug: string }) {
             variant="ghost"
             look="display"
             arrow={false}
-            className={cx(tool, "shrink-0 px-4")}
+            className={cx(tool, "flex-1")}
             icon={ico(flash === "copied", IconLink)}
             onClick={copy}
             aria-label="Скопировать ссылку"
