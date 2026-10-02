@@ -96,6 +96,30 @@ describe("фикстуры проходят схемы", () => {
     expect(artifact.slug).toBe(ready && "artifactSlug" in ready ? ready.artifactSlug : undefined);
   });
 
+  it("artifact-roast.json: картинка на каждую выбранную шутку, с цветом фона", () => {
+    const artifact = Artifact.parse(artifactRoast);
+    if (artifact.kind !== "roast_v1") throw new Error("kind");
+    expect(artifact.punchImages.map((i) => i.punchId)).toEqual(selection.punchIds);
+  });
+
+  it("roast: картинка к невыбранной шутке или вторая к той же не проходит", () => {
+    const [first] = artifactRoast.punchImages;
+    const stranger = { ...artifactRoast, punchImages: [{ ...first, punchId: "p99" }] };
+    const twice = { ...artifactRoast, punchImages: [first, first] };
+    expect(Artifact.safeParse(stranger).success).toBe(false);
+    expect(Artifact.safeParse(twice).success).toBe(false);
+  });
+
+  it("roast: шутка длиннее 140 знаков не проходит", () => {
+    const [p] = artifactRoast.content.punches;
+    const long = {
+      ...artifactRoast,
+      content: { ...artifactRoast.content, punches: [{ ...p, text: "а".repeat(141) }] },
+      punchImages: [],
+    };
+    expect(Artifact.safeParse(long).success).toBe(false);
+  });
+
   it("artifact-dossier.json: старый тип артефакта по-прежнему проходит", () => {
     expect(Artifact.parse(artifactDossier).kind).toBe("dossier_2027");
   });

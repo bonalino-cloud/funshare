@@ -102,10 +102,13 @@ export const GenerationStatus = z
 export type GenerationStatus = z.infer<typeof GenerationStatus>;
 
 /** Одна шутка-кандидат. Внутренние оценки и механики наружу не отдаются. */
+/** Шутка влезает в карточку 9:16 только до 140 знаков: длиннее писатель не отдаёт. */
+export const PUNCH_MAX_CHARS = 140;
+
 export const PunchCandidate = z.object({
   id: z.string().min(1),
   emoji: z.string().min(1),
-  text: z.string().min(1),
+  text: z.string().min(1).max(PUNCH_MAX_CHARS),
 });
 export type PunchCandidate = z.infer<typeof PunchCandidate>;
 
