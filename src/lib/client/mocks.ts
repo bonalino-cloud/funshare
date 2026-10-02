@@ -32,7 +32,7 @@ const PRICING = Pricing.parse(pricingFixture);
 const CANDIDATES = CandidatesResponse.parse(candidates20);
 const ARTIFACT = Artifact.parse(artifactRoast);
 const CHECK_OK = profileCheckOk.map((s) => ProfileCheckStatus.parse(s));
-const PROMOS: Record<string, number> = { ПОГНАЛИ100: 100, ПОЛОВИНА: 50 };
+const PROMOS: Record<string, number> = { ПОГНАЛИ100: 100, FREEE: 100, ПОЛОВИНА: 50 };
 const FAIL_BY_USERNAME: Record<string, ErrorCode> = {
   private: "profile_private",
   nobody: "profile_not_found",
