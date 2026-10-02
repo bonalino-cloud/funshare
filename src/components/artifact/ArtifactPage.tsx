@@ -42,7 +42,7 @@ export function ArtifactPage({ slug }: { slug: string }) {
       </div>
       <div className="relative z-10 mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-5 px-[18px] pt-6 pb-[max(40px,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between">
-          <Link href="/roast" aria-label="Funshare — на главную">
+          <Link href="/" aria-label="Funshare — на главную">
             <FunshareLogo className="h-7 w-auto text-paper" />
           </Link>
           {artifact && (

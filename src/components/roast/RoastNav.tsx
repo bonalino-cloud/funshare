@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cx } from "@/components/cx";
 import { FunshareLogo } from "@/components/brand/FunshareLogo";
 import { HistoryButton } from "./HistoryButton";
@@ -14,12 +15,12 @@ export function RoastNav({ className }: { className?: string }) {
         className,
       )}
     >
-      <a
-        href="#"
+      <Link
+        href="/"
         className="group/logo flex items-center gap-2.5 type-label text-sm text-on-surface"
       >
         <FunshareLogo className="h-7 w-auto md:h-8" />
-      </a>
+      </Link>
       <HistoryButton />
     </header>
   );

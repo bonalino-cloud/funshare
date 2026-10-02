@@ -173,7 +173,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             {phase.kind === "error" ? "Проверить ещё раз" : "Проверить"}
           </Button>
         )}
-        <QuietLink href="/roast">На главную</QuietLink>
+        <QuietLink href="/">На главную</QuietLink>
       </div>
     </form>
   );
