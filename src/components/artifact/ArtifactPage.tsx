@@ -55,7 +55,7 @@ export function ArtifactPage({ slug }: { slug: string }) {
           {error ? (
             <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>
           ) : cards.length ? (
-            <ArtifactCards cards={cards} reserve={230} />
+            <ArtifactCards cards={cards} slug={slug} reserve={230} />
           ) : (
             <p className="type-body text-paper/60">Открываем…</p>
           )}

@@ -141,7 +141,7 @@ export function ResultScreen({ slug }: { slug: string }) {
       {cards.length ? (
         // Колода по центру свободной высоты: на высоких экранах ширину режет колонка, а не высота
         <div className="flex flex-1 flex-col justify-center">
-          <ArtifactCards cards={cards} onIndex={setIndex} reserve={223} />
+          <ArtifactCards cards={cards} slug={slug} onIndex={setIndex} reserve={223} />
         </div>
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>
