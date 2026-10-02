@@ -8,7 +8,7 @@ import { LinkInput } from "@/components/ui/LinkInput";
 import { Spinner } from "@/components/ui/Spinner";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import { rememberLevel } from "@/lib/client/generation-meta";
+import { rememberGeneration } from "@/lib/client/history";
 import { formatRub } from "@/lib/client/money";
 import { Blaze } from "../Blaze";
 import { ERROR_TEXT, errorLine } from "../errors";
@@ -128,7 +128,17 @@ export function CheckoutStep({
         extraFacts: draft.extraFacts.length ? draft.extraFacts : undefined,
         promoCode: draft.promoCode,
       });
-      rememberLevel(id, level);
+      // В «Мои прожарки» на лендинге и для картинки степени в лоудере
+      if (profile) {
+        rememberGeneration({
+          id,
+          username: profile.username,
+          tier,
+          level,
+          mode: draft.mode,
+          createdAt: new Date().toISOString(),
+        });
+      }
       router.push(`/g/${id}`);
     } catch (e) {
       const code = toErrorCode(e);

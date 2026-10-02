@@ -5,7 +5,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import koster from "@/components/roast/assets/level-koster.png";
 import { resetDraft } from "@/lib/client/draft";
-import { recallLevel } from "@/lib/client/generation-meta";
+import { recallLevel } from "@/lib/client/history";
 import { useGeneration } from "@/lib/client/useGeneration";
 import { CreateShell } from "./CreateShell";
 import { errorLine } from "./errors";
