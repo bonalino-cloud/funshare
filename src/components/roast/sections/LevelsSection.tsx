@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Asterisk } from "@/components/brand/Asterisk";
 import { cx } from "@/components/cx";
 import { cardTones, type CardTone } from "@/components/ui/Card";
@@ -21,57 +21,58 @@ type Level = {
   sub: string;
   img: StaticImageData;
   tone: CardTone;
+  /** Сколько картинок показать в примере результата (десктоп). */
   images: number;
   free?: boolean;
+  soon?: boolean;
   video?: boolean;
   includes: string[];
 };
 
-const base = [
-  "Вердикт в одну строку. Он же заголовок для сторис",
-  "4–6 панчей про привычки и вайб",
-  "«Но если честно» в конце, чтобы не обиделись",
-  "Ссылка с превью для Telegram и WhatsApp",
-];
-
+// Состав тарифов по решению от 2026-10-02 (architecture/roast-engine.md §7.1a)
 const levels: Level[] = [
   {
     name: "Поджог",
     heat: 1,
-    sub: "Только шутки, только текст",
+    sub: "Бесплатно один раз. Только шутки",
     img: ogon,
     tone: "yellow",
     images: 0,
     free: true,
-    includes: base,
+    includes: [
+      "До 10 шуток про твой профиль, выбираешь 6 лучших",
+      "Карточки 9:16 с шутками, сразу в сторис",
+      "Ссылка с превью для Telegram и WhatsApp",
+      "Только текст, без картинок",
+    ],
   },
   {
     name: "Кострище",
     heat: 2,
-    sub: "Шутки + 2 картинки",
+    sub: "Шутки + картинка к каждой",
     img: koster,
     tone: "orange",
     images: 2,
     includes: [
-      ...base.slice(0, 2),
-      "2 картинки в одном стиле, по мотивам профиля",
-      ...base.slice(2),
+      "До 20 свежих шуток и лучшие из Поджога",
+      "Выбираешь 6, к каждой своя картинка",
+      "Главный герой картинок ты: 3D-карикатура по профилю",
+      "Карточки 9:16 для сторис и ссылка с превью",
     ],
   },
   {
     name: "Пекло",
     heat: 3,
-    sub: "Шутки + 4 картинки + огненное видео",
+    sub: "Скоро. Шутки, картинки и огненное видео",
     img: peklo,
     tone: "red",
     images: 4,
+    soon: true,
     video: true,
     includes: [
-      ...base.slice(0, 2),
-      "4 картинки в одном стиле, по мотивам профиля",
-      "Видео 9:16 на 15 сек: картинки горят, вердикт в конце",
-      "Обложка-открытка для ДР или ответки",
-      ...base.slice(2),
+      "Всё, что в Кострище",
+      "Видео 9:16: картинки горят, вердикт в конце",
+      "Появится после запуска",
     ],
   },
 ];
@@ -127,8 +128,8 @@ function CornerFlames({ className }: { className?: string }) {
   );
 }
 
-/** «Вот что получится»: три сборки-вкладки. Состав и пример прожарки появляются сразу под выбранной
- * карточкой на мобиле и под всем рядом на десктопе — одна разметка, порядок задаёт CSS order */
+/** «Вот что получится»: три тарифа. На мобиле под каждой карточкой её состав, без примера
+ * прожарки. На десктопе карточки — вкладки, под рядом состав выбранной и пример прожарки */
 export function LevelsSection() {
   const [active, setActive] = useState(1);
   const level = levels[active];
@@ -148,18 +149,13 @@ export function LevelsSection() {
           {levels.map((l, i) => {
             const fire = flameOn(l.tone);
             return (
-              <Reveal
-                key={l.name}
-                delay={i * 90}
-                className="order-[var(--o)] md:order-none"
-                style={{ "--o": i * 2 } as CSSProperties}
-              >
+              <Reveal key={l.name} delay={i * 90}>
                 <button
                   aria-pressed={i === active}
                   aria-controls="level-details"
                   onClick={() => setActive(i)}
                   className={cx(
-                    "group/flames relative flex h-full w-full flex-col items-start justify-end overflow-visible rounded-lg border-2 p-5 pt-40 text-left transition-[transform,box-shadow] duration-200 ease-[var(--ease-poster)] md:p-6 md:pt-48",
+                    "group/flames relative flex w-full flex-col items-start justify-end overflow-visible rounded-lg border-2 p-5 pt-40 text-left transition-[transform,box-shadow] duration-200 ease-[var(--ease-poster)] md:h-full md:p-6 md:pt-48",
                     cardTones[l.tone],
                     i === active
                       ? "-translate-y-2 -rotate-1 border-ink shadow-offset"
@@ -185,6 +181,11 @@ export function LevelsSection() {
                     sizes="260px"
                     className="absolute -top-10 left-1/2 h-48 w-auto -translate-x-1/2 transition-transform duration-300 ease-[var(--ease-poster)] group-hover/flames:scale-105 group-hover/flames:-rotate-3 md:h-56"
                   />
+                  {l.soon && (
+                    <span className="absolute top-3 right-3 -rotate-6 rounded-sm border-2 border-ink bg-paper px-2 py-1 type-label text-ink">
+                      Скоро
+                    </span>
+                  )}
                   {l.free && (
                     <span className="absolute top-3 right-3 rotate-6 rounded-sm border-2 border-ink bg-pink px-2 py-1 type-label text-ink">
                       Бесплатно
@@ -201,6 +202,11 @@ export function LevelsSection() {
                   <span className="relative mt-2 type-cond-xl">{l.name}</span>
                   <span className="relative mt-1 type-body font-semibold">{l.sub}</span>
                 </button>
+                {/* Мобила: состав под каждой карточкой, всегда открыт; снизу запас под чёртика следующей карточки */}
+                <div className="mt-6 mb-14 md:hidden">
+                  <h3 className="type-display-m">Что входит в {l.name}</h3>
+                  <Includes items={l.includes} />
+                </div>
               </Reveal>
             );
           })}
@@ -209,22 +215,11 @@ export function LevelsSection() {
             id="level-details"
             key={active}
             aria-live="polite"
-            className="order-[var(--o)] mt-4 grid [animation:swap-in_360ms_var(--ease-poster)] items-start gap-8 md:order-last md:col-span-3 md:mt-12 md:grid-cols-[1fr_1.2fr] md:gap-12"
-            style={{ "--o": active * 2 + 1 } as CSSProperties}
+            className="hidden [animation:swap-in_360ms_var(--ease-poster)] items-start md:col-span-3 md:mt-12 md:grid md:grid-cols-[1fr_1.2fr] md:gap-12"
           >
             <div>
               <h3 className="type-display-m">Что входит в {level.name}</h3>
-              <ul className="mt-5 space-y-3">
-                {level.includes.map((t) => (
-                  <li
-                    key={t}
-                    className="group flex items-start gap-3 type-lead transition-transform duration-200 hover:translate-x-1"
-                  >
-                    <Asterisk className="mt-1 size-4 shrink-0 text-red transition-transform duration-500 group-hover:rotate-[120deg]" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
+              <Includes items={level.includes} />
             </div>
 
             <ResultCard level={level} />
@@ -232,6 +227,22 @@ export function LevelsSection() {
         </div>
       </div>
     </Section>
+  );
+}
+
+function Includes({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-5 space-y-3">
+      {items.map((t) => (
+        <li
+          key={t}
+          className="group flex items-start gap-3 type-lead transition-transform duration-200 hover:translate-x-1"
+        >
+          <Asterisk className="mt-1 size-4 shrink-0 text-red transition-transform duration-500 group-hover:rotate-[120deg]" />
+          {t}
+        </li>
+      ))}
+    </ul>
   );
 }
 
