@@ -407,7 +407,7 @@ function CardViewer({
               look="display"
               arrow={false}
               className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
-              icon={<IconBrandInstagram className="size-5" strokeWidth={2.5} />}
+              icon={<IconBrandInstagram className="size-[26px]" strokeWidth={2.75} />}
               onClick={share}
               disabled={busy !== null}
               aria-busy={busy === "share" || undefined}

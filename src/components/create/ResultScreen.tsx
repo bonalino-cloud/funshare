@@ -175,7 +175,7 @@ export function ResultScreen({ slug }: { slug: string }) {
             look="display"
             arrow={false}
             className="h-14 min-w-0 flex-1"
-            icon={<IconBrandInstagram className="size-5" strokeWidth={2.5} />}
+            icon={<IconBrandInstagram className="size-[26px]" strokeWidth={2.75} />}
             onClick={share}
             disabled={!cards.length}
             aria-busy={busy === "share" || undefined}
