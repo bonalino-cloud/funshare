@@ -39,7 +39,7 @@ const LEVEL_UI: Record<Level, { tone: CardTone; image: typeof rare; desc: string
 
 /**
  * Шаг 4. Три карточки-кнопки без «Дальше». Rare и Medium ведут сразу к итогу,
- * Well done открывает окно: 18+ и мат, красные линии, большой чекбокс, «Согласен».
+ * Well done открывает окно «Будет жёстко»: 18+, мат, внешность можно, запретные темы нет, большой чекбокс, «Согласен».
  */
 export function LevelStep({ go }: { draft: CreateDraft; go: (step: CreateStep) => void }) {
   const [warn, setWarn] = useState(false);
@@ -104,12 +104,13 @@ export function LevelStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =
         onClose={() => setWarn(false)}
         title={
           <>
-            Тут 18+ <span className="tilt text-pink">и мат</span>
+            Будет <span className="tilt text-pink">жёстко</span>
           </>
         }
       >
         <p className="text-center type-body text-paper/85">
-          Шутки будут жёсткими. Про здоровье, национальность, религию и семью всё равно не шутим.
+          Тут 18+ шутки, мат. Шутки по внешним признакам допустимы. Но цензура остаётся на
+          запрещённые темы.
         </p>
         <button
           type="button"
@@ -128,7 +129,7 @@ export function LevelStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =
             {agreed && "✓"}
           </span>
           <span className="type-body font-bold text-paper">
-            Мне есть 18, я понимаю, что будет жёстко
+            Мне есть 18 и я беру всю ответственность на себя
           </span>
         </button>
         <Button
