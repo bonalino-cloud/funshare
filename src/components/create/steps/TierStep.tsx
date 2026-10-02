@@ -35,7 +35,8 @@ function items(t: TierInfo, base: TierInfo | undefined): string[] {
   const out: string[] = [];
   if (t.imageCount === 0) out.push("Шутки, только текст");
   else if (base && t.candidateCount > base.candidateCount) out.push("Ещё больше шуток");
-  if (t.imageCount > 0) out.push(plural(t.imageCount, "картинка", "картинки", "картинок"));
+  // Картинок столько, сколько выбрано шуток: число — максимум
+  if (t.imageCount > 0) out.push(`До ${plural(t.imageCount, "картинки", "картинок", "картинок")}`);
   if (t.tier === 3) out.push("Видео для сторис");
   return out;
 }
@@ -91,17 +92,20 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
           {([1, 2, 3] as const).map((tier) => {
             const ui = TIER_UI[tier];
             const info = pricing?.tiers.find((t) => t.tier === tier);
-            const free = tier === 1 && pricing?.freeTrialAvailable;
+            // Поджог бесплатный и один раз на человека; Пекло — заглушка до конца MVP
+            const trialUsed = tier === 1 && pricing?.freeTrialAvailable === false;
+            const soon = info?.available === false;
             return (
               <TierCard
                 key={tier}
                 tone={ui.tone}
                 image={ui.image}
                 onClick={() => pick(tier)}
+                disabled={soon || trialUsed}
                 corner={
-                  info && tier === 3 && !info.video ? (
+                  soon ? (
                     <span className="inline-block rounded-sm border-2 border-dashed border-ink px-2 py-1 type-label">
-                      Видео скоро
+                      Скоро
                     </span>
                   ) : undefined
                 }
@@ -118,14 +122,13 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                 footer={
                   info ? (
                     <span className="relative z-10 flex flex-wrap items-center gap-2 font-wide text-lg leading-none font-extrabold">
-                      {free ? (
-                        <>
-                          <s className="font-bold opacity-55">{formatRub(info.listAmount)}</s>
-                          Бесплатно
-                        </>
-                      ) : (
-                        formatRub(info.listAmount)
-                      )}
+                      {soon
+                        ? "Скоро"
+                        : trialUsed
+                          ? "Уже был"
+                          : info.listAmount === 0
+                            ? "Бесплатно"
+                            : formatRub(info.listAmount)}
                     </span>
                   ) : (
                     <span

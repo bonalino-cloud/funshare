@@ -36,7 +36,8 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
     };
   }, [id, attempt]);
 
-  const need = data?.selectCount ?? 0;
+  // selectCount — максимум (контракт: от 1 до него), а кандидатов бывает меньше: тогда все
+  const need = data ? Math.min(data.selectCount, data.candidates.length) : 0;
   const full = picked.length >= need;
 
   const toggle = (punchId: string) => {

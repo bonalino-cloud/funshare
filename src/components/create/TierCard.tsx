@@ -17,6 +17,7 @@ export function TierCard({
   children,
   footer,
   onClick,
+  disabled = false,
   className,
 }: {
   tone: CardTone;
@@ -29,17 +30,21 @@ export function TierCard({
   /** Нижний ряд слева: цена */
   footer?: ReactNode;
   onClick: () => void;
+  /** Тариф нельзя выбрать (Пекло-заглушка, уже использованный Поджог): карточка тусклая, без нажатия */
+  disabled?: boolean;
   className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cx(
         "group grain relative flex min-h-[120px] flex-col overflow-hidden rounded-lg p-7 pr-[44%] text-left",
         "transition-transform duration-200 ease-[var(--ease-poster)] hover:scale-[1.03] active:scale-[0.98]",
         "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-pink",
         cardTones[tone],
+        disabled && "pointer-events-none opacity-55 saturate-50",
         className,
       )}
     >
