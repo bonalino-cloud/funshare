@@ -10,10 +10,12 @@ import {
   type PointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { IconCheck, IconDownload, IconX } from "@/components/create/icons";
+import { IconBrandInstagram, IconCheck, IconDownload, IconX } from "@/components/create/icons";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/cx";
 import { renderCardPng, type RoastCardData } from "@/lib/client/roast-card";
+import { STORY_HINT, shareToStories } from "@/lib/client/stories";
+import { fontVariables } from "@/styles/fonts";
 import { RoastCard } from "./RoastCard";
 
 /** Сколько карточек выглядывает из-за передней. */
@@ -41,15 +43,12 @@ const FLY_MS = 280;
 export function ArtifactCards({
   cards,
   slug,
-  shareText,
   onIndex,
   reserve = 300,
 }: {
   cards: RoastCardData[];
   /** Для имени скачанного файла и ссылки при «Поделиться». */
   slug: string;
-  /** Текст к «Поделиться» в полноэкранном просмотре. */
-  shareText?: string;
   onIndex?: (i: number) => void;
   /** Сколько px высоты экрана занято вокруг стопки: шапка, кнопки. */
   reserve?: number;
@@ -189,7 +188,6 @@ export function ArtifactCards({
         <CardViewer
           card={cards[index]}
           slug={slug}
-          shareText={shareText}
           n={index + 1}
           total={n}
           onPrev={() => go(index - 1)}
@@ -225,7 +223,6 @@ export function saveFile(file: File) {
 function CardViewer({
   card,
   slug,
-  shareText,
   n,
   total,
   onPrev,
@@ -234,7 +231,6 @@ function CardViewer({
 }: {
   card: RoastCardData;
   slug: string;
-  shareText?: string;
   n: number;
   total: number;
   onPrev: () => void;
@@ -242,7 +238,8 @@ function CardViewer({
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState<"save" | "share" | null>(null);
-  const [flash, setFlash] = useState<"saved" | "copied" | null>(null);
+  const [flash, setFlash] = useState<"saved" | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [dx, setDx] = useState(0);
   /** PNG по id шутки, готовим заранее: на iOS долгое ожидание перед share() ломает жест. */
   const files = useRef(new Map<string, Promise<File>>());
@@ -262,7 +259,7 @@ function CardViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- готовим файл, когда сменилась карточка
   }, [card.punchId]);
 
-  function show(f: "saved" | "copied") {
+  function show(f: "saved") {
     setFlash(f);
     setTimeout(() => setFlash(null), 2000);
   }
@@ -321,23 +318,20 @@ function CardViewer({
     }
   }
 
-  /** PNG этой карточки + ссылка; без файлов — только ссылка; без системного меню — копируем ссылку. */
+  /** В Instagram Stories: PNG этой карточки в системное меню, ссылка в буфер под стикер. */
   async function share() {
     if (busy) return;
     setBusy("share");
-    const url = `${window.location.origin}/a/${slug}`;
     try {
-      const file = await fileNow().catch(() => null);
-      if (file && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareText, url });
-      } else if (navigator.share) {
-        await navigator.share({ title: "Прожарка", text: shareText, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        show("copied");
+      const result = await shareToStories(
+        await fileNow(),
+        `${window.location.origin}/a/${slug}`,
+        saveFile,
+      );
+      if (result !== "cancelled") {
+        setHint(STORY_HINT[result]);
+        setTimeout(() => setHint(null), 5000);
       }
-    } catch {
-      // закрыли системное меню или нет доступа к буферу: ничего не делаем
     } finally {
       setBusy(null);
     }
@@ -348,7 +342,8 @@ function CardViewer({
       role="dialog"
       aria-modal="true"
       aria-label={`Карточка ${n} из ${total}. Свайп листает, тап возвращает к карточкам`}
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      // Портал в body вне обёртки сайта: переменные шрифтов вешаем сюда, иначе Unbounded не найдётся
+      className={cx(fontVariables, "fixed inset-0 z-50 flex items-center justify-center")}
       // Размытие прячет страницу под просмотром там, куда карточка не дотягивается
       style={{ backgroundColor: "rgba(0,0,0,0.9)", backdropFilter: "blur(14px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -376,39 +371,50 @@ function CardViewer({
         >
           <IconX className="size-5" strokeWidth={2.5} />
         </button>
-        {/* Две кнопки рядом поверх карточки, отступ 24 по краям */}
-        <div className="absolute inset-x-6 bottom-[max(24px,env(safe-area-inset-bottom))] flex gap-2">
-          <Button
-            type="button"
-            variant="inverse"
-            look="display"
-            arrow={false}
-            className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
-            icon={
-              flash === "saved" ? (
-                <IconCheck className="size-5" strokeWidth={2.75} />
-              ) : (
-                <IconDownload className="size-5" strokeWidth={2.75} />
-              )
-            }
-            onClick={save}
-            disabled={busy !== null}
-            aria-busy={busy === "save" || undefined}
-          >
-            {flash === "saved" ? "Сохранено" : "Скачать"}
-          </Button>
-          <Button
-            type="button"
-            variant="inverse"
-            look="display"
-            arrow={false}
-            className="h-14 min-w-0 flex-1 px-3 text-sm!"
-            onClick={share}
-            disabled={busy !== null}
-            aria-busy={busy === "share" || undefined}
-          >
-            {flash === "copied" ? "Ссылка скопирована" : "Поделиться"}
-          </Button>
+        {/* Две кнопки рядом поверх карточки, отступ 24 по краям; подсказка после шеринга над ними */}
+        <div className="absolute inset-x-6 bottom-[max(24px,env(safe-area-inset-bottom))] flex flex-col gap-2">
+          {hint && (
+            <p
+              className="rounded-md bg-ink px-3 py-2 text-center type-body text-paper"
+              aria-live="polite"
+            >
+              {hint}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="inverse"
+              look="display"
+              arrow={false}
+              className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
+              icon={
+                flash === "saved" ? (
+                  <IconCheck className="size-5" strokeWidth={2.75} />
+                ) : (
+                  <IconDownload className="size-5" strokeWidth={2.75} />
+                )
+              }
+              onClick={save}
+              disabled={busy !== null}
+              aria-busy={busy === "save" || undefined}
+            >
+              {flash === "saved" ? "Сохранено" : "Скачать"}
+            </Button>
+            <Button
+              type="button"
+              variant="inverse"
+              look="display"
+              arrow={false}
+              className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
+              icon={<IconBrandInstagram className="size-5" strokeWidth={2.5} />}
+              onClick={share}
+              disabled={busy !== null}
+              aria-busy={busy === "share" || undefined}
+            >
+              Поделиться
+            </Button>
+          </div>
         </div>
       </div>
     </div>,
