@@ -99,7 +99,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
       </StepTitle>
       <StepLead>Выбери {need || 6} самых смешных шуток</StepLead>
 
-      <div role="group" aria-label="Шутки" className="flex flex-col gap-3 pb-3">
+      <div role="group" aria-label="Шутки" className="mx-2 flex flex-col gap-3 pb-3">
         {data?.candidates.map((c) => {
           const index = picked.indexOf(c.id);
           const on = index >= 0;
@@ -148,8 +148,8 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
         })}
       </div>
 
-      <div className="sticky bottom-[max(16px,env(safe-area-inset-bottom))] z-30 mt-auto rounded-lg bg-ink px-4 pt-3.5 pb-4">
-        <div className="mb-2.5 flex items-baseline justify-between">
+      <div className="sticky bottom-[max(16px,env(safe-area-inset-bottom))] z-30 mt-auto rounded-lg bg-ink px-6 pt-5 pb-6">
+        <div className="mb-3.5 flex items-baseline justify-between">
           <span className="font-mono text-[22px] leading-none font-extrabold text-white">
             {picked.length} / {need}
           </span>
