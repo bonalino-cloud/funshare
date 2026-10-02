@@ -177,7 +177,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
               key={i}
               className={cx(
                 "h-2 flex-1 rounded-[4px] transition-colors duration-200",
-                i < picked.length ? "bg-white" : "bg-[#2b2b2b]",
+                i < picked.length ? "bg-white" : "bg-white/25",
               )}
             />
           ))}

@@ -125,7 +125,7 @@ export function ResultScreen({ slug }: { slug: string }) {
 
   /** Вторичные кнопки: иконка слева от подписи, линия толще стандартной Tabler */
   // Чёрная заливка вместо прозрачной у ghost: кнопки не просвечивают огнём фона
-  const tool = "h-12 min-w-0 gap-2 bg-ink! px-2 text-xs! whitespace-nowrap";
+  const tool = "h-14 min-w-0 gap-2 bg-ink! px-2 text-xs! whitespace-nowrap";
   const ico = (done: boolean, Icon: typeof IconDownload) =>
     done ? (
       <IconCheck className="size-5" strokeWidth={2.75} />
@@ -141,7 +141,7 @@ export function ResultScreen({ slug }: { slug: string }) {
       {cards.length ? (
         // Колода по центру свободной высоты: на высоких экранах ширину режет колонка, а не высота
         <div className="flex flex-1 flex-col justify-center">
-          <ArtifactCards cards={cards} onIndex={setIndex} reserve={215} />
+          <ArtifactCards cards={cards} onIndex={setIndex} reserve={223} />
         </div>
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>

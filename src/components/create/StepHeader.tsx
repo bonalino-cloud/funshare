@@ -44,7 +44,7 @@ export function StepHeader({
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <i
                 key={i}
-                className={cx("h-1.5 flex-1 rounded-[3px]", i < step ? "bg-white" : "bg-[#2b2b2b]")}
+                className={cx("h-1.5 flex-1 rounded-[3px]", i < step ? "bg-white" : "bg-white/25")}
               />
             ))}
           </div>
