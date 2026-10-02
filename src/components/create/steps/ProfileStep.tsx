@@ -24,11 +24,7 @@ const MODES: ReadonlyArray<{ value: GenerationMode; label: string }> = [
   { value: "friend", label: "Друга" },
 ];
 
-/** Пока сервер не прислал свою строку, крутим свои каждые 3 с */
-const CHECKING_LINES = ["Открываем профиль…", "Листаем ленту…", "Смотрим, можно ли жарить…"];
-
-type Phase =
-  { kind: "idle" } | { kind: "checking"; hint?: string } | { kind: "error"; code: ErrorCode };
+type Phase = { kind: "idle" } | { kind: "checking" } | { kind: "error"; code: ErrorCode };
 
 /**
  * Шаг 1. Проверка профиля идёт до оплаты: открыт, постов хватает, владельцу есть 16.
@@ -37,7 +33,6 @@ type Phase =
 export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: CreateStep) => void }) {
   const [value, setValue] = useState(draft.instagramUrl);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-  const [tick, setTick] = useState(0);
   const abort = useRef<AbortController | null>(null);
 
   const [settled, setSettled] = useState(value);
@@ -52,13 +47,6 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
     return () => clearTimeout(t);
   }, [value]);
   const liveHint = settled === value && !input.ok ? inputHint(input.issue) : undefined;
-
-  // Локальные строки ожидания, если бэк не прислал hint
-  useEffect(() => {
-    if (!checking) return;
-    const t = setInterval(() => setTick((n) => n + 1), 3000);
-    return () => clearInterval(t);
-  }, [checking]);
 
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -76,10 +64,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
       const result = await pollUntil(
         () => api.getProfileCheck(id),
         (s) => s.status !== "checking",
-        {
-          signal: ac.signal,
-          onTick: (s) => setPhase({ kind: "checking", hint: s.hint }),
-        },
+        { signal: ac.signal },
       );
       if (result.status === "ok" && result.profile) {
         patchDraft({ instagramUrl: value, profileCheckId: id, profile: result.profile });
@@ -117,11 +102,6 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
       </>
     );
   }
-
-  const statusLine =
-    phase.kind === "checking"
-      ? (phase.hint ?? CHECKING_LINES[tick % CHECKING_LINES.length])
-      : undefined;
 
   return (
     <form
@@ -180,7 +160,8 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             aria-busy
           >
             <Spinner />
-            {statusLine}
+            {/* Одно слово: смена статусов не влезала в строку кнопки и прыгала */}
+            Ищем
           </Button>
         ) : (
           <Button
