@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Artifact } from "@/contracts";
 import { ArtifactCards, cardFile, saveFile } from "@/components/artifact/ArtifactCards";
+import { CoBrand } from "@/components/artifact/CoBrand";
 import { cx } from "@/components/cx";
 import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
@@ -137,11 +138,15 @@ export function ResultScreen({ slug }: { slug: string }) {
     <>
       {/* Карточки в фокусе: видимого заголовка нет, только для скринридера */}
       <h1 className="sr-only">Прожарка готова</h1>
-      <div className="h-3" aria-hidden="true" />
+      {artifact && (
+        <div className="mb-4">
+          <CoBrand username={artifact.subject.username} />
+        </div>
+      )}
       {cards.length ? (
         // Колода по центру свободной высоты: на высоких экранах ширину режет колонка, а не высота
         <div className="flex flex-1 flex-col justify-center">
-          <ArtifactCards cards={cards} slug={slug} onIndex={setIndex} reserve={223} />
+          <ArtifactCards cards={cards} slug={slug} onIndex={setIndex} reserve={330} />
         </div>
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>
