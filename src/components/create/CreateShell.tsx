@@ -12,7 +12,6 @@ import { StepHeader } from "./StepHeader";
 export function CreateShell({
   step,
   onBack,
-  action,
   progress,
   flush = false,
   children,
@@ -22,7 +21,6 @@ export function CreateShell({
   /** Без нижнего запаса: экран сам держит кнопки у края (результат). */
   flush?: boolean;
   onBack?: () => void;
-  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -40,7 +38,7 @@ export function CreateShell({
           !flush && "pb-[max(56px,env(safe-area-inset-bottom))]",
         )}
       >
-        <StepHeader step={step} onBack={onBack} action={action} progress={progress} />
+        <StepHeader step={step} onBack={onBack} progress={progress} />
         <main className="flex flex-1 flex-col">{children}</main>
       </div>
     </div>
