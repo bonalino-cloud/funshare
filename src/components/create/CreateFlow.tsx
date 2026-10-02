@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { patchDraft, useDraft, useHydrated } from "@/lib/client/draft";
+import { useDraft, useHydrated } from "@/lib/client/draft";
 import { CreateShell } from "./CreateShell";
 import {
   CREATE_STEPS,
@@ -33,7 +33,6 @@ const STEP_SCREENS = {
  */
 export function CreateFlow() {
   const params = useSearchParams();
-  const router = useRouter();
   const draft = useDraft();
   const hydrated = useHydrated();
 
@@ -53,16 +52,14 @@ export function CreateFlow() {
   };
   const back = () => {
     const i = CREATE_STEPS.indexOf(step);
-    if (i > 0) return go(CREATE_STEPS[i - 1] ?? "profile");
-    // На шаге 1 «назад» с экрана «Нашли!» возвращает к полю, а с поля — на лендинг
-    if (draft.profile) patchDraft({ profileCheckId: undefined, profile: undefined });
-    else router.push("/roast");
+    if (i > 0) go(CREATE_STEPS[i - 1] ?? "profile");
   };
 
   const Screen = STEP_SCREENS[step];
 
+  // На шаге 1 стрелки нет: выход на главную и «Другой профиль» — текстом под кнопкой
   return (
-    <CreateShell step={stepNumber(step)} onBack={back}>
+    <CreateShell step={stepNumber(step)} onBack={step === "profile" ? undefined : back}>
       {hydrated && <Screen draft={draft} go={go} />}
     </CreateShell>
   );

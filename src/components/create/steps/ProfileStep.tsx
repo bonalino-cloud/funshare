@@ -15,6 +15,7 @@ import { ArtStage } from "../ArtStage";
 import impInspect from "../assets/imp-inspect.png";
 import { errorLine, inputHint } from "../errors";
 import { ProfileFound } from "../ProfileFound";
+import { QuietLink } from "../QuietLink";
 import { StepLead, StepTitle } from "../StepTitle";
 import type { CreateStep } from "../steps";
 
@@ -96,7 +97,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
     return (
       <>
         <ProfileFound profile={draft.profile} />
-        <div className="mt-auto pt-4">
+        <div className="mt-auto flex flex-col pt-4">
           <Button
             type="button"
             variant="inverse"
@@ -107,6 +108,11 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
           >
             Дальше
           </Button>
+        </div>
+        <div className="flex flex-col pt-1">
+          <QuietLink onClick={() => patchDraft({ profileCheckId: undefined, profile: undefined })}>
+            Другой профиль
+          </QuietLink>
         </div>
       </>
     );
@@ -188,6 +194,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             {phase.kind === "error" ? "Проверить ещё раз" : "Проверить"}
           </Button>
         )}
+        <QuietLink href="/roast">На главную</QuietLink>
       </div>
     </form>
   );
