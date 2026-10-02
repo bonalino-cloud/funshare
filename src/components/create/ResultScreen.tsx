@@ -133,16 +133,34 @@ export function ResultScreen({ slug }: { slug: string }) {
     );
   }
 
+  /** Вторичные кнопки: иконка слева от подписи, линия толще стандартной Tabler */
+  const tool = "h-12 min-w-0 gap-1 px-1 text-[11px]!";
+  const ico = (done: boolean, Icon: typeof IconDownload) =>
+    done ? (
+      <IconCheck className="size-5" strokeWidth={2.75} />
+    ) : (
+      <Icon className="size-5" strokeWidth={2.75} />
+    );
+
   return (
     <>
-      <StepTitle size="m">Готово. Листай</StepTitle>
+      {artifact && (
+        <div className="mb-4 flex w-full flex-col items-center gap-1 text-center">
+          <Avatar url={artifact.subject.avatarUrl} name={artifact.subject.username} />
+          <div className="text-sm text-paper/80">{artifact.subject.displayName}</div>
+          <StepTitle size="s" className="mb-0! w-full">
+            Прожарен
+          </StepTitle>
+        </div>
+      )}
       {cards.length ? (
-        <ArtifactCards cards={cards} onIndex={setIndex} reserve={410} />
+        <ArtifactCards cards={cards} onIndex={setIndex} reserve={375} />
       ) : (
         <p className="type-body text-paper/60">Открываем…</p>
       )}
       {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
-      <div className="mt-auto flex flex-col gap-3 pt-4">
+      {/* Кнопки закреплены внизу: колода крупная, на коротком экране страница прокручивается под ними */}
+      <div className="sticky bottom-0 z-30 -mx-[18px] mt-auto flex flex-col gap-2 bg-linear-to-t from-surface from-70% to-transparent px-[18px] pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
         <Button
           type="button"
           variant="inverse"
@@ -161,55 +179,61 @@ export function ResultScreen({ slug }: { slug: string }) {
             variant="ghost"
             look="display"
             arrow={false}
-            className="h-12 gap-1.5 px-2 text-xs!"
+            className={tool}
+            icon={ico(flash === "saved", IconDownload)}
             onClick={save}
             disabled={!cards.length || busy !== null}
             aria-busy={busy === "save" || undefined}
             aria-label="Скачать эту карточку"
           >
-            {flash === "saved" ? (
-              <IconCheck className="size-4 shrink-0" />
-            ) : (
-              <IconDownload className="size-4 shrink-0" />
-            )}
-            {flash === "saved" ? "Готово" : "Эту"}
+            Эту
           </Button>
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className="h-12 gap-1.5 px-2 text-xs!"
+            className={tool}
+            icon={ico(flash === "savedAll", IconDownload)}
             onClick={saveAll}
             disabled={cards.length < 2 || busy !== null}
             aria-busy={busy === "saveAll" || undefined}
             aria-label="Скачать все карточки"
           >
-            {flash === "savedAll" ? (
-              <IconCheck className="size-4 shrink-0" />
-            ) : (
-              <IconDownload className="size-4 shrink-0" />
-            )}
-            {flash === "savedAll" ? "Готово" : busy === "saveAll" ? "Качаем…" : "Все"}
+            {busy === "saveAll" ? "…" : "Все"}
           </Button>
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className="h-12 gap-1.5 px-2 text-xs!"
+            className={tool}
+            icon={ico(flash === "copied", IconCopy)}
             onClick={copy}
             aria-label="Скопировать ссылку"
           >
-            {flash === "copied" ? (
-              <IconCheck className="size-4 shrink-0" />
-            ) : (
-              <IconCopy className="size-4 shrink-0" />
-            )}
-            {flash === "copied" ? "Готово" : "Ссылка"}
+            Ссылка
           </Button>
         </div>
       </div>
     </>
   );
+}
+
+/** Аватар из профиля; не загрузился (Instagram режет хотлинк) — розовый круг с буквой, как на шаге 1. */
+function Avatar({ url, name }: { url: string | null; name: string }) {
+  const [broken, setBroken] = useState(false);
+  const cls = "size-11 rounded-full border-[3px] border-ink";
+  if (!url || broken) {
+    return (
+      <div
+        className={`${cls} flex items-center justify-center bg-pink font-wide text-xl font-black text-ink`}
+        aria-hidden="true"
+      >
+        {name[0]?.toUpperCase()}
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" className={`${cls} object-cover`} onError={() => setBroken(true)} />;
 }

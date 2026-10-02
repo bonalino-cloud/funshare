@@ -58,10 +58,10 @@ export function StepTitle({
   children: ReactNode;
   accent?: ReactNode;
   split?: boolean;
-  size?: "l" | "m";
+  size?: "l" | "m" | "s";
   className?: string;
 }) {
-  const max = size === "l" ? 64 : 56;
+  const max = size === "l" ? 64 : size === "m" ? 56 : 40;
   const accentNode = accent && <span className="tilt text-pink">{accent}</span>;
   return (
     <h1

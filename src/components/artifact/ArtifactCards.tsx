@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { cx } from "@/components/cx";
 import { renderCardPng, type RoastCardData } from "@/lib/client/roast-card";
 import { RoastCard } from "./RoastCard";
 
+/** Поворот карточек, которые выглядывают из-за передней: следующая и та, что за ней. */
+const BEHIND = [-5, 5] as const;
+/** Свайп дальше этого (px) листает колоду. */
+const SWIPE = 60;
+
 /**
- * Карточки артефакта лентой со свайпом, как сторис. Ширина карточки подстраивается
- * под высоту экрана, чтобы под ней оставались кнопки.
+ * Колода карточек: передняя ровно по центру, за ней краями выглядывают следующие,
+ * повёрнутые на −5° и +5°. Листается свайпом, стрелками и точками, по кругу.
+ * Ширина передней подстраивается под высоту экрана, чтобы под колодой оставались кнопки.
  */
 export function ArtifactCards({
   cards,
@@ -16,33 +22,34 @@ export function ArtifactCards({
 }: {
   cards: RoastCardData[];
   onIndex?: (i: number) => void;
-  /** Сколько px высоты экрана занято вокруг карточки: шапка, кнопки. */
+  /** Сколько px высоты экрана занято вокруг колоды: шапка, заголовок, кнопки. */
   reserve?: number;
 }) {
-  const track = useRef<HTMLDivElement>(null);
+  const n = cards.length;
   const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const el = track.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          const i = Number((e.target as HTMLElement).dataset.index);
-          setIndex(i);
-          onIndex?.(i);
-        }
-      },
-      { root: el, threshold: 0.6 },
-    );
-    for (const child of el.children) io.observe(child);
-    return () => io.disconnect();
-  }, [cards, onIndex]);
+  const [dx, setDx] = useState(0);
+  const drag = useRef<{ x: number; id: number } | null>(null);
 
   function go(i: number) {
-    const el = track.current?.children[i] as HTMLElement | undefined;
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    const next = ((i % n) + n) % n;
+    setIndex(next);
+    onIndex?.(next);
+  }
+
+  function down(e: PointerEvent<HTMLDivElement>) {
+    if (n < 2) return;
+    drag.current = { x: e.clientX, id: e.pointerId };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function move(e: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id === e.pointerId) setDx(e.clientX - drag.current.x);
+  }
+  function up(e: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id !== e.pointerId) return;
+    drag.current = null;
+    if (dx <= -SWIPE) go(index + 1);
+    else if (dx >= SWIPE) go(index - 1);
+    setDx(0);
   }
 
   return (
@@ -50,30 +57,57 @@ export function ArtifactCards({
       className="[container-type:inline-size] flex w-full flex-col items-center gap-3"
       style={
         {
-          "--card-w": `max(220px, min(100cqw, calc((100dvh - ${reserve}px) * 9 / 16)))`,
+          // Запас по бокам под повёрнутые края задних карточек
+          "--card-w": `max(150px, min(calc(100cqw - 48px), calc((100dvh - ${reserve}px) * 9 / 16)))`,
         } as CSSProperties
       }
     >
       <div
-        ref={track}
-        className="flex w-full snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto overscroll-x-contain px-[max(0px,calc((100cqw-var(--card-w))/2))] [&::-webkit-scrollbar]:hidden"
-        aria-roledescription="карусель"
-        aria-label="Карточки прожарки"
+        className="relative w-(--card-w) touch-pan-y outline-none select-none"
+        style={{ aspectRatio: "9 / 16" }}
+        role="group"
+        aria-roledescription="колода карточек"
+        aria-label={`Карточка ${index + 1} из ${n}. Листай свайпом или стрелками`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") go(index + 1);
+          if (e.key === "ArrowLeft") go(index - 1);
+        }}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
       >
-        {cards.map((card, i) => (
-          <div
-            key={card.punchId}
-            data-index={i}
-            className="w-(--card-w) shrink-0 snap-center"
-            aria-roledescription="карточка"
-            aria-label={`${i + 1} из ${cards.length}`}
-          >
-            <RoastCard card={card} priority={i === 0} className="rounded-lg" />
-          </div>
-        ))}
+        {cards.map((card, i) => {
+          // Место в колоде: 0 — передняя, 1 и 2 — выглядывают, остальные спрятаны сзади
+          const d = (i - index + n) % n;
+          const front = d === 0;
+          const rot = front ? dx / 18 : (BEHIND[d - 1] ?? 0);
+          return (
+            <div
+              key={card.punchId}
+              className={cx(
+                "absolute inset-0 origin-bottom",
+                !(front && dx) && "transition-[transform,opacity] duration-300 ease-out",
+              )}
+              style={{
+                zIndex: n - d,
+                opacity: d <= BEHIND.length ? 1 : 0,
+                transform: `translateX(${front ? dx : 0}px) rotate(${rot}deg) scale(${front ? 1 : 0.97})`,
+              }}
+              aria-hidden={!front}
+            >
+              <RoastCard
+                card={card}
+                priority={d <= BEHIND.length}
+                className="rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
+              />
+            </div>
+          );
+        })}
       </div>
-      {cards.length > 1 && (
-        <div className="flex gap-2" role="tablist" aria-label="Выбор карточки">
+      {n > 1 && (
+        <div className="relative z-10 flex gap-1" role="tablist" aria-label="Выбор карточки">
           {cards.map((card, i) => (
             <button
               key={card.punchId}
@@ -82,9 +116,10 @@ export function ArtifactCards({
               aria-selected={i === index}
               aria-label={`Карточка ${i + 1}`}
               onClick={() => go(i)}
+              // Точка маленькая, а зона нажатия 16 px: псевдоэлемент шире самой точки
               className={cx(
-                "h-2 rounded-full transition-all duration-200",
-                i === index ? "w-6 bg-paper" : "w-2 bg-paper/35 hover:bg-paper/60",
+                "relative h-1 rounded-full transition-all duration-200 before:absolute before:-inset-1.5",
+                i === index ? "w-3 bg-paper" : "w-1 bg-paper/35 hover:bg-paper/60",
               )}
             />
           ))}

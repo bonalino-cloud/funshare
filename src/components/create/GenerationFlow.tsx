@@ -35,14 +35,16 @@ export function GenerationFlow({ id }: { id: string }) {
   return (
     <CreateShell
       step={step}
+      progress={status?.status !== "ready"}
+      flush={status?.status === "ready"}
       action={
         status?.status === "ready" ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="inverse"
             look="display"
             arrow={false}
-            className="h-10 px-5 text-sm!"
+            className="h-7 px-3 text-[11px]! shadow-none!"
             onClick={() => router.push("/create")}
           >
             Ещё раз
