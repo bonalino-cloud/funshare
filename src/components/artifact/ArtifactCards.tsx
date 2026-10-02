@@ -41,12 +41,15 @@ const FLY_MS = 280;
 export function ArtifactCards({
   cards,
   slug,
+  shareText,
   onIndex,
   reserve = 300,
 }: {
   cards: RoastCardData[];
-  /** Для имени скачанного файла. */
+  /** Для имени скачанного файла и ссылки при «Поделиться». */
   slug: string;
+  /** Текст к «Поделиться» в полноэкранном просмотре. */
+  shareText?: string;
   onIndex?: (i: number) => void;
   /** Сколько px высоты экрана занято вокруг стопки: шапка, кнопки. */
   reserve?: number;
@@ -186,6 +189,7 @@ export function ArtifactCards({
         <CardViewer
           card={cards[index]}
           slug={slug}
+          shareText={shareText}
           n={index + 1}
           total={n}
           onPrev={() => go(index - 1)}
@@ -212,8 +216,8 @@ export function saveFile(file: File) {
 }
 
 /**
- * Карточка на всю высоту экрана без скругления (как в PNG), поверх неё внизу «Скачать» —
- * PNG только этой карточки. Свайп влево/вправо и стрелки листают (колода под просмотром
+ * Карточка на всю высоту экрана без скругления (как в PNG), поверх неё внизу рядом
+ * «Скачать» и «Поделиться» — обе про эту карточку. Свайп влево/вправо и стрелки листают (колода под просмотром
  * листается вместе с ним), тап по карточке возвращает к колоде; ещё крестик, тап мимо и Esc.
  * Через портал в body: у колоды container-type, и fixed внутри неё встал бы
  * относительно колоды, а не экрана.
@@ -221,6 +225,7 @@ export function saveFile(file: File) {
 function CardViewer({
   card,
   slug,
+  shareText,
   n,
   total,
   onPrev,
@@ -229,15 +234,38 @@ function CardViewer({
 }: {
   card: RoastCardData;
   slug: string;
+  shareText?: string;
   n: number;
   total: number;
   onPrev: () => void;
   onNext: () => void;
   onClose: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState<"save" | "share" | null>(null);
+  const [flash, setFlash] = useState<"saved" | "copied" | null>(null);
   const [dx, setDx] = useState(0);
+  /** PNG по id шутки, готовим заранее: на iOS долгое ожидание перед share() ломает жест. */
+  const files = useRef(new Map<string, Promise<File>>());
+
+  function fileNow(): Promise<File> {
+    let f = files.current.get(card.punchId);
+    if (!f) {
+      f = cardFile(card, slug, n);
+      f.catch(() => files.current.delete(card.punchId));
+      files.current.set(card.punchId, f);
+    }
+    return f;
+  }
+
+  useEffect(() => {
+    fileNow().catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- готовим файл, когда сменилась карточка
+  }, [card.punchId]);
+
+  function show(f: "saved" | "copied") {
+    setFlash(f);
+    setTimeout(() => setFlash(null), 2000);
+  }
   const drag = useRef<{ x: number; id: number } | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   // Стрелки видят свежие колбэки, а подписка на keydown не пересоздаётся на каждый рендер
@@ -284,13 +312,34 @@ function CardViewer({
 
   async function save() {
     if (busy) return;
-    setBusy(true);
+    setBusy("save");
     try {
-      saveFile(await cardFile(card, slug, n));
-      setDone(true);
-      setTimeout(() => setDone(false), 2000);
+      saveFile(await fileNow());
+      show("saved");
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  /** PNG этой карточки + ссылка; без файлов — только ссылка; без системного меню — копируем ссылку. */
+  async function share() {
+    if (busy) return;
+    setBusy("share");
+    const url = `${window.location.origin}/a/${slug}`;
+    try {
+      const file = await fileNow().catch(() => null);
+      if (file && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareText, url });
+      } else if (navigator.share) {
+        await navigator.share({ title: "Прожарка", text: shareText, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        show("copied");
+      }
+    } catch {
+      // закрыли системное меню или нет доступа к буферу: ничего не делаем
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -327,25 +376,40 @@ function CardViewer({
         >
           <IconX className="size-5" strokeWidth={2.5} />
         </button>
-        <Button
-          type="button"
-          variant="inverse"
-          look="display"
-          arrow={false}
-          className="absolute inset-x-6 bottom-[max(24px,env(safe-area-inset-bottom))] h-14"
-          icon={
-            done ? (
-              <IconCheck className="size-5" strokeWidth={2.75} />
-            ) : (
-              <IconDownload className="size-5" strokeWidth={2.75} />
-            )
-          }
-          onClick={save}
-          disabled={busy}
-          aria-busy={busy || undefined}
-        >
-          {done ? "Сохранено" : "Скачать"}
-        </Button>
+        {/* Две кнопки рядом поверх карточки, отступ 24 по краям */}
+        <div className="absolute inset-x-6 bottom-[max(24px,env(safe-area-inset-bottom))] flex gap-2">
+          <Button
+            type="button"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
+            icon={
+              flash === "saved" ? (
+                <IconCheck className="size-5" strokeWidth={2.75} />
+              ) : (
+                <IconDownload className="size-5" strokeWidth={2.75} />
+              )
+            }
+            onClick={save}
+            disabled={busy !== null}
+            aria-busy={busy === "save" || undefined}
+          >
+            {flash === "saved" ? "Сохранено" : "Скачать"}
+          </Button>
+          <Button
+            type="button"
+            variant="inverse"
+            look="display"
+            arrow={false}
+            className="h-14 min-w-0 flex-1 px-3 text-sm!"
+            onClick={share}
+            disabled={busy !== null}
+            aria-busy={busy === "share" || undefined}
+          >
+            {flash === "copied" ? "Ссылка скопирована" : "Поделиться"}
+          </Button>
+        </div>
       </div>
     </div>,
     document.body,
