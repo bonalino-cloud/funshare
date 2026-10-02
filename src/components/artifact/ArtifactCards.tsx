@@ -166,7 +166,7 @@ export function ArtifactCards({
         })}
       </div>
       {n > 1 && (
-        <div className="relative z-10 flex gap-1" role="tablist" aria-label="Выбор карточки">
+        <div className="relative z-10 flex gap-1.5" role="tablist" aria-label="Выбор карточки">
           {cards.map((card, i) => (
             <button
               key={card.punchId}
@@ -177,8 +177,8 @@ export function ArtifactCards({
               onClick={() => go(i)}
               // Точка маленькая, а зона нажатия 16 px: псевдоэлемент шире самой точки
               className={cx(
-                "relative h-1 rounded-full transition-all duration-200 before:absolute before:-inset-1.5",
-                i === index ? "w-3 bg-paper" : "w-1 bg-paper/35 hover:bg-paper/60",
+                "relative h-1.5 rounded-full transition-all duration-200 before:absolute before:-inset-1.5",
+                i === index ? "w-4 bg-paper" : "w-1.5 bg-paper/35 hover:bg-paper/60",
               )}
             />
           ))}
