@@ -33,6 +33,12 @@ export const GenerationRequest = z
     extraFacts: z.array(ExtraFact).max(5).optional(),
     /** «Волшебное слово». Нормализацию и проверку делает BE, ошибка — `promo_invalid`. */
     promoCode: z.string().trim().min(1).max(40).optional(),
+    /**
+     * Кострище: завершённая генерация Поджога того же владельца и профиля, откуда подтянуть
+     * выбранные шутки (roast-engine §1). Чужую, незавершённую или другого профиля BE молча
+     * игнорирует.
+     */
+    trialGenerationId: z.string().min(1).optional(),
   })
   .refine((r) => r.level !== "well_done" || r.ageConfirmed === true, {
     message: "well_done требует ageConfirmed = true",
@@ -109,6 +115,8 @@ export const PunchCandidate = z.object({
   id: z.string().min(1),
   emoji: z.string().min(1),
   text: z.string().min(1).max(PUNCH_MAX_CHARS),
+  /** Перенесена из Поджога в Кострище («из пробы»), `id` сохранён. */
+  fromTrial: z.boolean().optional(),
 });
 export type PunchCandidate = z.infer<typeof PunchCandidate>;
 
@@ -116,13 +124,10 @@ export type PunchCandidate = z.infer<typeof PunchCandidate>;
 export const CandidatesResponse = z
   .object({
     generationId: z.string().min(1),
-    /** Сколько нужно выбрать: ровно столько и ни одной больше. */
+    /** Сколько можно выбрать максимум: от 1 до `selectCount`. */
     selectCount: z.number().int().positive(),
+    /** До N кандидатов: качественных шуток бывает меньше максимума (и меньше `selectCount`). */
     candidates: z.array(PunchCandidate).min(1),
-  })
-  .refine((c) => c.candidates.length >= c.selectCount, {
-    message: "кандидатов не меньше, чем нужно выбрать",
-    path: ["candidates"],
   })
   .refine((c) => new Set(c.candidates.map((p) => p.id)).size === c.candidates.length, {
     message: "id кандидатов уникальны",
@@ -132,7 +137,7 @@ export type CandidatesResponse = z.infer<typeof CandidatesResponse>;
 
 /**
  * POST /api/generations/:id/selection — выбор пользователя. Порядок = порядок в артефакте.
- * Сервер проверяет, что все id из кандидатов этой генерации и их ровно `selectCount`; ответ 202.
+ * Сервер проверяет, что все id из кандидатов этой генерации и их от 1 до `selectCount`; ответ 202.
  */
 export const SelectionRequest = z
   .object({

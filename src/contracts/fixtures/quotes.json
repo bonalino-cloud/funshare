@@ -1,33 +1,39 @@
 {
   "plain": {
     "tier": 2,
-    "listAmount": 19900,
+    "listAmount": 9900,
     "discountAmount": 0,
-    "finalAmount": 19900,
+    "finalAmount": 9900,
     "currency": "RUB"
   },
   "freeTrial": {
     "tier": 1,
-    "listAmount": 9900,
-    "discountAmount": 9900,
+    "listAmount": 0,
+    "discountAmount": 0,
     "finalAmount": 0,
     "currency": "RUB",
     "freeTrial": true
   },
   "promoHalf": {
     "tier": 2,
-    "listAmount": 19900,
-    "discountAmount": 9950,
-    "finalAmount": 9950,
+    "listAmount": 9900,
+    "discountAmount": 4950,
+    "finalAmount": 4950,
     "currency": "RUB",
-    "promo": { "code": "ПОЛОВИНА", "percentOff": 50 }
+    "promo": {
+      "code": "ПОЛОВИНА",
+      "percentOff": 50
+    }
   },
   "promoFull": {
     "tier": 2,
-    "listAmount": 19900,
-    "discountAmount": 19900,
+    "listAmount": 9900,
+    "discountAmount": 9900,
     "finalAmount": 0,
     "currency": "RUB",
-    "promo": { "code": "ПОГНАЛИ100", "percentOff": 100 }
+    "promo": {
+      "code": "ПОГНАЛИ100",
+      "percentOff": 100
+    }
   }
 }

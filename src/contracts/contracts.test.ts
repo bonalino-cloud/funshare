@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   Artifact,
+  ArtifactDraft,
   CandidatesResponse,
   GenerationRequest,
   GenerationStatus,
@@ -41,17 +42,19 @@ describe("фикстуры проходят схемы", () => {
     ]);
   });
 
-  it("pricing.json: три тарифа, Поджог без картинок, Пекло пока без видео", () => {
+  it("pricing.json: Поджог 0 ₽ без картинок, Кострище 99 ₽ до 6 картинок, Пекло недоступно", () => {
     const p = Pricing.parse(pricing);
     expect(p.tiers.map((t) => t.tier)).toEqual([1, 2, 3]);
-    expect(p.tiers.map((t) => t.listAmount)).toEqual([9900, 19900, 29900]);
+    expect(p.tiers.map((t) => t.listAmount)).toEqual([0, 9900, 0]);
+    expect(p.tiers.map((t) => t.available)).toEqual([true, true, false]);
     expect(p.tiers[0]?.imageCount).toBe(0);
+    expect(p.tiers[1]?.imageCount).toBe(6);
     expect(p.tiers[2]?.video).toBe(false);
   });
 
   it("quotes.json: все варианты сходятся по сумме", () => {
     const q = Object.values(quotes).map((x) => Quote.parse(x));
-    expect(q.map((x) => x.finalAmount)).toEqual([19900, 0, 9950, 0]);
+    expect(q.map((x) => x.finalAmount)).toEqual([9900, 0, 4950, 0]);
   });
 
   it("generation-request.json", () => {
@@ -80,10 +83,11 @@ describe("фикстуры проходят схемы", () => {
     expect(c.selectCount).toBe(6);
   });
 
-  it("selection.json: ровно selectCount id, все из кандидатов", () => {
+  it("selection.json: от 1 до selectCount id, все из кандидатов", () => {
     const s = SelectionRequest.parse(selection);
     const ids = new Set(candidates20.candidates.map((p) => p.id));
-    expect(s.punchIds).toHaveLength(candidates20.selectCount);
+    expect(s.punchIds.length).toBeGreaterThanOrEqual(1);
+    expect(s.punchIds.length).toBeLessThanOrEqual(candidates20.selectCount);
     expect(s.punchIds.every((id) => ids.has(id))).toBe(true);
   });
 
@@ -189,9 +193,9 @@ describe("Quote и Selection", () => {
     expect(() =>
       Quote.parse({
         tier: 2,
-        listAmount: 19900,
+        listAmount: 9900,
         discountAmount: 100,
-        finalAmount: 19900,
+        finalAmount: 9900,
         currency: "RUB",
       }),
     ).toThrow();
@@ -199,5 +203,41 @@ describe("Quote и Selection", () => {
 
   it("повторы в punchIds — ошибка", () => {
     expect(() => SelectionRequest.parse({ punchIds: ["p1", "p1"] })).toThrow();
+  });
+});
+
+describe("Кострище после Поджога (roast-engine §1, §7.1a)", () => {
+  it("GenerationRequest принимает trialGenerationId", () => {
+    const r = GenerationRequest.parse({ ...generationRequest, trialGenerationId: "gen_trial" });
+    expect(r.trialGenerationId).toBe("gen_trial");
+  });
+
+  it("кандидат из Поджога помечен fromTrial", () => {
+    const [first, ...rest] = candidates20.candidates;
+    const c = CandidatesResponse.parse({
+      ...candidates20,
+      candidates: [{ ...first, fromTrial: true }, ...rest],
+    });
+    expect(c.candidates[0]?.fromTrial).toBe(true);
+  });
+
+  it("кандидатов может быть меньше selectCount: все числа «до»", () => {
+    const c = CandidatesResponse.parse({
+      ...candidates20,
+      candidates: candidates20.candidates.slice(0, 4),
+    });
+    expect(c.candidates).toHaveLength(4);
+  });
+
+  it("imagePrompts: от 0 до 6", () => {
+    const content = artifactRoast.content;
+    const prompt = { role: "section", prompt: "сцена", alt: "картинка" } as const;
+    expect(ArtifactDraft.safeParse({ content, imagePrompts: [] }).success).toBe(true);
+    expect(ArtifactDraft.safeParse({ content, imagePrompts: Array(6).fill(prompt) }).success).toBe(
+      true,
+    );
+    expect(ArtifactDraft.safeParse({ content, imagePrompts: Array(7).fill(prompt) }).success).toBe(
+      false,
+    );
   });
 });
