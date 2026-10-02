@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type CSSProperties,
@@ -182,7 +183,15 @@ export function ArtifactCards({
         </div>
       )}
       {open && cards[index] && (
-        <CardViewer card={cards[index]} slug={slug} n={index + 1} onClose={close} />
+        <CardViewer
+          card={cards[index]}
+          slug={slug}
+          n={index + 1}
+          total={n}
+          onPrev={() => go(index - 1)}
+          onNext={() => go(index + 1)}
+          onClose={close}
+        />
       )}
     </div>
   );
@@ -204,30 +213,68 @@ export function saveFile(file: File) {
 
 /**
  * Карточка на всю высоту экрана без скругления (как в PNG), поверх неё внизу «Скачать» —
- * PNG только этой карточки.
- * Закрывается крестиком, тапом мимо карточки и Esc. Через портал в body: у колоды
- * container-type, и fixed внутри неё встал бы относительно колоды, а не экрана.
+ * PNG только этой карточки. Свайп влево/вправо и стрелки листают (колода под просмотром
+ * листается вместе с ним), тап по карточке возвращает к колоде; ещё крестик, тап мимо и Esc.
+ * Через портал в body: у колоды container-type, и fixed внутри неё встал бы
+ * относительно колоды, а не экрана.
  */
 function CardViewer({
   card,
   slug,
   n,
+  total,
+  onPrev,
+  onNext,
   onClose,
 }: {
   card: RoastCardData;
   slug: string;
   n: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [dx, setDx] = useState(0);
+  const drag = useRef<{ x: number; id: number } | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // Стрелки видят свежие колбэки, а подписка на keydown не пересоздаётся на каждый рендер
+  const onArrow = useEffectEvent((key: string) => {
+    if (key === "ArrowRight") onNext();
+    if (key === "ArrowLeft") onPrev();
+  });
+
+  function down(e: PointerEvent<HTMLDivElement>) {
+    // Нажатия на «Скачать» и «×» — это кнопки, а не свайп и не тап по карточке
+    if ((e.target as HTMLElement).closest("button")) return;
+    drag.current = { x: e.clientX, id: e.pointerId };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function move(e: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id === e.pointerId) setDx(e.clientX - drag.current.x);
+  }
+  function up(e: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id !== e.pointerId) return;
+    const moved = e.clientX - drag.current.x;
+    drag.current = null;
+    setDx(0);
+    if (e.type === "pointercancel") return;
+    if (Math.abs(moved) < TAP) onClose();
+    else if (total < 2) return;
+    else if (moved <= -SWIPE) onNext();
+    else if (moved >= SWIPE) onPrev();
+  }
 
   useEffect(() => {
     closeRef.current?.focus();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      onArrow(e.key);
+    };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = overflow;
@@ -251,7 +298,7 @@ function CardViewer({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Карточка ${n}`}
+      aria-label={`Карточка ${n} из ${total}. Свайп листает, тап возвращает к карточкам`}
       className="fixed inset-0 z-50 flex items-center justify-center"
       // Размытие прячет страницу под просмотром там, куда карточка не дотягивается
       style={{ backgroundColor: "rgba(0,0,0,0.9)", backdropFilter: "blur(14px)" }}
@@ -259,7 +306,17 @@ function CardViewer({
     >
       {/* Карточка во всю высоту экрана (на узком — во всю ширину), без скругления, как в PNG.
           Кнопки лежат поверх неё */}
-      <div className="relative w-[min(100vw,calc(100dvh*9/16))]">
+      <div
+        className={cx(
+          "relative w-[min(100vw,calc(100dvh*9/16))] touch-pan-y select-none",
+          !dx && "transition-transform duration-200 ease-out",
+        )}
+        style={{ transform: `translateX(${dx}px) rotate(${dx / 40}deg)` }}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+      >
         <RoastCard card={card} priority />
         <button
           ref={closeRef}
