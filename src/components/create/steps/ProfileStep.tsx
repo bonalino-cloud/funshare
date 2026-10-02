@@ -157,6 +157,8 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             look="display"
             arrow={false}
             className="h-16 w-full"
+            // Серая и неактивная, пока ищем: тот же вид, что у «Проверить» без ника
+            disabled
             aria-busy
           >
             <Spinner />
