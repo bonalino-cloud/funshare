@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Artifact } from "@/contracts";
 import { ArtifactCards, cardFile, saveFile } from "@/components/artifact/ArtifactCards";
+import { cx } from "@/components/cx";
 import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
 import { roastCards } from "@/lib/client/roast-card";
@@ -172,13 +173,14 @@ export function ResultScreen({ slug }: { slug: string }) {
             Поделиться
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        {/* «Скачать все» забирает свободное место, «Ссылка» по своей подписи */}
+        <div className="flex gap-2">
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className={tool}
+            className={cx(tool, "flex-1")}
             icon={ico(flash === "savedAll", IconDownload)}
             onClick={saveAll}
             disabled={!cards.length || busy !== null}
@@ -191,7 +193,7 @@ export function ResultScreen({ slug }: { slug: string }) {
             variant="ghost"
             look="display"
             arrow={false}
-            className={tool}
+            className={cx(tool, "shrink-0 px-4")}
             icon={ico(flash === "copied", IconLink)}
             onClick={copy}
             aria-label="Скопировать ссылку"
