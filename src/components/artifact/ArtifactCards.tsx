@@ -203,7 +203,8 @@ export function saveFile(file: File) {
 }
 
 /**
- * Карточка на весь экран поверх затемнения, внизу «Скачать» — PNG только этой карточки.
+ * Карточка на всю высоту экрана без скругления (как в PNG), поверх неё внизу «Скачать» —
+ * PNG только этой карточки.
  * Закрывается крестиком, тапом мимо карточки и Esc. Через портал в body: у колоды
  * container-type, и fixed внутри неё встал бы относительно колоды, а не экрана.
  */
@@ -251,42 +252,44 @@ function CardViewer({
       role="dialog"
       aria-modal="true"
       aria-label={`Карточка ${n}`}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-4 pt-[max(16px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))]"
-      // Размытие прячет кнопки страницы под просмотром: остаётся ровная тёмная подложка
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      // Размытие прячет страницу под просмотром там, куда карточка не дотягивается
       style={{ backgroundColor: "rgba(0,0,0,0.9)", backdropFilter: "blur(14px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <button
-        ref={closeRef}
-        type="button"
-        onClick={onClose}
-        aria-label="Закрыть"
-        className="absolute top-[max(16px,env(safe-area-inset-top))] right-4 flex size-10 items-center justify-center rounded-sm border-2 border-white text-paper focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
-      >
-        <IconX className="size-5" strokeWidth={2.5} />
-      </button>
-      <div className="w-[min(100%,calc((100dvh-140px)*9/16))]">
-        <RoastCard card={card} priority className="rounded-lg" />
+      {/* Карточка во всю высоту экрана (на узком — во всю ширину), без скругления, как в PNG.
+          Кнопки лежат поверх неё */}
+      <div className="relative w-[min(100vw,calc(100dvh*9/16))]">
+        <RoastCard card={card} priority />
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Закрыть"
+          className="absolute top-[max(16px,env(safe-area-inset-top))] right-4 flex size-10 items-center justify-center rounded-sm border-2 border-ink bg-white text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pink"
+        >
+          <IconX className="size-5" strokeWidth={2.5} />
+        </button>
+        <Button
+          type="button"
+          variant="inverse"
+          look="display"
+          arrow={false}
+          className="absolute inset-x-6 bottom-[max(24px,env(safe-area-inset-bottom))] h-14"
+          icon={
+            done ? (
+              <IconCheck className="size-5" strokeWidth={2.75} />
+            ) : (
+              <IconDownload className="size-5" strokeWidth={2.75} />
+            )
+          }
+          onClick={save}
+          disabled={busy}
+          aria-busy={busy || undefined}
+        >
+          {done ? "Сохранено" : "Скачать"}
+        </Button>
       </div>
-      <Button
-        type="button"
-        variant="inverse"
-        look="display"
-        arrow={false}
-        className="h-14 w-[min(100%,calc((100dvh-140px)*9/16))]"
-        icon={
-          done ? (
-            <IconCheck className="size-5" strokeWidth={2.75} />
-          ) : (
-            <IconDownload className="size-5" strokeWidth={2.75} />
-          )
-        }
-        onClick={save}
-        disabled={busy}
-        aria-busy={busy || undefined}
-      >
-        {done ? "Сохранено" : "Скачать"}
-      </Button>
     </div>,
     document.body,
   );
