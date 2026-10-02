@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Artifact } from "@/contracts";
+import { ArtifactCards, cardFile, saveFile } from "@/components/artifact/ArtifactCards";
 import { Button } from "@/components/ui/Button";
 import { api, toErrorCode } from "@/lib/client/api";
+import { roastCards } from "@/lib/client/roast-card";
 import { errorLine } from "./errors";
 import { IconCheck, IconCopy, IconDownload } from "./icons";
 import { StepTitle } from "./StepTitle";
 
-/**
- * Шаг 7, механика: показать артефакт и поделиться. Внешний вид артефакта и карточек
- * шеринга придёт из Figma (fe/p2-share-cards), здесь простая вёрстка данных.
- */
+type Flash = "copied" | "saved" | "savedAll" | null;
+
+/** Шаг 7: карточки прожарки 9:16 и шеринг. Вёрстка карточек: `components/artifact`. */
 export function ResultScreen({ slug }: { slug: string }) {
   const [artifact, setArtifact] = useState<Artifact | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [flash, setFlash] = useState<Flash>(null);
+  const [busy, setBusy] = useState<"share" | "save" | "saveAll" | null>(null);
+  const [index, setIndex] = useState(0);
+  /** Готовые PNG по номеру карточки: «Поделиться» на iOS теряет жест, если ждать отрисовку. */
+  const files = useRef(new Map<number, Promise<File>>());
 
   useEffect(() => {
     let alive = true;
@@ -30,57 +33,98 @@ export function ResultScreen({ slug }: { slug: string }) {
     };
   }, [slug]);
 
+  const cards = useMemo(() => (artifact ? roastCards(artifact) : []), [artifact]);
+
+  const fileAt = useCallback(
+    (i: number) => {
+      const card = cards[i];
+      if (!card) return Promise.reject(new Error("card"));
+      let f = files.current.get(i);
+      if (!f) {
+        f = cardFile(card, slug, i + 1);
+        f.catch(() => files.current.delete(i));
+        files.current.set(i, f);
+      }
+      return f;
+    },
+    [cards, slug],
+  );
+
+  // Готовим PNG текущей карточки заранее, пока человек смотрит на неё
+  useEffect(() => {
+    if (cards.length) fileAt(index).catch(() => undefined);
+  }, [cards, index, fileAt]);
+
   const url = typeof window === "undefined" ? `/a/${slug}` : `${window.location.origin}/a/${slug}`;
   const shareText = artifact?.kind === "roast_v1" ? artifact.content.shareText : undefined;
 
+  function show(f: Flash) {
+    setFlash(f);
+    setTimeout(() => setFlash(null), 2200);
+  }
+
   async function share() {
+    if (busy) return;
+    setBusy("share");
     try {
+      const file = await fileAt(index).catch(() => null);
+      const withFile = file && navigator.canShare?.({ files: [file] });
       if (navigator.share) {
-        await navigator.share({ title: "Прожарка", text: shareText, url });
+        await navigator.share(
+          withFile
+            ? { files: [file], text: shareText, url }
+            : { title: "Прожарка", text: shareText, url },
+        );
         return;
       }
+      await copy();
     } catch {
       // человек закрыл системное меню: ничего не делаем
-      return;
+    } finally {
+      setBusy(null);
     }
-    await copy();
   }
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      show("copied");
     } catch {
       window.prompt("Скопируй ссылку", url);
     }
   }
 
-  /** Скачать все картинки артефакта. Чужой домен без CORS — открываем в новой вкладке */
-  async function downloadAll() {
-    if (!artifact || downloading) return;
-    setDownloading(true);
+  async function save() {
+    if (busy) return;
+    setBusy("save");
     try {
-      for (const [i, img] of artifact.images.entries()) {
-        try {
-          const blob = await (await fetch(img.url)).blob();
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = `${slug}-${i + 1}.${blob.type.split("/")[1] ?? "png"}`;
-          a.click();
-          URL.revokeObjectURL(a.href);
-        } catch {
-          window.open(img.url, "_blank", "noopener");
-        }
-      }
-      setDownloaded(true);
-      setTimeout(() => setDownloaded(false), 2500);
+      saveFile(await fileAt(index));
+      show("saved");
+    } catch {
+      setError("Не получилось сохранить картинку. Попробуй ещё раз");
     } finally {
-      setDownloading(false);
+      setBusy(null);
     }
   }
 
-  if (error) {
+  async function saveAll() {
+    if (busy) return;
+    setBusy("saveAll");
+    try {
+      for (const i of cards.keys()) {
+        saveFile(await fileAt(i));
+        // Браузеры режут пачку загрузок без паузы между ними
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      show("savedAll");
+    } catch {
+      setError("Не получилось сохранить картинки. Попробуй ещё раз");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (error && !artifact) {
     return (
       <>
         <StepTitle size="m">Не открылось</StepTitle>
@@ -89,85 +133,80 @@ export function ResultScreen({ slug }: { slug: string }) {
     );
   }
 
-  const content = artifact?.kind === "roast_v1" ? artifact.content : null;
-  const hero = artifact?.images.find((i) => i.role === "hero");
-
   return (
     <>
-      <StepTitle accent="Смотри, что вышло" split>
-        Готово.
-      </StepTitle>
-      <div className="flex flex-col gap-2">
-        {hero && (
-          <div className="h-[180px] overflow-hidden rounded-lg border-2 border-ink">
-            {/* Картинки артефакта из Blob: домены переменные, поэтому <img> */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={hero.url} alt={hero.alt} className="size-full object-cover" />
-          </div>
-        )}
-        {content ? (
-          <>
-            <div className="rounded-md bg-paper px-3 py-2.5 text-ink">
-              <div className="font-wide text-sm leading-tight font-extrabold uppercase">
-                {content.title}
-              </div>
-              <div className="type-body">{content.tagline}</div>
-            </div>
-            {content.punches.map((p) => (
-              <div key={p.id} className="rounded-md bg-paper px-3 py-2.5 type-body text-ink">
-                {p.emoji} {p.text}
-              </div>
-            ))}
-            <p className="px-1 pt-1 type-body text-paper/80">{content.finale}</p>
-          </>
-        ) : (
-          <p className="type-body text-paper/60">Открываем…</p>
-        )}
-      </div>
+      <StepTitle size="m">Готово. Листай</StepTitle>
+      {cards.length ? (
+        <ArtifactCards cards={cards} onIndex={setIndex} reserve={410} />
+      ) : (
+        <p className="type-body text-paper/60">Открываем…</p>
+      )}
+      {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       <div className="mt-auto flex flex-col gap-3 pt-4">
         <Button
           type="button"
           variant="inverse"
           look="display"
           arrow={false}
-          className="h-16 w-full"
+          className="h-14 w-full"
           onClick={share}
-          disabled={!artifact}
+          disabled={!cards.length}
+          aria-busy={busy === "share" || undefined}
         >
           Поделиться
         </Button>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className="h-14 gap-2 px-3 text-sm!"
-            onClick={copy}
+            className="h-12 gap-1.5 px-2 text-xs!"
+            onClick={save}
+            disabled={!cards.length || busy !== null}
+            aria-busy={busy === "save" || undefined}
+            aria-label="Скачать эту карточку"
           >
-            {copied ? (
-              <IconCheck className="size-5 shrink-0" />
+            {flash === "saved" ? (
+              <IconCheck className="size-4 shrink-0" />
             ) : (
-              <IconCopy className="size-5 shrink-0" />
+              <IconDownload className="size-4 shrink-0" />
             )}
-            {copied ? "Скопировано" : "Скопировать ссылку"}
+            {flash === "saved" ? "Готово" : "Эту"}
           </Button>
           <Button
             type="button"
             variant="ghost"
             look="display"
             arrow={false}
-            className="h-14 gap-2 px-3 text-sm!"
-            onClick={downloadAll}
-            disabled={!artifact || artifact.images.length === 0 || downloading}
-            aria-busy={downloading || undefined}
+            className="h-12 gap-1.5 px-2 text-xs!"
+            onClick={saveAll}
+            disabled={cards.length < 2 || busy !== null}
+            aria-busy={busy === "saveAll" || undefined}
+            aria-label="Скачать все карточки"
           >
-            {downloaded ? (
-              <IconCheck className="size-5 shrink-0" />
+            {flash === "savedAll" ? (
+              <IconCheck className="size-4 shrink-0" />
             ) : (
-              <IconDownload className="size-5 shrink-0" />
+              <IconDownload className="size-4 shrink-0" />
             )}
-            {downloaded ? "Успешно" : downloading ? "Скачиваем…" : "Скачать все"}
+            {flash === "savedAll" ? "Готово" : busy === "saveAll" ? "Качаем…" : "Все"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            look="display"
+            arrow={false}
+            className="h-12 gap-1.5 px-2 text-xs!"
+            onClick={copy}
+            aria-label="Скопировать ссылку"
+          >
+            {flash === "copied" ? (
+              <IconCheck className="size-4 shrink-0" />
+            ) : (
+              <IconCopy className="size-4 shrink-0" />
+            )}
+            {flash === "copied" ? "Готово" : "Ссылка"}
           </Button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { JetBrains_Mono, Onest, Unbounded, Yanone_Kaffeesatz } from "next/font/google";
+import { Alumni_Sans, JetBrains_Mono, Onest, Unbounded, Yanone_Kaffeesatz } from "next/font/google";
 
 // Night Poster (DESIGN.md §3). Все четыре с кириллицей — проверено по font-data.json в next/font.
 
@@ -34,9 +34,21 @@ export const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+/**
+ * Шутка в карточке артефакта. В макете DIN Condensed Bold: он системный в macOS и по лицензии
+ * Apple не едет ни на сайт, ни на сервер. Alumni Sans 700 ближе всех по ширине строки.
+ */
+export const alumni = Alumni_Sans({
+  subsets: ["latin", "cyrillic"],
+  weight: "700",
+  variable: "--font-alumni",
+  display: "swap",
+});
+
 export const fontVariables = [
   unbounded.variable,
   yanone.variable,
   onest.variable,
   jetbrainsMono.variable,
+  alumni.variable,
 ].join(" ");

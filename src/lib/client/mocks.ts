@@ -136,6 +136,15 @@ function generationStatus(genId: string, g: Gen): GenerationStatus {
   return { ...base, status: "ready", artifactSlug: g.slug };
 }
 
+/** Клетки public/mocks/roast/1–6.webp: цвет фона — медиана верхнего края клетки. */
+const MOCK_CELLS = [
+  { bg: "#fff6b8", alt: "Бородач в кепке у мольбертов, рядом сердитая какашка с табличкой" },
+  { bg: "#f8ceda", alt: "Бородач в смокинге с кольцом на скамейке «Запасной аэродром»" },
+  { bg: "#cff0ff", alt: "Бородач в пижаме смотрит в телефон с подписью «Это ты»" },
+  { bg: "#d1f7c4", alt: "Бородач нюхает носок, рядом вянет кактус" },
+  { bg: "#fae5d0", alt: "Бородач падает со сцены, уронив микрофон и кепку" },
+  { bg: "#ccfde6", alt: "Бородач едет в самосвале, полном бумаг" },
+] as const;
 export const mockApi: Api = {
   async createProfileCheck(req: ProfileCheckRequest) {
     await wait(300);
@@ -250,7 +259,14 @@ export const mockApi: Api = {
         title: `Прожарка @${g.username}`,
         punches: g.punchIds.map((p) => byId.get(p)),
       },
-      images: ARTIFACT.images.slice(0, g.tier.imageCount),
+      images: [],
+      // Клетки референсного холста 2×3, нарезанные как в шаге draw (roast-engine §7.0)
+      punchImages: g.punchIds.slice(0, g.tier.imageCount).map((punchId, i) => ({
+        punchId,
+        url: new URL(`/mocks/roast/${(i % MOCK_CELLS.length) + 1}.webp`, location.origin).href,
+        alt: MOCK_CELLS[i % MOCK_CELLS.length]?.alt ?? "Картинка к шутке",
+        bg: MOCK_CELLS[i % MOCK_CELLS.length]?.bg ?? "#fff7b5",
+      })),
       isOwner: true,
     });
   },
