@@ -124,7 +124,8 @@ export function ResultScreen({ slug }: { slug: string }) {
   }
 
   /** Вторичные кнопки: иконка слева от подписи, линия толще стандартной Tabler */
-  const tool = "h-12 min-w-0 gap-2 px-2 text-xs! whitespace-nowrap";
+  // Чёрная заливка вместо прозрачной у ghost: кнопки не просвечивают огнём фона
+  const tool = "h-12 min-w-0 gap-2 bg-ink! px-2 text-xs! whitespace-nowrap";
   const ico = (done: boolean, Icon: typeof IconDownload) =>
     done ? (
       <IconCheck className="size-5" strokeWidth={2.75} />
@@ -147,7 +148,7 @@ export function ResultScreen({ slug }: { slug: string }) {
       )}
       {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       {/* Кнопки закреплены внизу: колода крупная, на коротком экране страница прокручивается под ними */}
-      <div className="sticky bottom-0 z-30 -mx-[18px] mt-auto flex flex-col gap-2 bg-linear-to-t from-surface from-70% to-transparent px-[18px] pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 z-30 -mx-[18px] mt-auto flex flex-col gap-2 px-[18px] pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
         <div className="flex gap-2">
           {/* «Ещё раз» = новая генерация: квадрат в стиле «Поделиться», только иконка */}
           <Button

@@ -112,11 +112,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
       }}
     >
       <StepTitle accent="жарим?">Кого</StepTitle>
-      <StepLead>
-        {checking
-          ? "Смотрим, можно ли жарить: открыт, постов хватает, есть 16"
-          : "Кидай ссылку на открытый Instagram"}
-      </StepLead>
+      <StepLead>{checking ? "Идёт поиск…" : "Кидай ссылку на открытый Instagram"}</StepLead>
 
       {phase.kind === "error" ? (
         <ArtStage src={extinguisher} size="md" wiggle />
