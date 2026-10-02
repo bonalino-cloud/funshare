@@ -387,20 +387,21 @@ function CardViewer({
               variant="inverse"
               look="display"
               arrow={false}
-              className="h-14 min-w-0 flex-1 gap-2 px-3 text-sm!"
+              // Только иконка: место отдаём «Поделиться»
+              className="h-14 w-14 shrink-0 px-0"
               icon={
                 flash === "saved" ? (
-                  <IconCheck className="size-5" strokeWidth={2.75} />
+                  <IconCheck className="size-[26px]" strokeWidth={2.75} />
                 ) : (
-                  <IconDownload className="size-5" strokeWidth={2.75} />
+                  <IconDownload className="size-[26px]" strokeWidth={2.75} />
                 )
               }
               onClick={save}
               disabled={busy !== null}
               aria-busy={busy === "save" || undefined}
-            >
-              {flash === "saved" ? "Сохранено" : "Скачать"}
-            </Button>
+              aria-label={flash === "saved" ? "Сохранено" : "Скачать"}
+              title="Скачать"
+            />
             <Button
               type="button"
               variant="inverse"

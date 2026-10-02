@@ -68,9 +68,9 @@ export function GenerationFlow({ id }: { id: string }) {
       ) : !status || status.status === "queued" ? (
         <Loader image={art} phase="queued" startedAt={startedAt} />
       ) : status.status === "writing" ? (
-        <Loader image={art} phase="writing" hint={status.hint} startedAt={startedAt} />
+        <Loader image={art} phase="writing" startedAt={startedAt} />
       ) : status.status === "drawing" ? (
-        <Loader image={art} phase="drawing" hint={status.hint} startedAt={startedAt} />
+        <Loader image={art} phase="drawing" startedAt={startedAt} />
       ) : status.status === "awaiting_selection" ? (
         <PickPunches id={id} onDone={resume} />
       ) : (
