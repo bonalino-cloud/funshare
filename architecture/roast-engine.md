@@ -404,7 +404,7 @@ POST /api/generations        { profileCheckId, mode, tier, level, ageConfirmed?,
 |---|---|
 | `visitorId` | случайный id в first-party cookie, 1 год (не привязан к человеку) |
 | `sessionId` | новая сессия после 30 минут тишины |
-| `type` | `page_view`, `input_start`, `url_submitted`, `tier_selected`, `checkout_view`, `promo_applied`, `pay_click`, `share_click`, `copy_link`, `cta_click`, … |
+| `type` | `page_view`, `input_start`, `url_submitted`, `tier_selected`, `checkout_view`, `promo_applied`, `pay_click`, `share_click`, `copy_link`, `story_share`, `cta_click`, … |
 | `path`, `referrerHost`, `utm*` | откуда пришёл (Instagram, Telegram, WhatsApp, поиск, прямой) |
 | `device`, `browser`, `os`, `country`, `city` | разбираем на сервере из User-Agent и заголовков Vercel |
 | `tier`, `mode`, `generationId?` | контекст события (ник профиля не пишем) |
@@ -421,7 +421,7 @@ POST /api/generations        { profileCheckId, mode, tier, level, ageConfirmed?,
 6. Нажал «Прожарить / Оплатить» (`pay_click`)
 7. Генерация стартовала (`orders` → `free` или `paid`)
 8. Генерация закончилась артефактом (`generations.status = ready`)
-9. Поделился (`share_click`, `copy_link`)
+9. Поделился (`share_click`, `copy_link`, `story_share`; доля сторис — отдельной строкой: главный сценарий «для себя»)
 10. Получатель открыл ссылку → нажал «Прожарить в ответ» → новая генерация (вирусный коэффициент)
 
 Шаги 7 и 8 считаются из наших таблиц, а не из браузера: так браузерные потери не искажают деньги и надёжность конвейера. Сбоку на воронке: сколько применили промокод (`promo_applied`).
