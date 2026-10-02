@@ -48,7 +48,8 @@ export function Button({
       )}
       {...props}
     >
-      {icon && <span className="size-5 shrink-0">{icon}</span>}
+      {/* Размер задаёт сама иконка (обычно size-5), слот только центрирует её */}
+      {icon && <span className="flex shrink-0">{icon}</span>}
       {/* Без подписи (кнопка-иконка) пустой span не рисуем: иначе gap сдвигает иконку от центра */}
       {children != null && children !== false && <span>{children}</span>}
       {arrow && (

@@ -5,15 +5,22 @@ import { cx } from "@/components/cx";
 import { renderCardPng, type RoastCardData } from "@/lib/client/roast-card";
 import { RoastCard } from "./RoastCard";
 
-/** Поворот карточек, которые выглядывают из-за передней: следующая и та, что за ней. */
-const BEHIND = [-5, 5] as const;
-/** Свайп дальше этого (px) листает колоду. */
+/** Сколько карточек выглядывает из-за передней. */
+const PEEK = 2;
+/** Сдвиг вправо (доля ширины) и уменьшение каждой следующей карточки в стопке. */
+const SHIFT = 0.06;
+const SHRINK = 0.06;
+/** Свайп дальше этого (px) листает стопку. */
 const SWIPE = 60;
+/** Сколько длится улёт передней карточки, мс. */
+const FLY_MS = 280;
 
 /**
- * Колода карточек: передняя ровно по центру, за ней краями выглядывают следующие,
- * повёрнутые на −5° и +5°. Листается свайпом, стрелками и точками, по кругу.
- * Ширина передней подстраивается под высоту экрана, чтобы под колодой оставались кнопки.
+ * Стопка карточек (референс: Tips Slider Interaction, Jitu Raut): передняя ровная, задние
+ * лежат под ней со сдвигом вправо и чуть ниже ростом, их края выглядывают справа.
+ * Свайп влево уносит переднюю за край, и она уходит в конец стопки; вправо достаёт
+ * предыдущую. Ещё стрелки клавиатуры и точки, по кругу. Ширина передней подстраивается
+ * под высоту экрана, чтобы под стопкой оставались кнопки.
  */
 export function ArtifactCards({
   cards,
@@ -22,12 +29,13 @@ export function ArtifactCards({
 }: {
   cards: RoastCardData[];
   onIndex?: (i: number) => void;
-  /** Сколько px высоты экрана занято вокруг колоды: шапка, заголовок, кнопки. */
+  /** Сколько px высоты экрана занято вокруг стопки: шапка, кнопки. */
   reserve?: number;
 }) {
   const n = cards.length;
   const [index, setIndex] = useState(0);
   const [dx, setDx] = useState(0);
+  const [flying, setFlying] = useState(false);
   const drag = useRef<{ x: number; id: number } | null>(null);
 
   function go(i: number) {
@@ -36,8 +44,18 @@ export function ArtifactCards({
     onIndex?.(next);
   }
 
+  /** Вперёд: передняя улетает влево, потом встаёт в конец стопки. */
+  function next() {
+    if (flying || n < 2) return;
+    setFlying(true);
+    setTimeout(() => {
+      go(index + 1);
+      setFlying(false);
+    }, FLY_MS);
+  }
+
   function down(e: PointerEvent<HTMLDivElement>) {
-    if (n < 2) return;
+    if (n < 2 || flying) return;
     drag.current = { x: e.clientX, id: e.pointerId };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
@@ -47,7 +65,7 @@ export function ArtifactCards({
   function up(e: PointerEvent<HTMLDivElement>) {
     if (drag.current?.id !== e.pointerId) return;
     drag.current = null;
-    if (dx <= -SWIPE) go(index + 1);
+    if (dx <= -SWIPE) next();
     else if (dx >= SWIPE) go(index - 1);
     setDx(0);
   }
@@ -57,20 +75,21 @@ export function ArtifactCards({
       className="[container-type:inline-size] flex w-full flex-col items-center gap-3"
       style={
         {
-          // Запас по бокам под повёрнутые края задних карточек
-          "--card-w": `max(150px, min(calc(100cqw - 32px), calc((100dvh - ${reserve}px) * 9 / 16)))`,
+          // Стопка шире передней на выглядывающие края: (1 + PEEK × SHIFT) × ширина
+          "--card-w": `max(150px, min(calc((100cqw - 16px) / ${1 + PEEK * SHIFT}), calc((100dvh - ${reserve}px) * 9 / 16)))`,
         } as CSSProperties
       }
     >
       <div
         className="relative w-(--card-w) touch-pan-y outline-none select-none"
-        style={{ aspectRatio: "9 / 16" }}
+        // Центруем всю стопку, а не только переднюю: сдвиг на половину выглядывающих краёв
+        style={{ aspectRatio: "9 / 16", translate: `${(-PEEK * SHIFT * 100) / 2}% 0` }}
         role="group"
-        aria-roledescription="колода карточек"
+        aria-roledescription="стопка карточек"
         aria-label={`Карточка ${index + 1} из ${n}. Листай свайпом или стрелками`}
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") go(index + 1);
+          if (e.key === "ArrowRight") next();
           if (e.key === "ArrowLeft") go(index - 1);
         }}
         onPointerDown={down}
@@ -79,28 +98,34 @@ export function ArtifactCards({
         onPointerCancel={up}
       >
         {cards.map((card, i) => {
-          // Место в колоде: 0 — передняя, 1 и 2 — выглядывают, остальные спрятаны сзади
+          // Место в стопке: 0 — передняя, 1…PEEK выглядывают, остальные спрятаны за ними
           const d = (i - index + n) % n;
           const front = d === 0;
-          const rot = front ? dx / 18 : (BEHIND[d - 1] ?? 0);
+          const depth = Math.min(d, PEEK);
+          const transform =
+            front && flying
+              ? "translateX(-130%) rotate(-8deg)"
+              : front
+                ? `translateX(${dx}px) rotate(${dx / 30}deg)`
+                : `translateX(${depth * SHIFT * 100}%) scale(${1 - depth * SHRINK})`;
           return (
             <div
               key={card.punchId}
               className={cx(
-                "absolute inset-0 origin-bottom",
+                "absolute inset-0 origin-right",
                 !(front && dx) && "transition-[transform,opacity] duration-300 ease-out",
               )}
               style={{
                 zIndex: n - d,
-                opacity: d <= BEHIND.length ? 1 : 0,
-                transform: `translateX(${front ? dx : 0}px) rotate(${rot}deg) scale(${front ? 1 : 0.97})`,
+                opacity: d <= PEEK && !(front && flying) ? 1 : 0,
+                transform,
               }}
               aria-hidden={!front}
             >
               <RoastCard
                 card={card}
-                priority={d <= BEHIND.length}
-                className="rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
+                priority={d <= PEEK}
+                className="rounded-lg shadow-[-6px_8px_24px_rgba(0,0,0,0.45)]"
               />
             </div>
           );

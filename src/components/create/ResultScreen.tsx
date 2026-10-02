@@ -147,14 +147,14 @@ export function ResultScreen({ slug }: { slug: string }) {
       {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       {/* Кнопки закреплены внизу: колода крупная, на коротком экране страница прокручивается под ними */}
       <div className="sticky bottom-0 z-30 -mx-[18px] mt-auto flex flex-col gap-2 bg-linear-to-t from-surface from-70% to-transparent px-[18px] pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {/* «Ещё раз» = новая генерация: квадрат в стиле «Поделиться», только иконка */}
           <Button
             type="button"
             variant="inverse"
             arrow={false}
             className="h-14 w-14 shrink-0 px-0"
-            icon={<IconReload className="size-5" strokeWidth={2.75} />}
+            icon={<IconReload className="size-[26px]" strokeWidth={2.75} />}
             onClick={() => router.push("/create")}
             aria-label="Ещё раз"
             title="Ещё раз"
