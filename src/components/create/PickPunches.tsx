@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { CandidatesResponse } from "@/contracts";
-import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { cx } from "@/components/cx";
 import { api, toErrorCode } from "@/lib/client/api";
@@ -11,9 +10,14 @@ import { StepLead, StepTitle } from "./StepTitle";
 
 /**
  * Шаг 6, выбор: все кандидаты тарифа, выбрать ровно `selectCount`. Порядок выбора = порядок
- * в артефакте (номер в углу карточки). Когда набрано, остальные гаснут. Панель со счётчиком
- * и кнопкой закреплена внизу. Отправка выбора → бэк рисует картинки только по выбранным.
+ * в артефакте (номер в углу карточки). Когда набрано, остальные гаснут. Счётчик на тёмной
+ * плашке закреплён внизу поверх карточек. Кнопки нет: набрал нужное число — через паузу
+ * выбор уходит сам (снял галочку за паузу — отправка отменяется). Бэк рисует картинки
+ * только по выбранным.
  */
+/** Пауза между последним выбором и отправкой: успеть снять случайную галочку. */
+const AUTO_SUBMIT_MS = 900;
+
 export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) {
   const [data, setData] = useState<CandidatesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +39,9 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
   const need = data?.selectCount ?? 0;
   const full = picked.length >= need;
 
-  const toggle = (punchId: string) =>
+  const toggle = (punchId: string) => {
+    // Ошибка отправки снимается любым переключением: человек выбрал заново — пробуем ещё раз
+    setError(null);
     setPicked((prev) =>
       prev.includes(punchId)
         ? prev.filter((p) => p !== punchId)
@@ -43,6 +49,7 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
           ? [...prev, punchId]
           : prev,
     );
+  };
 
   async function submit() {
     if (!data || picked.length !== need) return;
@@ -56,6 +63,15 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
       setBusy(false);
     }
   }
+
+  // Набрал ровно сколько нужно: даём секунду передумать, потом отправляем сами.
+  // После ошибки сами не повторяем, иначе крутились бы в цикле
+  useEffect(() => {
+    if (!data || busy || error || need === 0 || picked.length !== need) return;
+    const t = setTimeout(() => void submit(), AUTO_SUBMIT_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit читает актуальный picked
+  }, [picked, need, data, busy, error]);
 
   if (error && !data) {
     return (
@@ -132,41 +148,31 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
         })}
       </div>
 
-      <div className="sticky bottom-0 -mx-[18px] mt-auto border-t-2 border-white bg-ink px-[18px] pt-3 pb-[max(56px,env(safe-area-inset-bottom))]">
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="font-mono text-[22px] leading-none font-extrabold text-yellow">
+      <div className="sticky bottom-[max(16px,env(safe-area-inset-bottom))] z-30 mt-auto rounded-lg bg-ink px-4 pt-3.5 pb-4 shadow-[0_-8px_32px_rgba(0,0,0,0.6)]">
+        <div className="mb-2.5 flex items-baseline justify-between">
+          <span className="font-mono text-[22px] leading-none font-extrabold text-white">
             {picked.length} / {need}
           </span>
-          <span className="type-body text-paper/70">
-            {full ? "готово" : `ещё ${need - picked.length}`}
+          <span className="flex items-center gap-2 type-body text-paper/70" aria-live="polite">
+            {busy ? (
+              <>
+                <Spinner className="scale-70" />
+                Собираем…
+              </>
+            ) : full ? (
+              "готово"
+            ) : (
+              `ещё ${need - picked.length}`
+            )}
           </span>
         </div>
-        <div className="mb-2.5 h-2 overflow-hidden rounded-[4px] bg-[#2b2b2b]" aria-hidden="true">
+        <div className="h-2 overflow-hidden rounded-[4px] bg-[#2b2b2b]" aria-hidden="true">
           <div
-            className="h-full bg-pink transition-[width] duration-200"
+            className="h-full bg-white transition-[width] duration-200"
             style={{ width: need ? `${(picked.length / need) * 100}%` : 0 }}
           />
         </div>
-        {error && <p className="mb-2 border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
-        <Button
-          type="button"
-          variant="inverse"
-          look="display"
-          arrow={false}
-          className="h-16 w-full"
-          disabled={!data || picked.length !== need || busy}
-          onClick={submit}
-          aria-busy={busy || undefined}
-        >
-          {busy ? (
-            <>
-              <Spinner />
-              Собираем…
-            </>
-          ) : (
-            "Собрать артефакт"
-          )}
-        </Button>
+        {error && <p className="mt-2.5 border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
       </div>
     </>
   );
