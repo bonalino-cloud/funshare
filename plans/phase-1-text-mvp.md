@@ -8,7 +8,8 @@
 
 - [x] `contracts/roast-v1`, `contracts/persona-roast`, `contracts/pricing-v1` — влиты как #9 и #35 (тарифы от 2026-10-02)
 - [ ] 1. `be/p1-scrape-step` — Apify → `ProfileSnapshot`, сырой ответ в private Blob, кэш 24 ч, ошибки `profile_not_found` / `profile_private`. Пишется и тестируется на фикстурах, живой прогон — с `APIFY_TOKEN`
-- [ ] 2. `be/p1-facts` — `ProfileFacts`: статистика, повторы, чистка PII, кэп подписей
+- [x] 2. `be/p1-facts` — `ProfileFacts`: статистика, повторы, чистка PII, кэп подписей
+  - Итог (2026-10-03): `src/server/facts/` — `buildProfileFacts(snapshot)` без LLM: статистика (UTC), повторы, ритм, язык ru/en, чистка PII, `captionsForLlm` с кэпом 300 и без `<>` · 81 новый тест (161 всего) · карусель 9/9 (поймала два телефона подряд, тире «–», `youtu.be`, медленную очистку на мусоре) · открыто: закреплённые посты искажают паузу (нужен `isPinned` в контракте), `@упоминания` идут в LLM
 - [ ] 3. `be/p1-analyze-step` — досье с `observations` / `warmFacts` / `sensitiveEvents`, гардрейлы `likelyMinor` / `insufficientData`, промпт `v1`
 - [ ] 4. `be/p1-profile-check` — `POST /api/profile-checks`, `GET …/:id`: `scrape → facts → analyze` до оплаты, гардрейлы (закрыт, мало данных, младше 16), кэш 24 ч, лимиты на проверки
 - [ ] 5. `be/p1-orders-promos` — `orders`, `promo_codes`, `promo_redemptions`, расчёт цены по `TIERS`, атомарное списание кода, освобождение при провале, лимит на перебор
