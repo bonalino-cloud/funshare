@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -155,4 +157,120 @@ export const profileChecks = pgTable(
     ...timestamps,
   },
   (t) => [index("profile_checks_ig_username_checked_at_idx").on(t.igUsername, t.checkedAt)],
+);
+
+/**
+ * Заказ: цена посчитана сервером (клиенту не доверяем), сумма в целых копейках. Генерация стартует
+ * только из заказа (roast-engine §9.3). Сейчас живут `free` (проба Поджога или код на 100 %) и
+ * `voided` (генерация упала без артефакта); `created`/`paid`/`refunded` — с билингом (`be/p4-billing`).
+ * Платный итог до билинга заказа не создаёт вовсе (402 `payment_required`): нечего хранить и нечего
+ * списывать с кода.
+ *
+ * `generationId` без FK: заказ создаётся до строки генерации (или строка живёт по своим срокам, а
+ * деньги учитываем дольше), порядок вставки не должен ломать списание. Уникален: один заказ на
+ * генерацию, повтор запроса не удвоит списание кода.
+ */
+export const orderStatus = pgEnum("order_status", [
+  "created",
+  "free",
+  "paid",
+  "refunded",
+  "voided",
+]);
+/** Почему заказ бесплатный. Правило 3: проба идёт тем же путём, что и всё остальное. */
+export const orderReason = pgEnum("order_reason", ["first_free", "promo_free"]);
+
+export const promoCodes = pgTable(
+  "promo_codes",
+  {
+    id: text("id").primaryKey(),
+    /** Нормализованный (`normalizePromoCode`): регистр, пробелы, дефисы, кириллица-двойники. */
+    code: text("code").notNull(),
+    percentOff: integer("percent_off").notNull(),
+    /** Для каких тарифов действует (1–3). */
+    tiers: integer("tiers").array().notNull(),
+    /** Обязателен у любого кода: безлимитных 100 % нет (правило 5). */
+    maxRedemptions: integer("max_redemptions").notNull(),
+    /** Счётчик списаний. Меняется только атомарно (`redeemed + 1 ... WHERE redeemed < max`). */
+    redeemed: integer("redeemed").notNull().default(0),
+    perDeviceLimit: integer("per_device_limit"),
+    perIpLimit: integer("per_ip_limit"),
+    validFrom: timestamp("valid_from", { withTimezone: true }),
+    validUntil: timestamp("valid_until", { withTimezone: true }),
+    active: boolean("active").notNull().default(true),
+    note: text("note"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("promo_codes_code_idx").on(t.code),
+    check("promo_codes_code_not_empty", sql`length(${t.code}) > 0`),
+    check("promo_codes_percent_off", sql`${t.percentOff} BETWEEN 1 AND 100`),
+    check("promo_codes_max_redemptions", sql`${t.maxRedemptions} > 0`),
+    check("promo_codes_redeemed", sql`${t.redeemed} >= 0`),
+    check(
+      "promo_codes_limits",
+      sql`(${t.perDeviceLimit} IS NULL OR ${t.perDeviceLimit} > 0) AND (${t.perIpLimit} IS NULL OR ${t.perIpLimit} > 0)`,
+    ),
+    check("promo_codes_tiers", sql`cardinality(${t.tiers}) > 0 AND ${t.tiers} <@ ARRAY[1, 2, 3]`),
+  ],
+);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: text("id").primaryKey(),
+    generationId: text("generation_id").notNull(),
+    tier: integer("tier").notNull(),
+    listAmount: integer("list_amount").notNull(),
+    discountAmount: integer("discount_amount").notNull(),
+    finalAmount: integer("final_amount").notNull(),
+    promoId: text("promo_id").references(() => promoCodes.id),
+    status: orderStatus("status").notNull(),
+    reason: orderReason("reason"),
+    /** Платёжный провайдер; пока билинга нет — всегда null. */
+    provider: text("provider"),
+    ownerTokenHash: text("owner_token_hash").notNull(),
+    ipHash: text("ip_hash").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("orders_generation_id_idx").on(t.generationId),
+    // Проба Поджога «один раз на человека»: гонку двух одновременных проб закрывает сама БД.
+    // Упавшая генерация (`voided`) пробу возвращает.
+    uniqueIndex("orders_first_free_owner_idx")
+      .on(t.ownerTokenHash)
+      .where(sql`${t.reason} = 'first_free' AND ${t.status} <> 'voided'`),
+    index("orders_first_free_ip_idx")
+      .on(t.ipHash)
+      .where(sql`${t.reason} = 'first_free' AND ${t.status} <> 'voided'`),
+    check("orders_tier", sql`${t.tier} BETWEEN 1 AND 3`),
+    check(
+      "orders_amounts",
+      sql`${t.listAmount} >= 0 AND ${t.discountAmount} >= 0 AND ${t.discountAmount} <= ${t.listAmount} AND ${t.finalAmount} = ${t.listAmount} - ${t.discountAmount}`,
+    ),
+  ],
+);
+
+/** Использование кода. `releasedAt` — освобождено при провале генерации (правило 2). */
+export const promoRedemptions = pgTable(
+  "promo_redemptions",
+  {
+    id: text("id").primaryKey(),
+    promoId: text("promo_id")
+      .notNull()
+      .references(() => promoCodes.id),
+    orderId: text("order_id")
+      .notNull()
+      .unique()
+      .references(() => orders.id),
+    ownerTokenHash: text("owner_token_hash").notNull(),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("promo_redemptions_promo_owner_idx").on(t.promoId, t.ownerTokenHash),
+    index("promo_redemptions_promo_ip_idx").on(t.promoId, t.ipHash),
+  ],
 );
