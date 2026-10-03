@@ -7,16 +7,12 @@ import { Sticker } from "../Sticker";
 import snowflake from "../assets/sticker-snowflake.png";
 import { RevealText } from "../RevealText";
 
-const never = [
-  "Внешность, вес, здоровье",
-  "Национальность, религию, политику",
-  "Ориентацию, семью, деньги",
-];
+const never = ["Семью и здоровье", "Национальность, религию, политику", "Ориентацию"];
 const data = [
   "Только открытые профили. Закрытый значит закрытый",
   "Маленьких не обижаем",
   "Лицо не копируем, а срисовываем",
-  "Удалить прожарку можно в любое время — данные не сохраняются нигде",
+  "Удалить прожарку можно в любое время",
   "Черновик какое-то время храним, потом сжигаем",
 ];
 
@@ -24,11 +20,8 @@ const data = [
 export function RulesSection() {
   return (
     <Section id="rules" surface="color" className="py-20 md:py-28">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10 [translate:0_calc(var(--sy,0)*0.2px)]"
-      >
-        <FlameVortex mode="rise" scale={1.3} />
+      <div aria-hidden="true" className="absolute inset-0 -z-10">
+        <FlameVortex mode="rise" scale={1.3} slot="rules" />
       </div>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="inline-block -rotate-2 rounded-lg border-2 border-ink bg-paper px-5 py-4 text-ink shadow-offset transition-transform duration-200 hover:rotate-0 md:px-8 md:py-6">
