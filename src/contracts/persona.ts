@@ -27,6 +27,18 @@ export const PersonaProfile = z.object({
   humorAngles: z.array(z.string().min(1)).max(10),
   /** Чего касаться нельзя в этом профиле, сверх общих красных линий. */
   avoidTopics: z.array(z.string().min(1)).max(10),
+  /**
+   * Внешность для карикатуры на картинках (roast-engine §7.0). null — нет ни одного фото,
+   * где человек виден крупно и один: картинки рисуются без героя.
+   */
+  look: z
+    .object({
+      /** Приметы словами: лицо, причёска и цвет волос, борода, очки, татуировки, одежда. */
+      description: z.string().min(1).max(600),
+      /** Аватар и 2–3 фото из постов, где он один. Только вход модели, наружу не уходит. */
+      referenceImageUrls: z.array(z.url()).min(1).max(4),
+    })
+    .nullable(),
   flags: PersonaFlags,
 });
 export type PersonaProfile = z.infer<typeof PersonaProfile>;
