@@ -20,7 +20,7 @@ export type ScrapeErrorCode = Extract<
 
 /** Наружу — только это. Детали провайдера остаются в логах. */
 export type ScrapeResult =
-  | { ok: true; snapshot: ProfileSnapshotType; cached: boolean }
+  | { ok: true; snapshot: ProfileSnapshotType; snapshotId: string; cached: boolean }
   | { ok: false; errorCode: ScrapeErrorCode };
 
 /** Внешние зависимости шага; в тестах подменяются фейками. */
@@ -97,9 +97,9 @@ function guardrail(snapshot: ProfileSnapshotType): ScrapeErrorCode | null {
   return null;
 }
 
-function finish(snapshot: ProfileSnapshotType, cached: boolean): ScrapeResult {
+function finish(snapshot: ProfileSnapshotType, snapshotId: string, cached: boolean): ScrapeResult {
   const blocked = guardrail(snapshot);
-  return blocked ? { ok: false, errorCode: blocked } : { ok: true, snapshot, cached };
+  return blocked ? { ok: false, errorCode: blocked } : { ok: true, snapshot, snapshotId, cached };
 }
 
 /**
@@ -107,8 +107,8 @@ function finish(snapshot: ProfileSnapshotType, cached: boolean): ScrapeResult {
  * Идемпотентен: повтор в пределах 24 ч берёт кэш и не вызывает Apify.
  * Порядок записи: Blob, затем БД (сбой Blob — в БД ничего не пишем).
  *
- * TODO(be/p1-profile-check, cost-log): перед `fetchRaw` проверить дневной потолок трат на Apify
- * (roast-engine.md §8) и лимиты на проверки; после вызова записать стоимость.
+ * TODO(cost-log): перед `fetchRaw` проверить дневной потолок трат на Apify
+ * (roast-engine.md §8); после вызова записать стоимость. Лимиты на проверки — в `profile-check`.
  */
 export async function scrapeProfile(
   igUsername: string,
@@ -123,7 +123,7 @@ export async function scrapeProfile(
     const cachedRow = await deps.snapshots.findFresh(username, since);
     if (cachedRow) {
       const parsed = ProfileSnapshot.safeParse(cachedRow.data);
-      if (parsed.success) return finish(parsed.data, true);
+      if (parsed.success) return finish(parsed.data, cachedRow.id, true);
       logFailure("кэш: снимок не прошёл схему, перезапрашиваем");
     }
 
@@ -153,8 +153,12 @@ export async function scrapeProfile(
 
     const key = rawBlobKey(username, fetchedAt);
     await deps.putRaw(key, JSON.stringify(raw));
-    await deps.snapshots.insert({ igUsername: username, data: result.snapshot, rawBlobKey: key });
-    return finish(result.snapshot, false);
+    const snapshotId = await deps.snapshots.insert({
+      igUsername: username,
+      data: result.snapshot,
+      rawBlobKey: key,
+    });
+    return finish(result.snapshot, snapshotId, false);
   } catch (error) {
     logFailure("сбой хранилища", error);
     return { ok: false, errorCode: "internal" };

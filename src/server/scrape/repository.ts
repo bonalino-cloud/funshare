@@ -3,12 +3,13 @@ import { and, desc, eq, gte } from "drizzle-orm";
 import type { ProfileSnapshot } from "@/contracts";
 import { db, schema } from "../db";
 
-export type SnapshotRow = { data: unknown; fetchedAt: Date };
+export type SnapshotRow = { id: string; data: unknown; fetchedAt: Date };
 
 export type SnapshotRepository = {
   /** Самый свежий снимок ника не старше `since`; `data` НЕ доверенный — вызывающий парсит. */
   findFresh(igUsername: string, since: Date): Promise<SnapshotRow | null>;
-  insert(row: { igUsername: string; data: ProfileSnapshot; rawBlobKey: string }): Promise<void>;
+  /** Возвращает `id` новой записи: по нему шаги дальше (analyze) привязывают досье к снимку. */
+  insert(row: { igUsername: string; data: ProfileSnapshot; rawBlobKey: string }): Promise<string>;
 };
 
 export function createSnapshotRepository(): SnapshotRepository {
@@ -16,6 +17,7 @@ export function createSnapshotRepository(): SnapshotRepository {
     async findFresh(igUsername, since) {
       const rows = await db()
         .select({
+          id: schema.profileSnapshots.id,
           data: schema.profileSnapshots.data,
           fetchedAt: schema.profileSnapshots.fetchedAt,
         })
@@ -32,15 +34,17 @@ export function createSnapshotRepository(): SnapshotRepository {
     },
 
     async insert({ igUsername, data, rawBlobKey }) {
+      const id = randomUUID();
       await db()
         .insert(schema.profileSnapshots)
         .values({
-          id: randomUUID(),
+          id,
           igUsername,
           data,
           rawBlobKey,
           fetchedAt: new Date(data.fetchedAt),
         });
+      return id;
     },
   };
 }

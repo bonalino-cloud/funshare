@@ -43,13 +43,17 @@ describe("scrapeProfile: успех", () => {
     const { deps } = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
     const order: string[] = [];
     deps.putRaw.mockImplementation(async () => void order.push("blob"));
-    deps.snapshots.insert.mockImplementation(async () => void order.push("db"));
+    deps.snapshots.insert.mockImplementation(async () => {
+      order.push("db");
+      return "snap-order";
+    });
 
     const result = await scrapeProfile("@Test.User", deps);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.cached).toBe(false);
+    expect(result.snapshotId).toBe("snap-order");
     expect(result.snapshot.posts).toHaveLength(24);
     expect(deps.fetchRaw).toHaveBeenCalledExactlyOnceWith("test.user");
     expect(order).toEqual(["blob", "db"]);
@@ -74,10 +78,14 @@ describe("scrapeProfile: успех", () => {
     await scrapeProfile("test.user", first.deps);
 
     const { deps } = makeDeps();
-    deps.snapshots.findFresh.mockResolvedValue({ data: first.stored[0]?.data, fetchedAt: NOW });
+    deps.snapshots.findFresh.mockResolvedValue({
+      id: "snap-cached",
+      data: first.stored[0]?.data,
+      fetchedAt: NOW,
+    });
     const result = await scrapeProfile("test.user", deps);
 
-    expect(result).toMatchObject({ ok: true, cached: true });
+    expect(result).toMatchObject({ ok: true, cached: true, snapshotId: "snap-cached" });
     expect(deps.fetchRaw).not.toHaveBeenCalled();
     expect(deps.putRaw).not.toHaveBeenCalled();
     expect(deps.snapshots.insert).not.toHaveBeenCalled();
@@ -87,7 +95,11 @@ describe("scrapeProfile: успех", () => {
 
   it("битый снимок в кэше → как промах, перезапрос", async () => {
     const { deps } = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
-    deps.snapshots.findFresh.mockResolvedValue({ data: { garbage: true }, fetchedAt: NOW });
+    deps.snapshots.findFresh.mockResolvedValue({
+      id: "snap-bad",
+      data: { garbage: true },
+      fetchedAt: NOW,
+    });
     const result = await scrapeProfile("test.user", deps);
     expect(result).toMatchObject({ ok: true, cached: false });
     expect(deps.fetchRaw).toHaveBeenCalledTimes(1);
@@ -131,7 +143,7 @@ describe("scrapeProfile: коды ошибок", () => {
     const first = await run(fewPosts);
     const { deps } = makeDeps();
     const data = first.deps.snapshots.insert.mock.calls[0]?.[0].data;
-    deps.snapshots.findFresh.mockResolvedValue({ data, fetchedAt: NOW });
+    deps.snapshots.findFresh.mockResolvedValue({ id: "snap-x", data, fetchedAt: NOW });
     expect(await scrapeProfile("someone", deps)).toEqual({
       ok: false,
       errorCode: "not_enough_data",

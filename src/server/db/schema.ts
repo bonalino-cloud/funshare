@@ -9,14 +9,30 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { ArtifactContent, ArtifactImage, PersonaProfile, ProfileSnapshot } from "@/contracts";
-import { ArtifactKind, ErrorCode, GenerationMode, GenerationStatusCode } from "@/contracts";
+import type {
+  ArtifactContent,
+  ArtifactImage,
+  CheckedProfile,
+  PersonaProfile,
+  ProfileSnapshot,
+} from "@/contracts";
+import {
+  ArtifactKind,
+  ErrorCode,
+  GenerationMode,
+  GenerationStatusCode,
+  ProfileCheckStatusCode,
+} from "@/contracts";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
 const values = <T extends string>(options: readonly T[]) => options as [T, ...T[]];
 
 export const generationStatus = pgEnum("generation_status", values(GenerationStatusCode.options));
 export const errorCode = pgEnum("error_code", values(ErrorCode.options));
+export const profileCheckStatus = pgEnum(
+  "profile_check_status",
+  values(ProfileCheckStatusCode.options),
+);
 export const generationMode = pgEnum("generation_mode", values(GenerationMode.options));
 export const artifactKind = pgEnum("artifact_kind", values(ArtifactKind.options));
 
@@ -109,3 +125,34 @@ export const artifacts = pgTable("artifacts", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
+
+/**
+ * Проверка профиля до оплаты (шаг 1 флоу). Одна строка на каждый POST: у каждого человека свой `id`
+ * и своя привязка к `ownerTokenHash`, даже если результат взят из кэша. `profile` — только то, что
+ * показываем на экране «Нашли!» (без сырых данных профиля, инвариант 20).
+ *
+ * Кэш 24 ч считается по `checkedAt` — моменту, когда результат реально посчитан: копия из кэша
+ * наследует `checkedAt` источника, иначе кэш продлевал бы сам себя. В кэш идут `ok` и отказ
+ * `minor_detected` (остальные отказы дёшевы: снимок уже в кэше скрейпа). Хэши IP и ownerToken — инвариант 6.
+ */
+export const profileChecks = pgTable(
+  "profile_checks",
+  {
+    id: text("id").primaryKey(),
+    igUsername: text("ig_username").notNull(),
+    status: profileCheckStatus("status").notNull().default("checking"),
+    errorCode: errorCode("error_code"),
+    /** Строка мини-лоудера, человеческими словами. */
+    hint: text("hint"),
+    /** Снимок, на котором считался результат: по нему генерация берёт досье. Снимки чистит Cron. */
+    snapshotId: text("snapshot_id").references(() => profileSnapshots.id, {
+      onDelete: "set null",
+    }),
+    profile: jsonb("profile").$type<CheckedProfile>(),
+    ownerTokenHash: text("owner_token_hash").notNull(),
+    ipHash: text("ip_hash").notNull(),
+    checkedAt: timestamp("checked_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("profile_checks_ig_username_checked_at_idx").on(t.igUsername, t.checkedAt)],
+);
