@@ -1,0 +1,595 @@
+[
+  {
+    "inputUrl": "https://www.instagram.com/test.user",
+    "id": "100000001",
+    "username": "test.user",
+    "fullName": "Тестовый Пользователь",
+    "biography": "Выдуманный профиль для тестов. Кофе, закаты, дача.",
+    "externalUrl": "https://example.invalid/link",
+    "externalUrls": [],
+    "followersCount": 1520,
+    "followsCount": 310,
+    "postsCount": 214,
+    "private": false,
+    "verified": false,
+    "profilePicUrl": "https://scontent.example.invalid/v/avatar.jpg",
+    "profilePicUrlHD": "https://scontent.example.invalid/v/avatar_hd.jpg",
+    "latestPosts": [
+      {
+        "id": "fx0",
+        "type": "Image",
+        "shortCode": "Cx0abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx0abc/",
+        "commentsCount": 3,
+        "likesCount": -1,
+        "timestamp": "2026-09-30T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p0.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx1",
+        "type": "Video",
+        "shortCode": "Cx1abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx1abc/",
+        "commentsCount": 4,
+        "likesCount": 125,
+        "timestamp": "2026-09-29T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p1.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-28T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx3",
+        "type": "Image",
+        "shortCode": "Cx3abc",
+        "caption": "Понедельник, ты серьёзно? #понедельник",
+        "hashtags": ["понедельник"],
+        "url": "https://www.instagram.com/p/Cx3abc/",
+        "commentsCount": 6,
+        "likesCount": 135,
+        "timestamp": "2026-09-27T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p3.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx4",
+        "type": "Video",
+        "shortCode": "Cx4abc",
+        "caption": "Выходные на даче, шашлык и ноль планов #дача #шашлык #выходные",
+        "hashtags": ["дача", "шашлык", "выходные"],
+        "url": "https://www.instagram.com/p/Cx4abc/",
+        "commentsCount": 7,
+        "likesCount": 140,
+        "timestamp": "2026-09-26T17:20:00.000Z",
+        "locationName": "Дача, Подмосковье",
+        "displayUrl": "https://scontent.example.invalid/v/p4.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "type": "Image",
+        "timestamp": "not-a-date",
+        "displayUrl": "javascript:alert(1)"
+      },
+      {
+        "id": "fx5",
+        "type": "Sidecar",
+        "shortCode": "Cx5abc",
+        "caption": "Новый плейлист для пробежки, которую я не совершу #бег #музыка",
+        "hashtags": ["бег", "музыка"],
+        "url": "https://www.instagram.com/p/Cx5abc/",
+        "commentsCount": 8,
+        "likesCount": 145,
+        "timestamp": "2026-09-25T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p5.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx6",
+        "type": "Image",
+        "shortCode": "Cx6abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx6abc/",
+        "commentsCount": 9,
+        "likesCount": 150,
+        "timestamp": "2026-09-24T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p6.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx7",
+        "type": "Video",
+        "shortCode": "Cx7abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx7abc/",
+        "commentsCount": 10,
+        "likesCount": -1,
+        "timestamp": "2026-09-23T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p7.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx8",
+        "type": "Sidecar",
+        "shortCode": "Cx8abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx8abc/",
+        "commentsCount": 11,
+        "likesCount": 160,
+        "timestamp": "2026-09-22T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p8.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx9",
+        "type": "Image",
+        "shortCode": "Cx9abc",
+        "caption": "Понедельник, ты серьёзно? #понедельник",
+        "hashtags": ["понедельник"],
+        "url": "https://www.instagram.com/p/Cx9abc/",
+        "commentsCount": 12,
+        "likesCount": 165,
+        "timestamp": "2026-09-21T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p9.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx10",
+        "type": "Video",
+        "shortCode": "Cx10abc",
+        "caption": "Выходные на даче, шашлык и ноль планов #дача #шашлык #выходные",
+        "hashtags": ["дача", "шашлык", "выходные"],
+        "url": "https://www.instagram.com/p/Cx10abc/",
+        "commentsCount": 13,
+        "likesCount": 170,
+        "timestamp": "2026-09-20T17:20:00.000Z",
+        "locationName": "Дача, Подмосковье",
+        "displayUrl": "https://scontent.example.invalid/v/p10.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx11",
+        "type": "Sidecar",
+        "shortCode": "Cx11abc",
+        "caption": "Новый плейлист для пробежки, которую я не совершу #бег #музыка",
+        "hashtags": ["бег", "музыка"],
+        "url": "https://www.instagram.com/p/Cx11abc/",
+        "commentsCount": 14,
+        "likesCount": 175,
+        "timestamp": "2026-09-19T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p11.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx12",
+        "type": "Image",
+        "shortCode": "Cx12abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx12abc/",
+        "commentsCount": 15,
+        "likesCount": 180,
+        "timestamp": "2026-09-18T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p12.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx13",
+        "type": "Video",
+        "shortCode": "Cx13abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx13abc/",
+        "commentsCount": 16,
+        "likesCount": 185,
+        "timestamp": "2026-09-17T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p13.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx14",
+        "type": "Sidecar",
+        "shortCode": "Cx14abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx14abc/",
+        "commentsCount": 17,
+        "likesCount": -1,
+        "timestamp": "2026-09-16T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p14.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx15",
+        "type": "Image",
+        "shortCode": "Cx15abc",
+        "caption": "Понедельник, ты серьёзно? #понедельник",
+        "hashtags": ["понедельник"],
+        "url": "https://www.instagram.com/p/Cx15abc/",
+        "commentsCount": 18,
+        "likesCount": 195,
+        "timestamp": "2026-09-15T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p15.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx16",
+        "type": "Video",
+        "shortCode": "Cx16abc",
+        "caption": "Выходные на даче, шашлык и ноль планов #дача #шашлык #выходные",
+        "hashtags": ["дача", "шашлык", "выходные"],
+        "url": "https://www.instagram.com/p/Cx16abc/",
+        "commentsCount": 19,
+        "likesCount": 200,
+        "timestamp": "2026-09-14T17:20:00.000Z",
+        "locationName": "Дача, Подмосковье",
+        "displayUrl": "https://scontent.example.invalid/v/p16.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx17",
+        "type": "Sidecar",
+        "shortCode": "Cx17abc",
+        "caption": "Новый плейлист для пробежки, которую я не совершу #бег #музыка",
+        "hashtags": ["бег", "музыка"],
+        "url": "https://www.instagram.com/p/Cx17abc/",
+        "commentsCount": 20,
+        "likesCount": 205,
+        "timestamp": "2026-09-13T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p17.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx18",
+        "type": "Image",
+        "shortCode": "Cx18abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx18abc/",
+        "commentsCount": 21,
+        "likesCount": 210,
+        "timestamp": "2026-09-12T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p18.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx19",
+        "type": "Video",
+        "shortCode": "Cx19abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx19abc/",
+        "commentsCount": 22,
+        "likesCount": 215,
+        "timestamp": "2026-09-11T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p19.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx20",
+        "type": "Sidecar",
+        "shortCode": "Cx20abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx20abc/",
+        "commentsCount": 23,
+        "likesCount": 220,
+        "timestamp": "2026-09-10T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p20.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx21",
+        "type": "Image",
+        "shortCode": "Cx21abc",
+        "caption": "Понедельник, ты серьёзно? #понедельник",
+        "hashtags": ["понедельник"],
+        "url": "https://www.instagram.com/p/Cx21abc/",
+        "commentsCount": 24,
+        "likesCount": -1,
+        "timestamp": "2026-09-09T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p21.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx22",
+        "type": "Video",
+        "shortCode": "Cx22abc",
+        "caption": "Выходные на даче, шашлык и ноль планов #дача #шашлык #выходные",
+        "hashtags": ["дача", "шашлык", "выходные"],
+        "url": "https://www.instagram.com/p/Cx22abc/",
+        "commentsCount": 25,
+        "likesCount": 230,
+        "timestamp": "2026-09-08T17:20:00.000Z",
+        "locationName": "Дача, Подмосковье",
+        "displayUrl": "https://scontent.example.invalid/v/p22.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx23",
+        "type": "Sidecar",
+        "shortCode": "Cx23abc",
+        "caption": "Новый плейлист для пробежки, которую я не совершу #бег #музыка",
+        "hashtags": ["бег", "музыка"],
+        "url": "https://www.instagram.com/p/Cx23abc/",
+        "commentsCount": 26,
+        "likesCount": 235,
+        "timestamp": "2026-09-07T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p23.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx24",
+        "type": "Image",
+        "shortCode": "Cx24abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx24abc/",
+        "commentsCount": 27,
+        "likesCount": 240,
+        "timestamp": "2026-09-06T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p24.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx25",
+        "type": "Video",
+        "shortCode": "Cx25abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx25abc/",
+        "commentsCount": 28,
+        "likesCount": 245,
+        "timestamp": "2026-09-05T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p25.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx26",
+        "type": "Sidecar",
+        "shortCode": "Cx26abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx26abc/",
+        "commentsCount": 29,
+        "likesCount": 250,
+        "timestamp": "2026-09-04T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p26.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx27",
+        "type": "Image",
+        "shortCode": "Cx27abc",
+        "caption": "Понедельник, ты серьёзно? #понедельник",
+        "hashtags": ["понедельник"],
+        "url": "https://www.instagram.com/p/Cx27abc/",
+        "commentsCount": 30,
+        "likesCount": 255,
+        "timestamp": "2026-09-03T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p27.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx28",
+        "type": "Video",
+        "shortCode": "Cx28abc",
+        "caption": "Выходные на даче, шашлык и ноль планов #дача #шашлык #выходные",
+        "hashtags": ["дача", "шашлык", "выходные"],
+        "url": "https://www.instagram.com/p/Cx28abc/",
+        "commentsCount": 31,
+        "likesCount": -1,
+        "timestamp": "2026-09-02T17:20:00.000Z",
+        "locationName": "Дача, Подмосковье",
+        "displayUrl": "https://scontent.example.invalid/v/p28.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx29",
+        "type": "Sidecar",
+        "shortCode": "Cx29abc",
+        "caption": "Новый плейлист для пробежки, которую я не совершу #бег #музыка",
+        "hashtags": ["бег", "музыка"],
+        "url": "https://www.instagram.com/p/Cx29abc/",
+        "commentsCount": 32,
+        "likesCount": 265,
+        "timestamp": "2026-09-01T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p29.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      }
+    ]
+  }
+]
