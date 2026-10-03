@@ -36,7 +36,7 @@ export function StickyCta() {
         show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0",
       )}
     >
-      <FireButton size="sm" cut={null} type="button">
+      <FireButton size="sm" cut={null} href="/create">
         Прожарить
       </FireButton>
     </div>

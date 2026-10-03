@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/components/cx";
+import { fxDisabled } from "@/lib/client/fx";
 import { FlameVortex } from "./FlameVortex";
 import { jitterFor } from "./RevealText";
 
@@ -27,6 +28,8 @@ export function FireWord({
   const [maskKey, setMaskKey] = useState(0);
 
   useEffect(() => {
+    // Отладочный выключатель: трафарет не рисуем, слово остаётся обычным текстом цветом ink
+    if (fxDisabled("word")) return;
     const el = wrap.current;
     const over = layer.current;
     if (!el || !over) return;
@@ -81,27 +84,38 @@ export function FireWord({
     <span ref={wrap} aria-label={text} className={cx("relative inline-block", className)}>
       {/* Запасной текст для браузеров без WebGL; когда трафарет готов — прячем, чтобы не было тёмной кромки */}
       <span aria-hidden="true" className="text-ink in-data-[masked=true]:text-transparent">
-        {Array.from(text).map((ch, i) => {
-          // Пробел — обычный текст: по нему строка переносится на узком экране
-          if (ch === " ") return " ";
-          const { k, w } = jitter ? jitterFor(i) : { k: 1, w: undefined };
+        {/* Слово — неразрывный блок: между inline-block буквами браузер иначе разрешает перенос
+            и «Ь» уезжает на новую строку. Переносится только по пробелам между словами */}
+        {text.split(" ").map((word, wi, words) => {
+          const offset = words.slice(0, wi).reduce((n, w) => n + w.length + 1, 0);
           return (
-            <span
-              key={i}
-              data-ch
-              data-k={k}
-              className="inline-block origin-center"
-              style={
-                jitter
-                  ? {
-                      transform: `scaleX(${k})`,
-                      margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
-                      fontWeight: w,
-                    }
-                  : undefined
-              }
-            >
-              {ch}
+            <span key={wi}>
+              {wi > 0 && " "}
+              <span className="inline-block whitespace-nowrap">
+                {Array.from(word).map((ch, ci) => {
+                  const i = offset + ci;
+                  const { k, w } = jitter ? jitterFor(i) : { k: 1, w: undefined };
+                  return (
+                    <span
+                      key={ci}
+                      data-ch
+                      data-k={k}
+                      className="inline-block origin-center"
+                      style={
+                        jitter
+                          ? {
+                              transform: `scaleX(${k})`,
+                              margin: `0 ${((k - 1) * 0.5).toFixed(3)}em`,
+                              fontWeight: w,
+                            }
+                          : undefined
+                      }
+                    >
+                      {ch}
+                    </span>
+                  );
+                })}
+              </span>
             </span>
           );
         })}
@@ -112,7 +126,14 @@ export function FireWord({
         data-surface="dark"
         className="pointer-events-none absolute -inset-x-[0.2em] -inset-y-[0.08em] block bg-transparent"
       >
-        <FlameVortex mode="rise" mask={mask} maskKey={maskKey} scale={1.6} />
+        <FlameVortex
+          mode="rise"
+          mask={mask}
+          maskKey={maskKey}
+          scale={1.6}
+          slot="word"
+          dprCap={1.5}
+        />
       </span>
     </span>
   );

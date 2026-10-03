@@ -6,7 +6,7 @@ import { cx } from "@/components/cx";
 
 /**
  * Стикер-иллюстрация: реагирует на всё. Hover — поворот и подъём, курсор — параллакс
- * по глубине depth (через --mx/--my секции), стикер можно схватить и перетащить.
+ * по глубине depth (слой ParallaxScope, data-parallax), стикер можно схватить и перетащить.
  */
 export function Sticker({
   src,
@@ -53,11 +53,9 @@ export function Sticker({
 
   return (
     <div
-      className={cx("absolute select-none", className)}
-      style={{
-        translate: `calc(var(--mx, 0) * ${depth * 18}px) calc(var(--my, 0) * ${depth * 14}px + var(--sy, 0) * ${depth * -0.12}px)`,
-        ...style,
-      }}
+      data-parallax={`${depth * 18} ${depth * 14} ${depth * -0.12}`}
+      className={cx("absolute will-change-transform select-none", className)}
+      style={style}
     >
       <div
         ref={inner}
