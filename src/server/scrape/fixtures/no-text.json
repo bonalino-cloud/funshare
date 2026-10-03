@@ -1,0 +1,166 @@
+[
+  {
+    "username": "silent.one",
+    "fullName": "",
+    "biography": "",
+    "followersCount": 40,
+    "followsCount": 50,
+    "postsCount": 9,
+    "private": false,
+    "verified": false,
+    "latestPosts": [
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-20T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-19T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-18T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-17T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-16T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-15T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-14T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-13T00:00:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      }
+    ]
+  }
+]

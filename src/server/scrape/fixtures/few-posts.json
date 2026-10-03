@@ -1,0 +1,71 @@
+[
+  {
+    "username": "new.user",
+    "fullName": "Новичок",
+    "biography": "Только начал",
+    "followersCount": 12,
+    "followsCount": 30,
+    "postsCount": 3,
+    "private": false,
+    "verified": false,
+    "latestPosts": [
+      {
+        "id": "fx0",
+        "type": "Image",
+        "shortCode": "Cx0abc",
+        "caption": "Закат опять был лучше, чем моя мотивация #закат #вечер",
+        "hashtags": ["закат", "вечер"],
+        "url": "https://www.instagram.com/p/Cx0abc/",
+        "commentsCount": 3,
+        "likesCount": -1,
+        "timestamp": "2026-09-30T17:20:00.000Z",
+        "locationName": "Парк Горького",
+        "displayUrl": "https://scontent.example.invalid/v/p0.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx1",
+        "type": "Video",
+        "shortCode": "Cx1abc",
+        "caption": "Кофе номер три. Считаю это завтраком #кофе #утро",
+        "hashtags": ["кофе", "утро"],
+        "url": "https://www.instagram.com/p/Cx1abc/",
+        "commentsCount": 4,
+        "likesCount": 125,
+        "timestamp": "2026-09-29T17:20:00.000Z",
+        "locationName": null,
+        "displayUrl": "https://scontent.example.invalid/v/p1.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      },
+      {
+        "id": "fx2",
+        "type": "Sidecar",
+        "shortCode": "Cx2abc",
+        "caption": "",
+        "hashtags": [],
+        "url": "https://www.instagram.com/p/Cx2abc/",
+        "commentsCount": 5,
+        "likesCount": 130,
+        "timestamp": "2026-09-28T17:20:00.000Z",
+        "locationName": "Кофейня «Зерно»",
+        "displayUrl": "https://scontent.example.invalid/v/p2.jpg",
+        "latestComments": [
+          {
+            "ownerUsername": "fake_user",
+            "text": "комментарий, который мы не берём"
+          }
+        ]
+      }
+    ]
+  }
+]
