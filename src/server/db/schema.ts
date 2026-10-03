@@ -1,6 +1,15 @@
 import { sql } from "drizzle-orm";
-import { index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import type { ArtifactContent, ArtifactImage, ProfileSnapshot } from "@/contracts";
+import {
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import type { ArtifactContent, ArtifactImage, PersonaProfile, ProfileSnapshot } from "@/contracts";
 import { ArtifactKind, ErrorCode, GenerationMode, GenerationStatusCode } from "@/contracts";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
@@ -58,6 +67,27 @@ export const profileSnapshots = pgTable(
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("profile_snapshots_ig_username_fetched_at_idx").on(t.igUsername, t.fetchedAt)],
+);
+
+/**
+ * Досье — источник истины для артефактов (инвариант 10). `data` — `PersonaProfile` (при чтении
+ * всё равно проходит `.parse()`). Одно досье на (снимок, версия промпта): повтор шага обновляет
+ * строку, а не плодит дубли. Каскад: досье производно от снимка и живёт не дольше него
+ * (Cron удаляет снимки старше 30 дней, инвариант 5).
+ */
+export const personas = pgTable(
+  "personas",
+  {
+    id: text("id").primaryKey(),
+    snapshotId: text("snapshot_id")
+      .notNull()
+      .references(() => profileSnapshots.id, { onDelete: "cascade" }),
+    data: jsonb("data").$type<PersonaProfile>().notNull(),
+    model: text("model").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("personas_snapshot_id_prompt_version_idx").on(t.snapshotId, t.promptVersion)],
 );
 
 export const artifacts = pgTable("artifacts", {
