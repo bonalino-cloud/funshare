@@ -1,0 +1,65 @@
+import { sql } from "drizzle-orm";
+import { index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import type { ArtifactContent, ArtifactImage } from "@/contracts";
+import { ArtifactKind, ErrorCode, GenerationMode, GenerationStatusCode } from "@/contracts";
+
+// Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
+const values = <T extends string>(options: readonly T[]) => options as [T, ...T[]];
+
+export const generationStatus = pgEnum("generation_status", values(GenerationStatusCode.options));
+export const errorCode = pgEnum("error_code", values(ErrorCode.options));
+export const generationMode = pgEnum("generation_mode", values(GenerationMode.options));
+export const artifactKind = pgEnum("artifact_kind", values(ArtifactKind.options));
+
+/** Время начала/конца каждого шага конвейера, ISO-строки. */
+export type StepTimings = Partial<Record<string, { startedAt: string; finishedAt?: string }>>;
+
+const timestamps = {
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+};
+
+export const generations = pgTable(
+  "generations",
+  {
+    id: text("id").primaryKey(),
+    status: generationStatus("status").notNull().default("queued"),
+    errorCode: errorCode("error_code"),
+    igUsername: text("ig_username").notNull(),
+    mode: generationMode("mode").notNull(),
+    kind: artifactKind("kind").notNull(),
+    ownerTokenHash: text("owner_token_hash").notNull(),
+    ipHash: text("ip_hash").notNull(),
+    stepTimings: jsonb("step_timings").$type<StepTimings>().notNull().default({}),
+    costCents: integer("cost_cents").notNull().default(0),
+    artifactId: text("artifact_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("generations_ip_hash_created_at_idx").on(t.ipHash, t.createdAt),
+    index("generations_ig_username_idx").on(t.igUsername),
+  ],
+);
+
+export const artifacts = pgTable("artifacts", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  generationId: text("generation_id")
+    .notNull()
+    .unique()
+    .references(() => generations.id),
+  kind: artifactKind("kind").notNull(),
+  content: jsonb("content").$type<ArtifactContent>().notNull(),
+  images: jsonb("images")
+    .$type<ArtifactImage[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  ownerTokenHash: text("owner_token_hash").notNull(),
+  views: integer("views").notNull().default(0),
+  shares: integer("shares").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});

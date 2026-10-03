@@ -1,0 +1,28 @@
+[
+  { "id": "gen_mock_01", "status": "queued", "updatedAt": "2026-09-30T12:01:00.000Z" },
+  {
+    "id": "gen_mock_01",
+    "status": "writing",
+    "hint": "Считаем закаты… 47",
+    "updatedAt": "2026-09-30T12:01:02.000Z"
+  },
+  {
+    "id": "gen_mock_01",
+    "status": "writing",
+    "hint": "Точим панчи…",
+    "updatedAt": "2026-09-30T12:01:20.000Z"
+  },
+  { "id": "gen_mock_01", "status": "awaiting_selection", "updatedAt": "2026-09-30T12:01:35.000Z" },
+  {
+    "id": "gen_mock_01",
+    "status": "drawing",
+    "hint": "1 из 2",
+    "updatedAt": "2026-09-30T12:02:10.000Z"
+  },
+  {
+    "id": "gen_mock_01",
+    "status": "ready",
+    "artifactSlug": "rOastAnyA1",
+    "updatedAt": "2026-09-30T12:02:45.000Z"
+  }
+]

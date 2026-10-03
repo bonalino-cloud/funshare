@@ -12,8 +12,8 @@
 | Превью для мессенджеров | **`next/og`** (`opengraph-image.tsx`) | Картинка-превью генерируется из данных артефакта, ссылка в Telegram/WhatsApp выглядит как открытка |
 | Хостинг | **Vercel** | Превью-деплой на каждый PR, env, логи, аналитика из коробки |
 | Конвейер | **Vercel Workflow** (`"use workflow"` / `"use step"`) | Генерация идёт 30–90 с и из нескольких шагов; каждый шаг ретраится отдельно, падение картинки не перезапускает скрейп |
-| LLM | **AI SDK + Vercel AI Gateway**, текст — `anthropic/claude-sonnet-5` | `generateObject` + zod дают структурированный JSON; Gateway — один ключ, фолбэки моделей, учёт расходов |
-| Картинки | Модель через AI Gateway, кандидат — Nano Banana Pro | Выбираем тестом в фазе 2 по качеству стиля и цене; модель — одна строка в конфиге |
+| LLM | **AI SDK + `@ai-sdk/anthropic`**, свой ключ Anthropic, текст — `claude-sonnet-5` | `generateObject` + zod дают структурированный JSON; напрямую в Anthropic, расходы видны в console.anthropic.com |
+| Картинки | **KIE API** (kie.ai), по умолчанию `nano-banana-2-lite` 1K | Кандидаты (GPT Image 2.5, nano-banana-pro и др.) сравниваем в `be/p2-image-model-test` по стилю, цене и времени; модель — одна строка в конфиге, см. [roast-engine.md](roast-engine.md) §7.1 |
 | Скрейпинг | **Apify — Instagram Profile Scraper** (API) | Не держим свой скрейпер и прокси; платим за профиль |
 | БД | **Postgres (Neon через Vercel Marketplace) + Drizzle ORM** | Схема в TypeScript, миграции в репо, отдельная ветка БД на превью |
 | Файлы | **Vercel Blob** | Картинки артефактов (public) и сырой скрейп (private) |
@@ -36,7 +36,8 @@
 |---|---|
 | `DATABASE_URL` | BE |
 | `BLOB_READ_WRITE_TOKEN` | BE |
-| `AI_GATEWAY_API_KEY` (локально; на Vercel — OIDC) | BE |
+| `ANTHROPIC_API_KEY` — отдельный ключ проекта | BE |
+| `KIE_API_KEY` — отдельный ключ проекта | BE |
 | `APIFY_TOKEN` | BE |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | BE |
 | `NEXT_PUBLIC_USE_MOCKS` | FE (`1` — работать на фикстурах) |

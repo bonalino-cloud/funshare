@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funshare · Прожарка · wireframe v3</title>
+<style>
+  :root{--ink:#111;--line:#bbb;--fill:#eee;--muted:#777;--note:#c2410c}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.4 -apple-system,Helvetica,Arial,sans-serif;color:var(--ink);background:#fafafa}
+  .page{max-width:1080px;margin:0 auto;padding:16px}
+  section{border:2px solid var(--ink);margin:0 0 24px;padding:20px;position:relative;background:#fff}
+  section::before{content:attr(data-n) " · " attr(data-name);position:absolute;top:-11px;left:12px;background:#fff;padding:0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .note{font-size:12px;color:var(--note);border-left:3px solid var(--note);padding:2px 8px;margin:10px 0 0;background:#fff7ed}
+  .box{border:1.5px dashed var(--line);background:var(--fill);padding:12px;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1 1 200px}
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  h1{font-size:clamp(36px,7vw,72px);line-height:.92;margin:8px 0;text-transform:uppercase;letter-spacing:-.02em}
+  h2{font-size:26px;margin:0 0 12px;text-transform:uppercase;letter-spacing:-.01em}
+  h3{font-size:16px;margin:0 0 6px}
+  p{margin:6px 0}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+  .seg span{padding:8px 16px;font-size:13px;border-right:2px solid var(--ink)}
+  .seg span:last-child{border:0}
+  .seg .on{background:var(--ink);color:#fff}
+  .input{display:flex;gap:8px;margin:14px 0 6px}
+  .input .f{flex:1;border:2px solid var(--ink);border-radius:999px;padding:14px 18px;color:var(--muted)}
+  .btn{border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:14px 22px;font-weight:700;white-space:nowrap;display:inline-block}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn.xl{font-size:24px;padding:22px 44px;border-radius:999px;text-transform:uppercase;letter-spacing:.02em}
+  .card{border:2px solid var(--ink);border-radius:16px;padding:16px;background:#fff}
+  .card.dark{background:#111;color:#fff}
+  .card.dark .box{background:#222;border-color:#555;color:#aaa}
+  .card.sel{outline:3px solid var(--ink);outline-offset:3px}
+  .micro{font-size:12px;color:var(--muted)}
+  ul{margin:6px 0;padding-left:18px}
+  li{margin:3px 0}
+  header.top{display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;font-size:13px}
+  .legend{font-size:12px;color:var(--muted);margin-bottom:20px}
+  .big{font-size:22px;font-weight:800;line-height:1.1;margin:0 0 4px}
+  .status{font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.7;margin:0}
+  .stamp{width:150px;height:150px;flex:0 0 150px}
+  .stamp text{font-size:13.5px;font-weight:800;letter-spacing:2.5px;fill:var(--ink)}
+  .tier{display:flex;gap:8px;align-items:center}
+  .tier .pep{font-size:18px;letter-spacing:-2px}
+  .tag{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:12px}
+  details{border:1.5px solid var(--ink);border-radius:12px;padding:10px 14px;margin:8px 0}
+  summary{font-weight:700;cursor:pointer}
+  details p{margin:8px 0 2px;font-size:14px}
+  .phone{border:2px solid var(--ink);border-radius:22px;width:150px;height:300px;padding:10px;display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--muted);flex:0 0 150px}
+  .phone .box{flex:1;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="legend">
+  <b>Funshare · мини-лендинг «Прожарка» · wireframe v3 · 2026-09-29</b><br>
+  Тексты по <code>business/tone-of-voice.md</code>. Серые пунктирные блоки = визуал / декор. Оранжевые пометки = комментарии, в вёрстку не идут.
+</div>
+
+<header class="top">
+  <span><b>✱ FUNSHARE</b> <span class="micro">/ прожарка</span></span>
+  <span class="micro">[что ещё есть ↗] &nbsp; [☰]</span>
+</header>
+
+<!-- 01 HERO -->
+<section data-n="01" data-name="Hero">
+  <div class="row" style="align-items:center">
+    <div style="flex:2 1 380px">
+      <div class="eyebrow">Instagram → прожарка</div>
+      <h1>Прожарь себя.<br>Или друга.</h1>
+      <p>Кидай ссылку. ИИ прочитает сторис и выдаст роаст, которым не стыдно поделиться. Ну, почти.</p>
+      <div style="margin:22px 0 10px"><span class="btn xl">Прожарить ↗</span></div>
+      <p class="micro"><b>Поджог бесплатно</b> · Только открытые профили · Пара минут</p>
+    </div>
+    <div style="flex:1 1 300px;display:flex;flex-direction:column;gap:12px;align-items:center">
+      <div class="box" style="width:100%;min-height:260px;flex-direction:column;gap:6px">
+        <span style="font-size:40px">😈🔥</span>
+        <b style="color:var(--ink)">Анимация маскота: Чёртик</b>
+        <span>Огненный чёртик, который всех и жарит. Держит вилку или зажигалку, подпрыгивает, огонь на голове колышется, хитро подмигивает. Lottie / SVG-анимация, автоплей, без звука</span>
+        <span style="font-size:11px">Заглушка: статичный чёртик (SVG) с animate-wiggle до готовности анимации</span>
+      </div>
+      <svg class="stamp" viewBox="0 0 200 200" aria-label="Штамп: осторожно, огнеопасно">
+        <defs><path id="ring" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/></defs>
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#111" stroke-width="3"/>
+        <circle cx="100" cy="100" r="52" fill="none" stroke="#111" stroke-width="3"/>
+        <text><textPath href="#ring">ОСТОРОЖНО · ОГНЕОПАСНО · ОСТОРОЖНО · ОГНЕОПАСНО ·</textPath></text>
+        <text x="100" y="114" text-anchor="middle" style="font-size:40px;letter-spacing:0">🔥</text>
+      </svg>
+    </div>
+  </div>
+  <p class="note">Настроек в hero нет: одна большая кнопка ведёт на флоу с шагами (ссылка, кого, уровень, сборка). Маскот прожарки это чёртик, а не ромашка из DS: он персонаж именно этого мини-продукта, «шеф-повар», который жарит. Пока в вёрстку идёт статичный SVG чёртика с animate-wiggle как заглушка, слот под анимацию 1:1 или 4:5, чтобы потом подменить без перевёрстки. Тот же чёртик появляется в сборках (поджигает, стоит у костра, мешает в чане), в статусах ожидания и в 404. В DS нужно добавить его как компонент Imp рядом с Daisy. Штамп лежит на углу слота маскота, наполовину выходя за край, и медленно вращается как Sticker из DS. На мобиле маскот уходит под кнопку, штамп остаётся на его углу. prefers-reduced-motion глушит и маскота, и штамп.</p>
+</section>
+
+<!-- 02 ПРИМЕР + СБОРКИ -->
+<section data-n="02" data-name="Пример и сборки">
+  <h2>Вот что получится</h2>
+
+  <div class="grid g3" style="margin-bottom:14px">
+    <div class="card">
+      <div class="tier"><span class="pep">🌶</span><h3 style="margin:0">Поджог</h3><span class="tag" style="margin-left:auto;font-weight:700">Бесплатно</span></div>
+      <p class="micro">Только шутки, только текст</p>
+      <div class="box" style="min-height:60px;margin-top:8px">Чёртик зажигалкой поджигает смайлик</div>
+    </div>
+    <div class="card sel">
+      <div class="tier"><span class="pep">🌶🌶</span><h3 style="margin:0">Кострище</h3></div>
+      <p class="micro">Шутки + 2 картинки</p>
+      <div class="box" style="min-height:60px;margin-top:8px">Чёртик у костра, смайлик на вертеле подгорел сильнее</div>
+    </div>
+    <div class="card">
+      <div class="tier"><span class="pep">🌶🌶🌶</span><h3 style="margin:0">Пекло</h3></div>
+      <p class="micro">Шутки + 4 картинки + видео для сторис</p>
+      <div class="box" style="min-height:60px;margin-top:8px">Чёртик мешает в чане, смайлик варится</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div style="flex:1 1 240px">
+      <div class="eyebrow">Что входит · Кострище</div>
+      <ul>
+        <li>Вердикт в одну строку. Он же заголовок для сторис</li>
+        <li>4–6 панчей про привычки и вайб</li>
+        <li>2 картинки в одном стиле, по мотивам профиля</li>
+        <li>«Но если честно» в конце, чтобы не обиделись</li>
+        <li>Ссылка с превью для Telegram и WhatsApp</li>
+      </ul>
+      <div class="eyebrow" style="margin-top:14px">В Пекле сверху</div>
+      <ul>
+        <li>4 картинки вместо 2</li>
+        <li>Видео 9:16 на 15 сек: панчи появляются под бит, картинки горят</li>
+        <li>Обложка-открытка для ДР или ответки</li>
+      </ul>
+    </div>
+    <div style="flex:1 1 300px">
+      <div class="eyebrow">Результат · Кострище</div>
+      <div class="card dark">
+        <div class="eyebrow" style="color:#aaa">Прожарка @anya.travels</div>
+        <p class="big">Человек, у которого 40 сторис из аэропорта и ноль из дома</p>
+        <div class="row" style="margin:10px 0">
+          <div class="box" style="min-height:90px">Картинка 1</div>
+          <div class="box" style="min-height:90px">Картинка 2</div>
+        </div>
+        <ul>
+          <li>🧳 «Пересадка 6 часов» звучит у тебя как достижение, а не как ошибка планирования</li>
+          <li>☕ Кофе фотографируешь чаще, чем пьёшь. Кофе в курсе</li>
+          <li>🌅 Закаты. Все. Даже из такси. Даже когда их нет</li>
+          <li>🎧 Плейлист «для дороги» длиннее самой дороги</li>
+        </ul>
+        <p><b>Но если честно:</b> ты та, кто знает, где продолжить вечер. Это уважение.</p>
+        <div class="row" style="margin-top:10px">
+          <span class="btn ghost" style="text-align:center">Кинуть Ане ↗</span>
+          <span class="btn ghost" style="text-align:center">Прожарить в ответ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Поджог бесплатный с самого старта: так люди тестируют систему без барьера, а мы получаем поток генераций для eval-сета и вирусных ссылок. Плашка «Бесплатно» стоит на карточке сборки и дублируется строкой под кнопкой в hero. Клик по сборке меняет и левый список, и правый результат: Поджог показывает карточку без картинок, Пекло добавляет 4 картинки и превью видео. Альтернативы для Пекла, если видео дорого на старте: озвучка панчей голосом или «двойная прожарка» двух профилей. Цена Кострища и Пекла это фаза 4, до неё обе сборки можно держать в режиме «Скоро».</p>
+</section>
+
+<!-- 03 ВИДЕО -->
+<section data-n="03" data-name="Видео">
+  <h2>В сторис или в рилс</h2>
+  <div class="row" style="align-items:center">
+    <div class="phone">
+      <span>9:16 · 15 сек</span>
+      <div class="box">Превью видео: картинки горят, панчи вылетают под бит</div>
+      <span>▶ звук вкл</span>
+    </div>
+    <div style="flex:1 1 260px">
+      <p class="big">Прожарка, которая сама себя выкладывает</p>
+      <p>Вертикальное видео под сторис и рилс. Панчи под бит, картинки в огне, вердикт в конце. Скачал и выложил.</p>
+      <p class="micro">Входит в сборку Пекло 🌶🌶🌶</p>
+      <div style="margin-top:10px"><span class="btn ghost">Смотреть пример ▶</span></div>
+    </div>
+  </div>
+  <p class="note">Блок продаёт Пекло. Если видео уедет в фазу 3, блок остаётся с плашкой «Скоро» и кнопкой «Напомнить», это дешёвый способ замерить спрос.</p>
+</section>
+
+<!-- 04 КАК ДЕЛАЕТСЯ -->
+<section data-n="04" data-name="Три шага">
+  <h2>Как делается</h2>
+  <div class="grid g3">
+    <div class="card"><div class="eyebrow">01</div><h3>Кидаешь ссылку</h3><p>Свою или друга. Только открытые профили.</p></div>
+    <div class="card"><div class="eyebrow">02</div><h3>Несколько минут магии</h3><p>Чёртик на максимальном огне жарит жертву. Ты пока смотришь:</p>
+      <p class="status">Считаем закаты… 47<br>Читаем подписи. Даже длинные…<br>Ищем слабость. Нашли…</p></div>
+    <div class="card"><div class="eyebrow">03</div><h3>Share</h3><p>Делишься готовым артефактом. Осторожно, горячо!</p></div>
+  </div>
+  <div class="box" style="margin-top:12px">Бегущая лента «✱ ПРОЖАРКА ✱ ОГНЕОПАСНО ✱ БЕСПЛАТНО ✱ ОТВЕТКА ✱»</div>
+  <p class="note">«Магия» в ToV стоит в стоп-листе как нейросетевое слово, но здесь она в связке с «мегамозгом» и «жертвой» и читается как шутка, а не как маркетинг. Оставил как ты написал, если хочешь чище по ToV: «Пара минут на огне».</p>
+</section>
+
+<!-- 05 КОГДА ЗАХОДИТ -->
+<section data-n="05" data-name="Юзкейсы">
+  <h2>Когда заходит</h2>
+  <div class="grid g3">
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>На ДР другу</h3>
+      <p>Которого особенно любишь. Вместо «с др, бро».</p>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>В рандомный день</h3>
+      <p>Рандомное время. Без повода. Так даже лучше.</p>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Когда кто-то взбесил</h3>
+      <p>А ответить нужно красиво. Без мата, с огоньком.</p>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Что ИИ думает обо мне</h3>
+      <p>Самоирония в сторис заходит лучше селфи. «Меня прожарил ИИ. Он прав».</p>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>В общий чат</h3>
+      <p>Всех по очереди. Заодно узнаешь, кто обидчивый.</p>
+    </div>
+    <div class="card">
+      <div class="box" style="min-height:70px;margin-bottom:8px">иконка / мини-иллюстрация</div>
+      <h3>Нечего постить</h3>
+      <p>Готовая картинка и текст. Минимум два «это про тебя, да».</p>
+    </div>
+  </div>
+  <p class="note">Каждая карточка это ссылка на флоу с предустановкой: /roast/new?mode=friend&amp;level=hard&amp;tier=2 и так далее. Тегов нет, режим виден по тексту. Шесть карточек на десктопе 3×2, на мобиле горизонтальный свайп или 2 колонки.</p>
+</section>
+
+<!-- 06 ПРАВИЛА -->
+<section data-n="06" data-name="Правила">
+  <h2>Жарим, но не сжигаем дотла</h2>
+  <div class="grid g2">
+    <div>
+      <h3>Не трогаем. Никогда</h3>
+      <ul>
+        <li>Внешность, вес, здоровье</li>
+        <li>Национальность, религию, политику</li>
+        <li>Ориентацию, семью, деньги</li>
+      </ul>
+      <p class="micro">Даже на «Жёстко». Жёстко это про привычки, не про человека.</p>
+    </div>
+    <div>
+      <h3>С данными так</h3>
+      <ul>
+        <li>Только открытые профили. Закрытый значит закрытый</li>
+        <li>Маленьких не обижаем</li>
+        <li>Картинки рисуем, а не копируем лицо</li>
+        <li>Передумал: жми «Удалить», и прожарки нет</li>
+        <li>Сырое храним 30 дней, потом стираем</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 07 CTA -->
+<section data-n="07" data-name="Повторный CTA">
+  <div class="row" style="align-items:center">
+    <div style="flex:2 1 300px">
+      <h2 style="margin:0">Угли прогреты.<br>Кого жарим?</h2>
+    </div>
+    <div style="flex:1 1 220px;text-align:right"><span class="btn xl">Прожарить ↗</span></div>
+  </div>
+  <p class="note">Та же большая кнопка, что в hero, ведёт в тот же флоу. На мобиле после hero появляется sticky «Прожарить» снизу.</p>
+</section>
+
+<!-- 08 FAQ -->
+<section data-n="08" data-name="FAQ">
+  <h2>Вопросы</h2>
+  <details open><summary>Это бесплатно?</summary><p>Поджог бесплатно, без регистрации и лимита на первый раз. Кострище и Пекло с картинками и видео, там будет цена. Скажем заранее, до кнопки.</p></details>
+  <details><summary>Друг увидит, что это я?</summary><p>Только если сам скажешь. В прожарке нет имени отправителя, есть кнопка «Прожарить в ответ».</p></details>
+  <details><summary>Вы заходите в мой аккаунт?</summary><p>Нет. Смотрим только то, что видно всем без входа. Закрытый профиль не откроем.</p></details>
+  <details><summary>А если обидно?</summary><p>Жми «Удалить», и ссылка перестаёт работать. Картинки стираем тоже.</p></details>
+  <details><summary>Почему картинка не похожа на меня?</summary><p>Так и задумано. Рисуем персонажа по мотивам профиля, а не копируем лицо. Дипфейки не делаем.</p></details>
+  <details><summary>Можно прожарить не Instagram?</summary><p>Пока только его. Telegram-каналы и TikTok в планах, напиши, если очень надо.</p></details>
+  <p class="note">Ответы на возражения перед последним скроллом: цена, анонимность, доступ к аккаунту, удаление, лицо. Тексты про цену и другие соцсети это заглушки, решение по монетизации за вами с Денисом.</p>
+</section>
+
+<!-- 09 FOOTER -->
+<section data-n="09" data-name="Footer">
+  <div class="row" style="align-items:center">
+    <div class="micro">✱ ✱ ✱ &nbsp; Funshare · с любовью и огоньком</div>
+    <div class="micro" style="text-align:right">[Что ещё есть] [Правила] [Удалить мою прожарку]</div>
+  </div>
+  <div class="box" style="margin-top:12px;min-height:60px">Пламя перед футером · тизер других генераций добавим позже</div>
+</section>
+
+</div>
+</body>
+</html>
