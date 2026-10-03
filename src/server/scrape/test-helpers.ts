@@ -14,6 +14,7 @@ export function makeDeps(overrides: { fetchRaw?: ScrapeDeps["fetchRaw"] } = {}) 
       findFresh: vi.fn<ScrapeDeps["snapshots"]["findFresh"]>(async () => null),
       insert: vi.fn<ScrapeDeps["snapshots"]["insert"]>(async (row) => {
         stored.push(row);
+        return `snap-${stored.length}`;
       }),
     },
     now: () => NOW,
