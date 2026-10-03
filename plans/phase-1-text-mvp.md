@@ -6,8 +6,11 @@
 
 Единый список: базовая труба этой фазы + задачи прожарки из [roast-engine.md §12](../architecture/roast-engine.md). Порядок — по зависимостям: генерация по контракту требует готовой проверки профиля (`profileCheckId`) и заказа. Отмечать `[x]` здесь; §12 ссылается сюда.
 
-- [x] `contracts/roast-v1`, `contracts/persona-roast`, `contracts/pricing-v1` — влиты как #9 и #35 (тарифы от 2026-10-02)
+- [x] `contracts/roast-v1`, `contracts/pricing-v1` — влиты как #9 и #35 (тарифы от 2026-10-02)
+- [x] `contracts/persona-roast` — досье прожарки в `PersonaProfile`: `observations`, `warmFacts`, `signatureMoves`, `sensitiveEvents` (все необязательные)
+  - Итог (2026-10-03): в #35 вошло только `look`, поля §4 добавлены этой веткой · `Observation` с обязательным `evidence` (`post:N` / `fact:вид:значение`), лимиты длины, уникальные `id` · фикстура `persona-roast.json`, 226 тестов · карусель 9/9 (закрыла свободный текст в `evidence`, строки из пробелов) · `sensitiveEvents` не дописываются в `avoidTopics`: запретный список = объединение
 - [ ] 1. `be/p1-scrape-step` — Apify → `ProfileSnapshot`, сырой ответ в private Blob, кэш 24 ч, ошибки `profile_not_found` / `profile_private`. Пишется и тестируется на фикстурах, живой прогон — с `APIFY_TOKEN`
+  - Итог (2026-10-03): код в `dev` (#45) — `src/server/scrape/`: ник → кэш 24 ч → Apify REST 40 с + 1 ретрай → private Blob → `profile_snapshots`, миграция `drizzle/0001` · 135 тестов на фикстурах · `[x]` после живого прогона с `APIFY_TOKEN` и `db:migrate`; проверить, 12 или 24 поста отдаёт актор
 - [x] 2. `be/p1-facts` — `ProfileFacts`: статистика, повторы, чистка PII, кэп подписей
   - Итог (2026-10-03): `src/server/facts/` — `buildProfileFacts(snapshot)` без LLM: статистика (UTC), повторы, ритм, язык ru/en, чистка PII, `captionsForLlm` с кэпом 300 и без `<>` · 81 новый тест (161 всего) · карусель 9/9 (поймала два телефона подряд, тире «–», `youtu.be`, медленную очистку на мусоре) · открыто: закреплённые посты искажают паузу (нужен `isPinned` в контракте), `@упоминания` идут в LLM
 - [ ] 3. `be/p1-analyze-step` — досье с `observations` / `warmFacts` / `sensitiveEvents`, гардрейлы `likelyMinor` / `insufficientData`, промпт `v1`
