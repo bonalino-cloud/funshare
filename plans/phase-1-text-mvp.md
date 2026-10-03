@@ -8,6 +8,7 @@
 
 - [x] `contracts/roast-v1`, `contracts/persona-roast`, `contracts/pricing-v1` — влиты как #9 и #35 (тарифы от 2026-10-02)
 - [ ] 1. `be/p1-scrape-step` — Apify → `ProfileSnapshot`, сырой ответ в private Blob, кэш 24 ч, ошибки `profile_not_found` / `profile_private`. Пишется и тестируется на фикстурах, живой прогон — с `APIFY_TOKEN`
+  - Итог (2026-10-03): код готов — `src/server/scrape/` (`scrapeProfile`: ник → кэш 24 ч → Apify REST 40 с + 1 ретрай → private Blob → `profile_snapshots`), миграция `drizzle/0001` · 135 тестов на фикстурах · карусель 9/9 (поймала обрезку эмодзи и нулевого символа перед jsonb) · `[x]` после живого прогона с `APIFY_TOKEN` и `db:migrate` (Денис); проверить, сколько постов реально отдаёт актор (возможно 12, не 24)
 - [ ] 2. `be/p1-facts` — `ProfileFacts`: статистика, повторы, чистка PII, кэп подписей
 - [ ] 3. `be/p1-analyze-step` — досье с `observations` / `warmFacts` / `sensitiveEvents`, гардрейлы `likelyMinor` / `insufficientData`, промпт `v1`
 - [ ] 4. `be/p1-profile-check` — `POST /api/profile-checks`, `GET …/:id`: `scrape → facts → analyze` до оплаты, гардрейлы (закрыт, мало данных, младше 16), кэш 24 ч, лимиты на проверки

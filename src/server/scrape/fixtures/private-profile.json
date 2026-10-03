@@ -1,0 +1,14 @@
+[
+  {
+    "username": "closed.account",
+    "fullName": "Закрытый Аккаунт",
+    "biography": "",
+    "followersCount": 88,
+    "followsCount": 120,
+    "postsCount": 12,
+    "private": true,
+    "verified": false,
+    "profilePicUrl": "https://scontent.example.invalid/v/avatar2.jpg",
+    "latestPosts": []
+  }
+]

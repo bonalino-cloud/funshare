@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import type { ArtifactContent, ArtifactImage } from "@/contracts";
+import type { ArtifactContent, ArtifactImage, ProfileSnapshot } from "@/contracts";
 import { ArtifactKind, ErrorCode, GenerationMode, GenerationStatusCode } from "@/contracts";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
@@ -42,6 +42,22 @@ export const generations = pgTable(
     index("generations_ip_hash_created_at_idx").on(t.ipHash, t.createdAt),
     index("generations_ig_username_idx").on(t.igUsername),
   ],
+);
+
+/**
+ * Кэш скрейпа на 24 ч. `data` — `ProfileSnapshot` (при чтении всё равно проходит `.parse()`),
+ * `rawBlobKey` — ключ сырого ответа Apify в private Blob. Старше 30 дней удаляет Cron.
+ */
+export const profileSnapshots = pgTable(
+  "profile_snapshots",
+  {
+    id: text("id").primaryKey(),
+    igUsername: text("ig_username").notNull(),
+    data: jsonb("data").$type<ProfileSnapshot>().notNull(),
+    rawBlobKey: text("raw_blob_key").notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("profile_snapshots_ig_username_fetched_at_idx").on(t.igUsername, t.fetchedAt)],
 );
 
 export const artifacts = pgTable("artifacts", {

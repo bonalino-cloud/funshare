@@ -8,6 +8,13 @@
       "when": 1790430299692,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791036077849,
+      "tag": "0001_fearless_stature",
+      "breakpoints": true
     }
   ]
 }
