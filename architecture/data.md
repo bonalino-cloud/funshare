@@ -8,7 +8,7 @@
 | `profile_snapshots` | `id`, `igUsername`, `data jsonb` (`ProfileSnapshot`), `rawBlobKey`, `fetchedAt` | Кэш 24 ч; удаляем через 30 дней |
 | `personas` | `id`, `snapshotId`, `data jsonb` (`PersonaProfile`), `model`, `promptVersion` | Источник истины для любых артефактов |
 | `artifacts` | `id`, `slug`, `generationId`, `kind`, `content jsonb`, `images jsonb`, `ownerTokenHash`, `views`, `shares`, `createdAt`, `deletedAt` | `slug` — 10 символов nanoid |
-| `events` | `id`, `artifactId`, `type` (`view` \| `share_click` \| `copy_link` \| `cta_click`), `createdAt` | Продуктовая аналитика |
+| `events` | `id`, `artifactId`, `type` (`view` \| `share_click` \| `copy_link` \| `story_share` \| `cta_click`), `createdAt` | Продуктовая аналитика |
 
 ## Blob
 
