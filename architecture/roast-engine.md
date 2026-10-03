@@ -540,8 +540,8 @@ Eval-набор из фазы 1 (10 профилей) прогоняем на т
 
 Привязан к фазам из [plans/](../plans/INDEX.md). Один пункт = одна ветка = один PR.
 
-**Фаза 1 (текст)**
-- [ ] `contracts/roast-v1`, `contracts/persona-roast`, `contracts/pricing-v1` (`/pricing`, `/quotes`, `tier`, `promoCode`, новые коды ошибок)
+**Фаза 1 (текст)** — BE-задачи сведены с базовой трубой в единый порядок в [plans/phase-1-text-mvp.md](../plans/phase-1-text-mvp.md); галочки ставить там.
+- [x] `contracts/roast-v1`, `contracts/persona-roast`, `contracts/pricing-v1` (`/pricing`, `/quotes`, `tier`, `promoCode`, новые коды ошибок)
 - [ ] `be/p1-orders-promos` — `orders`, `promo_codes`, `promo_redemptions`, расчёт цены, атомарное списание кода, освобождение при провале, лимит на перебор
 - [ ] `fe/p1-checkout` — карточки тарифов с ценой, последний экран: сводка, «волшебное слово», кнопка с ценой, состояние «оплата скоро»
 - [ ] `be/p1-facts` — `ProfileFacts`: статистика, повторы, чистка PII, кэп подписей
