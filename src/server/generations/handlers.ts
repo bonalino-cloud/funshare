@@ -27,7 +27,7 @@ export type GenerationsHandlerDeps = {
   profiles: Pick<ProfileCheckRepository, "get">;
   orders: OrderRepository;
   guard: PromoGuard;
-  /** Запуск конвейера (сейчас заглушка, см. `workflow.ts`). */
+  /** Запуск конвейера (Vercel Workflow, см. `workflow.ts`). */
   startWorkflow: (generationId: string) => Promise<void>;
   newId: () => string;
   now: () => Date;

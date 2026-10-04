@@ -196,6 +196,10 @@ export async function createOrder(
  * `redeemed − 1`) и пробу Поджога (частичный индекс не считает `voided`). Идемпотентно.
  * Платный заказ (`paid`) не трогает: им займётся возврат денег (`be/p4-billing`).
  */
-export async function releaseOrder(repo: OrderRepository, orderId: string, now: Date) {
+export async function releaseOrder(
+  repo: Pick<OrderRepository, "release">,
+  orderId: string,
+  now: Date,
+) {
   return repo.release(orderId, now);
 }

@@ -5,3 +5,6 @@ drizzle/meta
 
 # Вайрфреймы: одноразовые макеты, не код
 wireframes/
+
+# Генерирует withWorkflow при сборке
+src/app/.well-known/

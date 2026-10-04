@@ -80,6 +80,8 @@ export type OrderRepository = {
   createTrialOrder(input: TrialInput): Promise<string | null>;
   /** Освободить заказ. `true` — освободили сейчас; `false` — уже освобождён или не подлежит. */
   release(orderId: string, now: Date): Promise<boolean>;
+  /** `id` заказа генерации (на `generationId` уникальный индекс) или `null`. */
+  orderIdFor(generationId: string): Promise<string | null>;
 };
 
 function isUniqueViolation(error: unknown): boolean {
@@ -254,6 +256,15 @@ export function createOrderRepository(): OrderRepository {
     async release(orderId, now) {
       const [row] = await rowsOf<{ voided: number }>(releaseSql(orderId, now));
       return Number(row?.voided ?? 0) > 0;
+    },
+
+    async orderIdFor(generationId) {
+      const rows = await db()
+        .select({ id: schema.orders.id })
+        .from(schema.orders)
+        .where(eq(schema.orders.generationId, generationId))
+        .limit(1);
+      return rows[0]?.id ?? null;
     },
   };
 }

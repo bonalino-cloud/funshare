@@ -122,6 +122,9 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       }
       return true;
     }),
+    orderIdFor: vi.fn<OrderRepository["orderIdFor"]>(
+      async (generationId) => orders.find((o) => o.generationId === generationId)?.id ?? null,
+    ),
   } satisfies OrderRepository;
   return { repo, codes, orders, redemptions };
 }

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import type {
   ArtifactKind,
   ErrorCode,
@@ -40,13 +40,46 @@ export type NewGeneration = {
   ipHash: string;
 };
 
+/** Условный переход статуса шага конвейера (см. `GenerationRepository.advance`). */
+export type Advance = {
+  /** Менять только из этих статусов: повтор шага не откатывает и не перескакивает. */
+  from: GenerationStatusCode[];
+  to: GenerationStatusCode;
+  /** Шаги, у которых проставить `startedAt` (уже стоящий не перезаписывается). */
+  start?: string[];
+  /** Шаги, у которых проставить `finishedAt` (у шага должен быть `startedAt`). */
+  finish?: string[];
+  now: Date;
+};
+
 export type GenerationRepository = {
   /** Строка со статусом `queued`. */
   insert(row: NewGeneration): Promise<void>;
   get(id: string): Promise<GenerationRow | null>;
   /** `failed` + код, пока артефакта нет (`ready` не трогаем). `true` — перевели сейчас. */
   markFailed(id: string, errorCode: ErrorCode, now: Date): Promise<boolean>;
+  /**
+   * Одна SQL-команда: статус + `stepTimings`, только если сейчас статус из `from`. `true` — перешли
+   * сейчас; `false` — строки нет или статус уже другой (повтор, `failed`, дальше по конвейеру).
+   */
+  advance(id: string, input: Advance): Promise<boolean>;
 };
+
+/** Новое значение `step_timings`. Имена шагов — константы кода, но значения всё равно параметры. */
+export function timingsSql(input: Pick<Advance, "start" | "finish" | "now">) {
+  const at = input.now.toISOString();
+  let timings = sql`${schema.generations.stepTimings}`;
+  for (const step of input.start ?? []) {
+    // Правый операнд `||` побеждает: уже записанный startedAt остаётся от первой попытки.
+    timings = sql`(jsonb_build_object(${step}::text, jsonb_build_object('startedAt', ${at}::text)) || ${timings})`;
+  }
+  for (const step of input.finish ?? []) {
+    // Уже стоящий finishedAt не трогаем: повтор шага не сдвигает время окончания.
+    const path = `{${step},finishedAt}`;
+    timings = sql`(CASE WHEN ${timings} #> ${path}::text[] IS NULL THEN jsonb_set(${timings}, ${path}::text[], to_jsonb(${at}::text)) ELSE ${timings} END)`;
+  }
+  return timings;
+}
 
 export function createGenerationRepository(): GenerationRepository {
   return {
@@ -80,6 +113,15 @@ export function createGenerationRepository(): GenerationRepository {
         .update(schema.generations)
         .set({ status: "failed", errorCode, updatedAt: now })
         .where(and(eq(schema.generations.id, id), ne(schema.generations.status, "ready")))
+        .returning({ id: schema.generations.id });
+      return rows.length > 0;
+    },
+
+    async advance(id, input) {
+      const rows = await db()
+        .update(schema.generations)
+        .set({ status: input.to, stepTimings: timingsSql(input), updatedAt: input.now })
+        .where(and(eq(schema.generations.id, id), inArray(schema.generations.status, input.from)))
         .returning({ id: schema.generations.id });
       return rows.length > 0;
     },

@@ -12,3 +12,5 @@ test-results/
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+/.swc
+/.workflow-data/

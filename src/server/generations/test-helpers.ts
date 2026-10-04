@@ -8,6 +8,7 @@ import {
   ownerHash,
 } from "../profile-check/test-helpers";
 import type { NewProfileCheck } from "../profile-check/repository";
+import type { StepTimings } from "../db/schema";
 import type { GenerationsHandlerDeps } from "./handlers";
 import type { GenerationRepository, GenerationRow, NewGeneration } from "./repository";
 
@@ -16,7 +17,7 @@ export { makePromo };
 
 /** Строка в памяти: `GenerationRow` плюс то, что пишет POST и читает шаг `write`. */
 export type StoredGeneration = GenerationRow &
-  Omit<NewGeneration, "tier" | "id"> & { ipHash: string };
+  Omit<NewGeneration, "tier" | "id"> & { ipHash: string; stepTimings: StepTimings };
 
 /** Репозиторий в памяти. `artifacts` — slug по `generationId`, как LEFT JOIN в SQL. */
 export function makeGenerationRepo(now: Date) {
@@ -29,6 +30,7 @@ export function makeGenerationRepo(now: Date) {
         status: "queued",
         errorCode: null,
         artifactSlug: null,
+        stepTimings: {},
         updatedAt: now,
       });
     }),
@@ -50,6 +52,20 @@ export function makeGenerationRepo(now: Date) {
       const row = rows.get(id);
       if (!row || row.status === "ready") return false;
       rows.set(id, { ...row, status: "failed", errorCode, updatedAt: at });
+      return true;
+    }),
+    /** Повторяет `advance` в SQL: условный статус, `startedAt` не перезаписывается. */
+    advance: vi.fn<GenerationRepository["advance"]>(async (id, input) => {
+      const row = rows.get(id);
+      if (!row || !input.from.includes(row.status)) return false;
+      const at = input.now.toISOString();
+      const timings: StepTimings = { ...row.stepTimings };
+      for (const step of input.start ?? []) timings[step] ??= { startedAt: at };
+      for (const step of input.finish ?? []) {
+        const t = timings[step];
+        if (t && !t.finishedAt) timings[step] = { ...t, finishedAt: at };
+      }
+      rows.set(id, { ...row, status: input.to, stepTimings: timings, updatedAt: input.now });
       return true;
     }),
   } satisfies GenerationRepository;
