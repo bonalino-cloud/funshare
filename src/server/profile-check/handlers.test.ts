@@ -37,17 +37,18 @@ async function status(t: T, id: string, token = TOKEN) {
 
 describe("POST: разбор ввода", () => {
   it.each([
-    ["не JSON", "{oops"],
-    ["нет поля", {}],
-    ["пустая строка", { instagramUrl: "  " }],
-    ["не строка", { instagramUrl: 5 }],
-    ["слишком длинная", { instagramUrl: "a".repeat(301) }],
-    ["мусор вместо ника", { instagramUrl: "https://evil.com/x" }],
-  ])("%s → 400 invalid_url, ни лимита, ни БД, ни фона", async (_name, body) => {
+    ["не JSON", "{oops", "invalid_request"],
+    ["нет поля", {}, "invalid_request"],
+    ["не объект", "null", "invalid_request"],
+    ["пустая строка", { instagramUrl: "  " }, "invalid_url"],
+    ["не строка", { instagramUrl: 5 }, "invalid_request"],
+    ["слишком длинная", { instagramUrl: "a".repeat(301) }, "invalid_url"],
+    ["мусор вместо ника", { instagramUrl: "https://evil.com/x" }, "invalid_url"],
+  ])("%s → 400 %s, ни лимита, ни БД, ни фона", async (_name, body, errorCode) => {
     const t = makeHandlerDeps();
     const res = await createProfileCheck(post(body), t.deps);
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ errorCode: "invalid_url" });
+    expect(await res.json()).toEqual({ errorCode });
     expect(t.check).not.toHaveBeenCalled();
     expect(t.repo.insert).not.toHaveBeenCalled();
     expect(t.tasks).toHaveLength(0);

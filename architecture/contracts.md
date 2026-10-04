@@ -80,6 +80,7 @@ Artifact = {
 
 ## История версий
 
+- **v2 + коды** (`contracts/error-codes`, 2026-10-04): `ErrorCode += "invalid_request" | "tier_unavailable"` (кривое тело запроса → 400 `invalid_request`; недоступный тариф → 400 `tier_unavailable`). Пустая или слишком длинная ссылка остаётся `invalid_url`, неверное по длине слово — `promo_invalid`. **BE:** миграция `0005` (`ALTER TYPE error_code ADD VALUE`). **FE:** две строки в `ERROR_TEXT` (`src/components/create/errors.ts`), без них typecheck падает.
 - **v2** (`contracts/create-flow-v1`): проверка профиля вынесена в `/api/profile-checks`; в `GenerationRequest` вместо `instagramUrl` — `profileCheckId`, добавлены `tier`, `level`, `ageConfirmed`, `extraFacts`, `promoCode`; статусы `scraping`/`analyzing` убраны из генерации, добавлен `awaiting_selection`; новые `ErrorCode`: `free_used`, `promo_invalid`, `payment_required`; цены и слово; кандидаты и выбор; `Artifact` стал union, добавлен `roast_v1`. **BE:** пересоздать pg-enum `generation_status` и `error_code` миграцией (данных в БД нет), `artifact_kind` получает `roast_v1`.
 - **v1**: первый контракт (dossier_2027).
 

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import { QuoteRequest, Pricing, type ErrorCode } from "@/contracts";
 import { hashValue, isOwnerToken } from "../hash";
 import { buildPricing, TierUnavailableError } from "../pricing";
@@ -17,11 +18,17 @@ export type OrdersHandlerDeps = {
 
 const STATUS: Partial<Record<ErrorCode, number>> = {
   promo_invalid: 400,
+  invalid_request: 400,
+  // 400, не 409: тариф недоступен всем одинаково, это не конфликт с состоянием человека.
+  tier_unavailable: 400,
   free_used: 409,
   payment_required: 402,
   rate_limited: 429,
   internal: 500,
 };
+
+/** Тариф в порядке, слово — строка: схема отказала по длине слова, а это ввод человека. */
+const BAD_PROMO_LENGTH = QuoteRequest.extend({ promoCode: z.string() });
 
 /** Ошибка наружу: только `errorCode` (контракт), без деталей. Ответы личные — не кэшируем. */
 function errorResponse(errorCode: ErrorCode, status = STATUS[errorCode] ?? 500): Response {
@@ -72,10 +79,16 @@ export async function postQuote(request: NextRequest, deps: OrdersHandlerDeps): 
   try {
     json = await request.json();
   } catch {
-    return errorResponse("internal", 400);
+    return errorResponse("invalid_request");
   }
   const body = QuoteRequest.safeParse(json);
-  if (!body.success) return errorResponse("internal", 400);
+  if (!body.success) {
+    // Слово неверное по длине — тот же `promo_invalid`, что и для любого неверного слова.
+    // Без лимитера: такого слова не бывает, перебирать нечего.
+    return errorResponse(
+      BAD_PROMO_LENGTH.safeParse(json).success ? "promo_invalid" : "invalid_request",
+    );
+  }
 
   let person: Person;
   try {
@@ -102,7 +115,7 @@ export async function postQuote(request: NextRequest, deps: OrdersHandlerDeps): 
     if (!result.ok) return errorResponse(result.errorCode);
     return Response.json(result.quote, { headers: { "cache-control": "no-store" } });
   } catch (error) {
-    if (error instanceof TierUnavailableError) return errorResponse("internal", 400);
+    if (error instanceof TierUnavailableError) return errorResponse("tier_unavailable");
     // Недоступный лимитер (Redis) и сбой БД: закрыто, без деталей наружу.
     const unavailable = error instanceof Error && error.name === "RateLimitUnavailableError";
     console.error(`[orders] quotes не выполнен: ${error instanceof Error ? error.name : ""}`);

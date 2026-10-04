@@ -158,6 +158,12 @@ describe("GenerationRequest", () => {
 describe("GenerationStatus", () => {
   const base = { id: "g", updatedAt: "2026-09-26T12:00:00.000Z" };
 
+  it.each(["invalid_request", "tier_unavailable"])("failed с кодом %s парсится", (errorCode) => {
+    expect(GenerationStatus.parse({ ...base, status: "failed", errorCode }).errorCode).toBe(
+      errorCode,
+    );
+  });
+
   it("failed без errorCode — ошибка", () => {
     expect(() => GenerationStatus.parse({ ...base, status: "failed" })).toThrow();
   });

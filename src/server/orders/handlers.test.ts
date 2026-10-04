@@ -145,11 +145,11 @@ describe("POST /api/quotes", () => {
     expect(t.repo.findPromo).not.toHaveBeenCalled();
   });
 
-  it("Пекло -> 400, не бесплатная цена", async () => {
+  it("Пекло -> 400 tier_unavailable, не бесплатная цена", async () => {
     const t = setup();
     const res = await quote(t, { tier: 3 });
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ errorCode: "internal" });
+    expect(await res.json()).toEqual({ errorCode: "tier_unavailable" });
   });
 
   it("Поджог после использованной пробы -> 409 free_used", async () => {
@@ -171,15 +171,18 @@ describe("POST /api/quotes", () => {
   });
 
   it.each([
-    ["не JSON", "{oops"],
-    ["нет tier", {}],
-    ["tier вне 1-3", { tier: 9 }],
-    ["пустой код", { tier: 2, promoCode: "  " }],
-    ["слишком длинный код", { tier: 2, promoCode: "A".repeat(41) }],
-  ])("%s -> 400 без обращения к БД и лимитеру", async (_name, body) => {
+    ["не JSON", "{oops", "invalid_request"],
+    ["нет tier", {}, "invalid_request"],
+    ["tier вне 1-3", { tier: 9 }, "invalid_request"],
+    ["код не строка", { tier: 2, promoCode: 5 }, "invalid_request"],
+    ["плохой tier и длинный код", { tier: 9, promoCode: "A".repeat(41) }, "invalid_request"],
+    ["пустой код", { tier: 2, promoCode: "  " }, "promo_invalid"],
+    ["слишком длинный код", { tier: 2, promoCode: "A".repeat(41) }, "promo_invalid"],
+  ])("%s -> 400 %s без обращения к БД и лимитеру", async (_name, body, errorCode) => {
     const t = setup();
     const res = await quote(t, body);
     expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ errorCode });
     expect(t.enter).not.toHaveBeenCalled();
     expect(t.repo.findPromo).not.toHaveBeenCalled();
   });

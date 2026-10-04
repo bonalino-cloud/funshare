@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   CheckedProfile,
   ProfileCheckCreated,
@@ -69,15 +70,25 @@ export function ipv6Prefix64(ip: string): string | null {
     .join(":")}::/64`;
 }
 
-async function readBody(request: Request): Promise<ProfileCheckRequest | null> {
+/** Поле есть и это строка: значит, схема отказала по длине — это ввод человека. */
+const HAS_URL_STRING = z.object({ instagramUrl: z.string() });
+
+/**
+ * Тело запроса → данные, `"invalid_request"` (не JSON, нет поля, не строка — ошибка формы
+ * запроса) или `"invalid_url"` (строка есть, но пустая или слишком длинная — ошибка ввода человека).
+ */
+async function readBody(
+  request: Request,
+): Promise<ProfileCheckRequest | "invalid_request" | "invalid_url"> {
   let json: unknown;
   try {
     json = await request.json();
   } catch {
-    return null;
+    return "invalid_request";
   }
   const parsed = ProfileCheckRequest.safeParse(json);
-  return parsed.success ? parsed.data : null;
+  if (parsed.success) return parsed.data;
+  return HAS_URL_STRING.safeParse(json).success ? "invalid_url" : "invalid_request";
 }
 
 /** Строка БД → ответ GET. Проходит `ProfileCheckStatus.parse` (инвариант 20); битая строка → `null`. */
@@ -108,7 +119,7 @@ export async function createProfileCheck(
   deps: HandlerDeps,
 ): Promise<Response> {
   const body = await readBody(request);
-  if (body === null) return errorResponse(400, "invalid_url");
+  if (typeof body === "string") return errorResponse(400, body);
   const username = parseInstagramInput(body.instagramUrl);
   if (username === null) return errorResponse(400, "invalid_url");
 

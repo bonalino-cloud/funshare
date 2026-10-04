@@ -79,6 +79,10 @@ export const ErrorCode = z.enum([
   "promo_invalid",
   /** Итог больше нуля, а оплата ещё не подключена. */
   "payment_required",
+  /** Тело запроса не прошло схему или не JSON: ошибка формы запроса, а не человека. */
+  "invalid_request",
+  /** Запрошенный тариф сейчас недоступен (например, Пекло-заглушка). */
+  "tier_unavailable",
   "internal",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
