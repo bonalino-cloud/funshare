@@ -36,6 +36,13 @@
       "when": 1791048001365,
       "tag": "0004_orders_promos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791106844924,
+      "tag": "0005_generation_inputs",
+      "breakpoints": true
     }
   ]
 }
