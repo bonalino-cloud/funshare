@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Funshare — кто что делает до запуска</title>
+    <style>
+      :root {
+        --bg: #14110f;
+        --card: #1f1a17;
+        --line: #3a302a;
+        --text: #f3ece6;
+        --muted: #b3a79d;
+        --ai: #6aa8ff;
+        --den: #ffb347;
+        --ser: #ff6fa8;
+        --warn: #ffcf5c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.5 -apple-system,
+          "Segoe UI",
+          Roboto,
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 18px 64px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 24px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 40px 0 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--line);
+      }
+      h2 small {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 15px;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .pill {
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 600;
+        background: var(--card);
+        border: 1px solid var(--line);
+      }
+      .ai {
+        color: var(--ai);
+      }
+      .den {
+        color: var(--den);
+      }
+      .ser {
+        color: var(--ser);
+      }
+      .box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .loop {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      .loop span.step {
+        background: #2a231f;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 14px;
+      }
+      .loop span.arr {
+        color: var(--muted);
+      }
+      .tbl {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+        font-size: 14.5px;
+      }
+      th {
+        background: #2a231f;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+      th.ai,
+      th.den,
+      th.ser {
+        color: inherit;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      tr.close td {
+        background: #241d19;
+        font-weight: 600;
+      }
+      td.n {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      td b {
+        color: #fff;
+      }
+      .dash {
+        color: #5d524a;
+      }
+      .now {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--den);
+        color: #1a120b;
+        border-radius: 6px;
+        padding: 1px 7px;
+        margin-left: 6px;
+        vertical-align: 2px;
+      }
+      .warn {
+        border-left: 4px solid var(--warn);
+      }
+      ol {
+        margin: 6px 0 0;
+        padding-left: 22px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      footer {
+        margin-top: 40px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Funshare — кто что делает до запуска</h1>
+      <p class="sub">
+        Дорожная карта по фазам 1–4 · 3 октября 2026 · фаза 0 закрыта (тег <code>v0.0.1</code>)
+      </p>
+
+      <div class="legend">
+        <span class="pill ai">🤖 Claude — пишет и проверяет код BE</span>
+        <span class="pill den">👤 Денис — решения, ключи, мерж своих PR</span>
+        <span class="pill ser">🎨 Сергей — экраны, Vercel, релизы</span>
+      </div>
+
+      <h2>Круг каждой BE-задачи</h2>
+      <div class="box loop">
+        <span class="step ai">🤖 пишет код</span><span class="arr">→</span>
+        <span class="step ai">🤖 отдельный проверяльщик</span><span class="arr">→</span>
+        <span class="step ai">🤖 отчёт</span><span class="arr">→</span>
+        <span class="step den">👤 «пушь»</span><span class="arr">→</span>
+        <span class="step ai">🤖 PR в dev</span><span class="arr">→</span>
+        <span class="step den">👤 мерж</span><span class="arr">→</span>
+        <span class="step den">👤 «дальше»</span>
+      </div>
+      <p class="sub" style="margin-top: 8px">
+        В таблицах ниже — только то, что добавляется к этому кругу. PR в
+        <code>src/contracts/</code> — с ревью обоих.
+      </p>
+
+      <h2>Фаза 1 — Текстовая прожарка <span class="now">СЕЙЧАС</span></h2>
+      <div class="tbl">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Задача</th>
+            <th class="ai">🤖 Claude</th>
+            <th class="den">👤 Денис</th>
+            <th class="ser">🎨 Сергей</th>
+          </tr>
+          <tr>
+            <td class="n">1</td>
+            <td>Скачивание профиля из Instagram</td>
+            <td>код на тестовых данных</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">2</td>
+            <td>Факты из профиля</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">3</td>
+            <td>Досье на человека</td>
+            <td>код, промпт</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">4</td>
+            <td>Проверка профиля (API)</td>
+            <td>код, лимиты</td>
+            <td><b>ключ Apify</b> · сообщить Сергею</td>
+            <td><b>подключить Upstash</b> в Vercel · экран проверки на реальный API</td>
+          </tr>
+          <tr>
+            <td class="n">5</td>
+            <td>Заказы и промокоды</td>
+            <td>код</td>
+            <td><b>список «волшебных слов»</b> на старт</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">6–7</td>
+            <td>Приём генерации, конвейер</td>
+            <td>код</td>
+            <td>сообщить Сергею</td>
+            <td>экран ожидания на реальные статусы</td>
+          </tr>
+          <tr>
+            <td class="n">8</td>
+            <td>Банк шуток</td>
+            <td>код, вынос банка из публичного репо</td>
+            <td><b>просмотреть разметку шуток</b></td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">9–10</td>
+            <td>Написание шуток, выбор</td>
+            <td>код</td>
+            <td>оценить первые шутки: смешно / нет</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">11</td>
+            <td>Выдача страницы</td>
+            <td>код</td>
+            <td>сообщить Сергею</td>
+            <td><b>выключить моки</b> — весь путь вживую</td>
+          </tr>
+          <tr>
+            <td class="n">12–14</td>
+            <td>Фильтры, логи, расходы</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">15</td>
+            <td>Проверка на 10 профилях</td>
+            <td>прогон, отчёт</td>
+            <td><b>дать 10 профилей</b> (2 закрытых / пустых)</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td class="n">—</td>
+            <td>Админка: промокоды, лента генераций</td>
+            <td>код (API)</td>
+            <td class="dash">—</td>
+            <td>экраны админки</td>
+          </tr>
+          <tr class="close">
+            <td class="n">✓</td>
+            <td>Закрытие фазы</td>
+            <td>тег <code>v0.1.0</code></td>
+            <td>проверить: 8 из 10 работают, ≤ 60 с, известна себестоимость</td>
+            <td>релиз dev → main</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Фаза 2 — Картинки и шаринг</h2>
+      <div class="tbl">
+        <table>
+          <tr>
+            <th>Задача</th>
+            <th class="ai">🤖 Claude</th>
+            <th class="den">👤 Денис</th>
+            <th class="ser">🎨 Сергей</th>
+          </tr>
+          <tr>
+            <td>Стиль картинок</td>
+            <td class="dash">—</td>
+            <td>одобрить стиль</td>
+            <td><b>первым делом</b>: образцы + описание стиля</td>
+          </tr>
+          <tr>
+            <td>Выбор модели картинок</td>
+            <td>прогон 5 моделей, сравнение</td>
+            <td><b>выбрать модель</b> по образцам и цене</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td>Сцены и рисование</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td>Проверка картинок</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td>События шаринга, удаление</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td>кнопки «поделиться», сторис, превью ссылок</td>
+          </tr>
+          <tr class="close">
+            <td>Закрытие фазы</td>
+            <td>тег <code>v0.2.0</code></td>
+            <td>проверить: 9 из 10 с картинками, ≤ 90 с</td>
+            <td>релиз</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Фаза 3 — Защита и запуск</h2>
+      <div class="tbl">
+        <table>
+          <tr>
+            <th>Задача</th>
+            <th class="ai">🤖 Claude</th>
+            <th class="den">👤 Денис</th>
+            <th class="ser">🎨 Сергей</th>
+          </tr>
+          <tr>
+            <td>Защита от ботов и спама</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td>включить BotID в Vercel</td>
+          </tr>
+          <tr>
+            <td>Потолок трат в день</td>
+            <td>код</td>
+            <td><b>назвать сумму</b> в день</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td>Чистка старых данных</td>
+            <td>код</td>
+            <td class="dash">—</td>
+            <td class="dash">—</td>
+          </tr>
+          <tr>
+            <td>Аналитика</td>
+            <td>код (приём, подсчёт)</td>
+            <td class="dash">—</td>
+            <td>дашборд</td>
+          </tr>
+          <tr>
+            <td>Юридические страницы</td>
+            <td class="dash">—</td>
+            <td><b>одобрить тексты</b></td>
+            <td>страницы, полировка, e2e-тесты</td>
+          </tr>
+          <tr class="close">
+            <td>Запуск</td>
+            <td>тег <code>v1.0.0</code></td>
+            <td colspan="2">Денис + Сергей: решение «запускаем», релиз — Сергей</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Фаза 4 — После запуска</h2>
+      <div class="box">
+        Настоящая оплата (сейчас — «Оплата скоро» и промокоды), тариф Пекло, аккаунты, другие
+        соцсети. Порядок — решаем вдвоём по итогам запуска.
+      </div>
+
+      <h2>Важно</h2>
+      <div class="box warn">
+        Планы фаз 2 и 3 (<code>plans/phase-2</code>, <code>plans/phase-3</code>) написаны до
+        прожарки и расходятся с <code>architecture/roast-engine.md §12</code> — так же, как было с
+        фазой 1. Сведём отдельным PR в начале фазы 2, на ревью Сергею.
+      </div>
+
+      <h2>Что можно сделать заранее</h2>
+      <div class="box">
+        <ol>
+          <li>
+            <span class="den">👤 Денис</span> — завести ключ Apify (apify.com → Settings → API &amp;
+            Integrations).
+          </li>
+          <li>
+            <span class="den">👤 Денис</span> — продумать «волшебные слова»: для кого, сколько.
+          </li>
+          <li><span class="den">👤 Денис</span> — собрать 10 профилей Instagram для проверки.</li>
+          <li>
+            <span class="ser">🎨 Сергей</span> — подключить Upstash в Vercel (понадобится к задаче
+            4).
+          </li>
+          <li>
+            <span class="ser">🎨 Сергей</span> — начать думать о стиле картинок (вход для фазы 2).
+          </li>
+        </ol>
+      </div>
+
+      <footer>
+        Источник: plans/phase-1…4, architecture/roast-engine.md §12. Галочки и порядок задач — в
+        plans/phase-1-text-mvp.md.
+      </footer>
+    </main>
+  </body>
+</html>
