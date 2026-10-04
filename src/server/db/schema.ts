@@ -23,6 +23,7 @@ import {
   ErrorCode,
   GenerationMode,
   GenerationStatusCode,
+  Level,
   ProfileCheckStatusCode,
 } from "@/contracts";
 
@@ -36,6 +37,7 @@ export const profileCheckStatus = pgEnum(
   values(ProfileCheckStatusCode.options),
 );
 export const generationMode = pgEnum("generation_mode", values(GenerationMode.options));
+export const generationLevel = pgEnum("generation_level", values(Level.options));
 export const artifactKind = pgEnum("artifact_kind", values(ArtifactKind.options));
 
 /** Время начала/конца каждого шага конвейера, ISO-строки. */
@@ -58,6 +60,22 @@ export const generations = pgTable(
     igUsername: text("ig_username").notNull(),
     mode: generationMode("mode").notNull(),
     kind: artifactKind("kind").notNull(),
+    /**
+     * Вход шага `write` из `GenerationRequest`. Колонки допускают null: строки, созданные до
+     * `be/p1-generations-api`, этих данных не несут (генераций в БД тогда ещё не было).
+     */
+    profileCheckId: text("profile_check_id").references(() => profileChecks.id, {
+      onDelete: "set null",
+    }),
+    tier: integer("tier"),
+    level: generationLevel("level"),
+    /** Факты от пользователя (до 5 по 140 знаков): недоверенный текст, идёт в промпт шага `write`. */
+    extraFacts: jsonb("extra_facts")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** Кострище: Поджог того же владельца и профиля, откуда берём выбранные шутки. Уже проверен. */
+    trialGenerationId: text("trial_generation_id"),
     ownerTokenHash: text("owner_token_hash").notNull(),
     ipHash: text("ip_hash").notNull(),
     stepTimings: jsonb("step_timings").$type<StepTimings>().notNull().default({}),
@@ -68,6 +86,7 @@ export const generations = pgTable(
   (t) => [
     index("generations_ip_hash_created_at_idx").on(t.ipHash, t.createdAt),
     index("generations_ig_username_idx").on(t.igUsername),
+    check("generations_tier", sql`${t.tier} IS NULL OR ${t.tier} BETWEEN 1 AND 3`),
   ],
 );
 
