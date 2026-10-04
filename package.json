@@ -14,7 +14,10 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "jokes:ingest": "tsx --env-file-if-exists=.env.local scripts/jokes/ingest.ts",
+    "jokes:review:export": "tsx --env-file-if-exists=.env.local scripts/jokes/review-export.ts",
+    "jokes:review:import": "tsx --env-file-if-exists=.env.local scripts/jokes/review-import.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.71",
@@ -42,6 +45,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.2"
   },
