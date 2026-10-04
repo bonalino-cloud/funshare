@@ -9,6 +9,7 @@
 | `personas` | `id`, `snapshotId`, `data jsonb` (`PersonaProfile`), `model`, `promptVersion` | Источник истины для любых артефактов |
 | `artifacts` | `id`, `slug`, `generationId`, `kind`, `content jsonb`, `images jsonb`, `ownerTokenHash`, `views`, `shares`, `createdAt`, `deletedAt` | `slug` — 10 символов nanoid |
 | `events` | `id`, `artifactId`, `type` (`view` \| `share_click` \| `copy_link` \| `story_share` \| `cta_click`), `createdAt` | Продуктовая аналитика |
+| `joke_cards` | `id`, `source` (unique, `s1#5`), `section`, `text`, `textHash`, `mechanism`, `skeleton`, `slots`, `heat`, `topic`, `redline`, `wellDoneOnly`, `nsfw`, `transferable`, `approved` (default false), `score` (default 0), `labelVersion`, `labelModel`, `createdAt`, `updatedAt` | Банк шуток 18+, читает только сервер (§5.1 roast-engine). Заполняет `pnpm jokes:ingest`, upsert по `source`. `textHash` = нормализованный текст + 🔞: изменился — разметка перезаписана, `approved` сброшен. `usableAsExample` не хранится (функция от уровня). Флаги `redline`/`wellDoneOnly` выводит код по теме, плюс CHECK в БД |
 
 ## Blob
 

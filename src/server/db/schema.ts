@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -26,6 +27,7 @@ import {
   Level,
   ProfileCheckStatusCode,
 } from "@/contracts";
+import { JOKE_HEATS, JOKE_MECHANISMS, JOKE_SLOTS, JOKE_TOPICS } from "../roast/jokes/card";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
 const values = <T extends string>(options: readonly T[]) => options as [T, ...T[]];
@@ -291,5 +293,60 @@ export const promoRedemptions = pgTable(
   (t) => [
     index("promo_redemptions_promo_owner_idx").on(t.promoId, t.ownerTokenHash),
     index("promo_redemptions_promo_ip_idx").on(t.promoId, t.ipHash),
+  ],
+);
+
+export const jokeMechanism = pgEnum("joke_mechanism", values(JOKE_MECHANISMS));
+export const jokeSlot = pgEnum("joke_slot", values(JOKE_SLOTS));
+export const jokeHeat = pgEnum("joke_heat", values(JOKE_HEATS));
+export const jokeTopic = pgEnum("joke_topic", values(JOKE_TOPICS));
+
+/**
+ * Банк шуток (roast-engine.md §5.1). Корпус 18+ и разметка: читает только сервер, наружу не отдаётся.
+ * `usableAsExample` не хранится: это функция от уровня (`roast/jokes/card.ts`, `conditions.ts`).
+ *
+ * `source` — «раздел + номер» из md (`s1#5`, у формул раздела 15 — порядковый), ключ upsert при
+ * `jokes:ingest`. `textHash` — sha256 нормализованного текста + пометки 🔞: изменился хэш =
+ * перезаписать разметку и сбросить `approved`. Карточки без разметки в таблицу не попадают.
+ * Флаги `redline`/`wellDoneOnly` выводит код (`deriveFlags`), а не слово модели.
+ */
+export const jokeCards = pgTable(
+  "joke_cards",
+  {
+    id: text("id").primaryKey(),
+    source: text("source").notNull(),
+    section: integer("section").notNull(),
+    /** Оригинал, только для внутреннего использования. */
+    text: text("text").notNull(),
+    textHash: text("text_hash").notNull(),
+    mechanism: jokeMechanism("mechanism").notNull(),
+    skeleton: text("skeleton").notNull(),
+    slots: jokeSlot("slots")
+      .array()
+      .notNull()
+      .default(sql`'{}'::joke_slot[]`),
+    heat: jokeHeat("heat").notNull(),
+    topic: jokeTopic("topic").notNull(),
+    redline: boolean("redline").notNull(),
+    wellDoneOnly: boolean("well_done_only").notNull(),
+    nsfw: boolean("nsfw").notNull(),
+    transferable: boolean("transferable").notNull(),
+    approved: boolean("approved").notNull().default(false),
+    /** Обучаемый вес (§5.6), старт 0. */
+    score: real("score").notNull().default(0),
+    /** Версия промпта и модель разметки. */
+    labelVersion: text("label_version").notNull(),
+    labelModel: text("label_model").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("joke_cards_source_idx").on(t.source),
+    index("joke_cards_text_hash_idx").on(t.textHash),
+    // Страховка к `deriveFlags`: красные линии держит и БД, не только код.
+    check("joke_cards_redline_topic", sql`${t.topic} NOT IN ('health', 'family') OR ${t.redline}`),
+    check(
+      "joke_cards_well_done_only_topic",
+      sql`${t.topic} NOT IN ('body', 'sex') OR ${t.wellDoneOnly}`,
+    ),
   ],
 );
