@@ -27,6 +27,14 @@ export const ERROR_TEXT: Record<ErrorCode, { what: string; next: string }> = {
   free_used: { what: "Поджог уже был.", next: "Бери Кострище" },
   promo_invalid: { what: "Такого слова нет.", next: "Проверь буквы" },
   payment_required: { what: "Оплата скоро.", next: "Есть волшебное слово?" },
+  invalid_request: {
+    what: "Запрос получился какой-то кривой.",
+    next: "Обнови страницу и попробуй ещё раз",
+  },
+  tier_unavailable: {
+    what: "Этот тариф пока недоступен.",
+    next: "Выбери другой или загляни позже",
+  },
   internal: { what: "У нас что-то сломалось.", next: "Уже чиним, попробуй через пару минут" },
 };
 
