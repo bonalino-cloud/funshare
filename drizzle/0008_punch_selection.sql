@@ -1,0 +1,2 @@
+ALTER TABLE "punch_candidates" ADD COLUMN "selection_position" integer;--> statement-breakpoint
+ALTER TABLE "punch_candidates" ADD CONSTRAINT "punch_candidates_selection" CHECK ("punch_candidates"."selected" = ("punch_candidates"."selection_position" IS NOT NULL) AND ("punch_candidates"."selection_position" IS NULL OR "punch_candidates"."selection_position" > 0));

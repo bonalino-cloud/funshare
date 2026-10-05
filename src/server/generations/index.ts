@@ -1,11 +1,11 @@
 import { createOrderRepository } from "../orders";
 import { createProfileCheckRepository } from "../profile-check/repository";
 import { createPromoGuard, type PromoGuard } from "../ratelimit/promo";
-import type { GenerationsHandlerDeps } from "./handlers";
+import type { GenerationsHandlerDeps, SelectionHandlerDeps } from "./handlers";
 import { createGenerationRepository, newGenerationId } from "./repository";
-import { startWorkflow } from "./workflow";
+import { resumeSelection, startWorkflow } from "./workflow";
 
-export { createGeneration, getGeneration } from "./handlers";
+export { createGeneration, getCandidates, getGeneration, postSelection } from "./handlers";
 
 // Лимитер живёт между вызовами одного инстанса.
 let guard: PromoGuard | undefined;
@@ -27,4 +27,9 @@ export function defaultDeps(): GenerationsHandlerDeps {
 /** Для GET нужна только строка генерации. */
 export function defaultReadDeps(): Pick<GenerationsHandlerDeps, "repo"> {
   return { repo: createGenerationRepository() };
+}
+
+/** Для выбора шуток: строка генерации, кандидаты, пробуждение workflow. */
+export function defaultSelectionDeps(): SelectionHandlerDeps {
+  return { repo: createGenerationRepository(), resumeSelection, now: () => new Date() };
 }

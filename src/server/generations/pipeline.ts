@@ -10,7 +10,8 @@ import { createGenerationRepository, type GenerationRepository } from "./reposit
  * `stepTimings`), поэтому повтор после рестарта не дублирует и не откатывает статус назад.
  *
  * `write` пишет кандидатов (`roast/write`); `draw` пока заглушка. `ready` здесь не ставится
- * никогда: по контракту `ready` без `artifactSlug` недопустим, а артефакта шаги не создают.
+ * никогда: по контракту `ready` без `artifactSlug` недопустим, `ready` и артефакт пишет одна
+ * команда сборки (`assemble.ts`).
  */
 export type PipelineDeps = {
   repo: Pick<GenerationRepository, "get" | "advance" | "markFailed">;
@@ -54,7 +55,7 @@ export async function runWrite(deps: PipelineDeps, generationId: string): Promis
     from: ["writing"],
     to: "awaiting_selection",
     finish: ["write"],
-    // Время ожидания человека видно в тех же таймингах; `finishedAt` проставит шаг выбора.
+    // Время ожидания человека видно в тех же таймингах; `finishedAt` проставит приём выбора.
     start: ["awaiting_selection"],
     now: deps.now(),
   });
@@ -67,8 +68,8 @@ export type DrawResult = "skipped" | "done";
 
 /**
  * `awaiting_selection → drawing`. У Поджога (тариф 1) картинок нет: шаг пропускается, статус не
- * меняется (§7.1a). Заглушка: рисовать пока нечего.
- * TODO(be/p1-selection): вызывается после выбора шуток, он же закрывает тайминг `awaiting_selection`.
+ * меняется (§7.1a). Заглушка: рисовать пока нечего. Зовётся после выбора шуток; тайминг
+ * `awaiting_selection` к этому моменту уже закрыт приёмом выбора (`submitSelection`).
  */
 export async function runDraw(deps: PipelineDeps, generationId: string): Promise<DrawResult> {
   const row = await deps.repo.get(generationId);

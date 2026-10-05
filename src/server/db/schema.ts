@@ -18,6 +18,7 @@ import type {
   CheckedProfile,
   PersonaProfile,
   ProfileSnapshot,
+  RoastContent,
 } from "@/contracts";
 import {
   ArtifactKind,
@@ -138,7 +139,7 @@ export const artifacts = pgTable("artifacts", {
     .unique()
     .references(() => generations.id),
   kind: artifactKind("kind").notNull(),
-  content: jsonb("content").$type<ArtifactContent>().notNull(),
+  content: jsonb("content").$type<ArtifactContent | RoastContent>().notNull(),
   images: jsonb("images")
     .$type<ArtifactImage[]>()
     .notNull()
@@ -358,7 +359,8 @@ export const jokeCards = pgTable(
  *
  * `trace` (механика, оценки судьи, `jokeCardId` скелета) наружу не отдаётся никогда: ответ API
  * собирается из `punchId`, `emoji`, `text`, `fromTrial` и проходит `.parse()` (инвариант 20).
- * `selected` ставит шаг выбора (`be/p1-selection`); перенос в Кострище читает только выбранные.
+ * `selected` и `selectionPosition` (порядок в артефакте, с 1) ставит одна команда приёма выбора
+ * (`be/p1-selection`); перенос в Кострище читает только выбранные.
  * Повтор шага не дублирует строки: уникален (`generationId`, `punchId`).
  */
 export const punchCandidates = pgTable(
@@ -376,6 +378,8 @@ export const punchCandidates = pgTable(
     text: text("text").notNull(),
     fromTrial: boolean("from_trial").notNull().default(false),
     selected: boolean("selected").notNull().default(false),
+    /** Место шутки в выборе человека (с 1); у невыбранных `null`. */
+    selectionPosition: integer("selection_position"),
     trace: jsonb("trace").$type<PunchTrace>().notNull(),
     promptVersion: text("prompt_version").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -383,5 +387,9 @@ export const punchCandidates = pgTable(
   (t) => [
     uniqueIndex("punch_candidates_generation_punch_idx").on(t.generationId, t.punchId),
     check("punch_candidates_text_len", sql`char_length(${t.text}) BETWEEN 1 AND 140`),
+    check(
+      "punch_candidates_selection",
+      sql`${t.selected} = (${t.selectionPosition} IS NOT NULL) AND (${t.selectionPosition} IS NULL OR ${t.selectionPosition} > 0)`,
+    ),
   ],
 );
