@@ -19,13 +19,15 @@ async function setup(over: { tier?: 1 | 2; promoCode?: string } = {}) {
   expect(res.status).toBe(202);
   const id = "gen-1";
   const clock = { at: new Date(NOW) };
+  const write = vi.fn<PipelineDeps["write"]>(async () => {});
   const deps: PipelineDeps = {
     repo: t.generations.repo,
     orders: t.orders.repo,
     now: () => clock.at,
+    write,
   };
   const row = () => t.generations.rows.get(id);
-  return { t, id, deps, clock, row };
+  return { t, id, deps, clock, row, write };
 }
 
 const tick = (clock: { at: Date }, ms: number) => {
@@ -48,6 +50,32 @@ describe("write", () => {
     await runWrite(deps, id);
     const seen = t.generations.repo.advance.mock.calls.map(([, input]) => input.to);
     expect(seen).toEqual(["writing", "awaiting_selection"]);
+  });
+
+  it("тело шага зовётся между writing и awaiting_selection, один раз на проход", async () => {
+    const { deps, id, write, row } = await setup();
+    write.mockImplementationOnce(async () => {
+      expect(row()?.status).toBe("writing");
+    });
+    await runWrite(deps, id);
+    expect(write).toHaveBeenCalledExactlyOnceWith(id);
+    await runWrite(deps, id);
+    expect(write).toHaveBeenCalledTimes(1);
+  });
+
+  it("провал тела шага: статус остаётся writing, дальше не едем (ошибка уходит workflow)", async () => {
+    const { deps, id, write, row } = await setup();
+    write.mockRejectedValueOnce(new Error("слабый результат"));
+    await expect(runWrite(deps, id)).rejects.toThrow("слабый результат");
+    expect(row()?.status).toBe("writing");
+    expect(row()?.stepTimings.write?.finishedAt).toBeUndefined();
+  });
+
+  it("закрытая снаружи генерация: тело шага (платное) не зовётся", async () => {
+    const { deps, id, write } = await setup();
+    await failGeneration(deps, id);
+    expect(await runWrite(deps, id)).toBe(false);
+    expect(write).not.toHaveBeenCalled();
   });
 
   it("повтор после полного прохода не откатывает статус и не трогает тайминги", async () => {
