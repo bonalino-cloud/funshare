@@ -39,17 +39,25 @@
 
 ## FE
 
-- [ ] `fe/p1-landing` — лендинг: суть в одном экране, поле ссылки, переключатель «Для себя / Для друга», примеры артефактов
-- [ ] `fe/p1-input-validation` — проверка ссылки на клиенте, понятные подсказки (`instagram.com/username`, `@username`)
-- [ ] `fe/p1-progress-screen` — экран ожидания по статусам: человеческие фразы, анимация, ощущение движения на 60 с
-- [ ] `fe/p1-error-states` — экран на каждый `errorCode` с действием («Попробовать другой профиль»)
-- [ ] `fe/p1-artifact-page` — `/a/[slug]`: вёрстка досье по `Artifact.content`, плейсхолдеры под картинки, мобильная версия в приоритете
-- [ ] `fe/p1-switch-to-real-api` — выключение моков на превью `dev`, проверка всего флоу вживую
+Сверено с кодом `dev` 2026-10-03. Вместо «досье» FE собрал флоу прожарки по [create-flow.md](../architecture/create-flow.md): 7 шагов на моках (`NEXT_PUBLIC_USE_MOCKS=1`), все `fe/p1-*` ветки влиты.
+
+- [x] `fe/p1-landing` — лендинг прожарки на `/` (`/roast` → редирект), секции, CTA, история
+- [x] `fe/p1-input-validation` — `instagram.com/name`, `@name`, `name`, тесты в `instagram.test.ts`
+- [x] `fe/p1-create-*` — шаги профиль → факты → тариф → прожарка → итог (`fe/p1-create-shell`, `-profile`, `-facts`, `-tier`, `-level`, `fe/p1-checkout`; тарифы от 2026-10-02 — #36)
+- [x] `fe/p1-progress-screen` — лоудер с огнём и сменой статусов человеческими словами (`fe/p1-generation-loader`)
+- [x] `fe/p1-error-states` — тексты по каждому `errorCode` на шаге профиля и в генерации (`create/errors.ts`)
+- [x] `fe/p1-pick-punches` — выбор шуток 1..`selectCount` из кандидатов
+- [x] `fe/p1-artifact-page` — `/a/[slug]`: карточки 9:16 вместо досье (см. фазу 2), «Прожарь в ответ»
+- [ ] 1. `fe/p1-real-profile-check` — шаг профиля на живом `POST/GET /api/profile-checks`, мини-лоудер на реальных 10–30 с. **Ждёт `be/p1-profile-check`**
+- [ ] 2. `fe/p1-real-generation` — старт, поллинг статусов, кандидаты и выбор на живом API, cookie `ownerToken`. **Ждёт `be/p1-generations-api` + `be/p1-workflow-skeleton`, затем `be/p1-write-step` + `be/p1-selection`**
+- [ ] 3. `fe/p1-switch-to-real-api` — `/a/[slug]` читает `getArtifact(slug)` на сервере, моки выключены на превью `dev`, весь флоу вживую на телефоне. **Ждёт `be/p1-artifact-read`**
+- [ ] 4. `fe/p1-admin-promos` — экраны промокодов. **Ждёт `be/p1-admin-api`** ([roast-engine.md §12](../architecture/roast-engine.md))
+- [ ] 5. `fe/p1-admin-generations` — список и карточка генераций. **Ждёт `contracts/admin-v1`**
 
 ## Точки синхронизации
 
-1. `be/p1-profile-check` в `dev` → FE подключает шаг проверки профиля к реальному API.
-2. `be/p1-generations-api` + `be/p1-workflow-skeleton` в `dev` → FE проверяет прогресс-экран на реальных статусах (шаги пока заглушки).
+1. `be/p1-profile-check` в `dev` → `fe/p1-real-profile-check`.
+2. `be/p1-generations-api` + `be/p1-workflow-skeleton` в `dev` → `fe/p1-real-generation`: лоудер на реальных статусах (шаги пока заглушки).
 3. `be/p1-write-step` + `be/p1-selection` + `be/p1-artifact-read` в `dev` → `fe/p1-switch-to-real-api`.
 4. Если FE нужно новое поле в артефакте — сначала `contracts/<что>`, потом код.
 
