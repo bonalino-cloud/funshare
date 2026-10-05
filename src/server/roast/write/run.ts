@@ -9,8 +9,14 @@ import { buildProfileFacts } from "../../facts";
 import { TIERS } from "../../pricing/config";
 import { PunchTraceSchema } from "./schema";
 import { createWriteRepository, type WriteRepository } from "./repository";
+import { WRITE_TRACE_STEP, type WriteTrace } from "./trace";
 import { WriteFailedError, type CarriedPunch } from "./types";
-import { defaultWriteDeps, writeCandidates, type WriteDeps } from "./write-candidates";
+import {
+  defaultWriteDeps,
+  writeCandidates,
+  type WriteDeps,
+  type WriteResult,
+} from "./write-candidates";
 
 export type WriteStepDeps = { repo: WriteRepository; write: () => WriteDeps };
 
@@ -21,6 +27,26 @@ export function defaultWriteStepDeps(): WriteStepDeps {
 
 function logFailure(event: string) {
   console.error(`[write] ${event}`);
+}
+
+/**
+ * Трасса в `generation_traces`. Её потеря не должна ронять генерацию: в лог только имя ошибки
+ * (ни текстов, ни SQL с данными).
+ */
+async function saveTraceSafe(
+  repo: WriteRepository,
+  generationId: string,
+  trace: WriteTrace | null,
+): Promise<void> {
+  if (!trace) {
+    logFailure("трасса не прошла схему, не записана");
+    return;
+  }
+  try {
+    await repo.saveTrace(generationId, WRITE_TRACE_STEP, trace);
+  } catch (error) {
+    logFailure(`трасса не записана: ${error instanceof Error ? error.name : "ошибка"}`);
+  }
 }
 
 /** Перенос выбранных в Поджоге шуток (§7.1a): только валидные, не больше `selectCount`. */
@@ -79,18 +105,29 @@ export async function runWriteStep(
   const facts = buildProfileFacts(snapshot.data);
   const carried = await loadCarried(repo, row.trialGenerationId, row.tier);
 
-  const result = await writeCandidates(
-    {
-      persona: persona.data,
-      facts,
-      extraFacts: row.extraFacts,
-      mode: row.mode,
-      level: row.level,
-      tier: row.tier,
-      carried,
-    },
-    deps.write(),
-  );
+  let result: WriteResult;
+  try {
+    result = await writeCandidates(
+      {
+        persona: persona.data,
+        facts,
+        extraFacts: row.extraFacts,
+        mode: row.mode,
+        level: row.level,
+        tier: row.tier,
+        carried,
+      },
+      deps.write(),
+    );
+  } catch (error) {
+    // Провал (слабое не выдаём) разбирают по трассе: пишем её и отдаём ошибку дальше как есть.
+    if (error instanceof WriteFailedError && error.trace) {
+      await saveTraceSafe(repo, generationId, error.trace);
+      // Трасса (тексты шуток, id наблюдений) дальше с ошибкой не едет: ни в workflow, ни в логи.
+      error.trace = null;
+    }
+    throw error;
+  }
 
   const response = CandidatesResponse.safeParse({
     generationId,
@@ -104,8 +141,10 @@ export async function runWriteStep(
   });
   if (!response.success) {
     logFailure("список кандидатов не прошёл контракт");
+    await saveTraceSafe(repo, generationId, result.trace);
     throw new WriteFailedError("invalid_output");
   }
 
   await repo.saveCandidates(generationId, result.candidates, result.promptVersion);
+  await saveTraceSafe(repo, generationId, result.trace);
 }

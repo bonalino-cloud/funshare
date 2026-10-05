@@ -1,6 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
 import { parseServerEnv } from "../env";
+import { withCanary } from "../prompts/canary";
 import type { AnalyzePromptPart } from "../prompts/analyze/v1";
 import { LlmDossier } from "./schema";
 
@@ -37,7 +38,7 @@ export function createAnthropicGenerate(): GenerateFn {
     try {
       const { output } = await generateText({
         model: anthropic(ANALYZE_MODEL),
-        system,
+        system: withCanary(system, "analyze"),
         messages: [
           {
             role: "user",

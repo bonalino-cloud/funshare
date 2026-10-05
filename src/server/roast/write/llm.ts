@@ -3,6 +3,7 @@ import { generateText, jsonSchema, NoObjectGeneratedError, Output, zodSchema } f
 import type { z } from "zod";
 import { LlmSchemaError } from "../../analyze/llm";
 import { parseServerEnv } from "../../env";
+import { withCanary, type CanaryRole } from "../../prompts/canary";
 import { JudgeOutput, ModeratorOutput, WriterOutput } from "./schema";
 
 /** Модель писателя: как в `analyze` (architecture/stack.md). */
@@ -29,6 +30,7 @@ export type GenerateFn = (prompt: PromptText) => Promise<unknown>;
  */
 function createAnthropicJson(
   role: "писатель" | "судья" | "модератор",
+  canary: CanaryRole,
   modelId: string,
   schema: z.ZodType,
   maxOutputTokens: number,
@@ -43,7 +45,7 @@ function createAnthropicJson(
     try {
       const result = await generateText({
         model: anthropic(modelId),
-        system,
+        system: withCanary(system, canary),
         messages: [{ role: "user", content: user }],
         output,
         maxOutputTokens,
@@ -70,8 +72,14 @@ function createAnthropicJson(
 }
 
 export const createAnthropicWriter = (): GenerateFn =>
-  createAnthropicJson("писатель", WRITER_MODEL, WriterOutput, WRITER_MAX_OUTPUT_TOKENS);
+  createAnthropicJson("писатель", "writer", WRITER_MODEL, WriterOutput, WRITER_MAX_OUTPUT_TOKENS);
 export const createAnthropicJudge = (): GenerateFn =>
-  createAnthropicJson("судья", JUDGE_MODEL, JudgeOutput, JUDGE_MAX_OUTPUT_TOKENS);
+  createAnthropicJson("судья", "judge", JUDGE_MODEL, JudgeOutput, JUDGE_MAX_OUTPUT_TOKENS);
 export const createAnthropicModerator = (): GenerateFn =>
-  createAnthropicJson("модератор", MODERATOR_MODEL, ModeratorOutput, MODERATOR_MAX_OUTPUT_TOKENS);
+  createAnthropicJson(
+    "модератор",
+    "moderator",
+    MODERATOR_MODEL,
+    ModeratorOutput,
+    MODERATOR_MAX_OUTPUT_TOKENS,
+  );

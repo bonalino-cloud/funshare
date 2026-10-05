@@ -355,6 +355,7 @@ describe("после выбора: draw, сборка и перенос в Ко�
       saveCandidates: async (_id, candidates) => {
         saved.push(...candidates);
       },
+      saveTrace: async () => {},
     };
     const writeDeps = makeWriteDeps();
     await runWriteStep("kostrishche", { repo, write: () => writeDeps });

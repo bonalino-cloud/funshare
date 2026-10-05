@@ -3,6 +3,7 @@ import { CandidatesResponse } from "@/contracts";
 import { LlmSchemaError } from "../../analyze/llm";
 import { assemble, writeCandidates } from "./write-candidates";
 import { WriteFailedError } from "./types";
+import { newEntry } from "./trace";
 import {
   fakeJudge,
   fakeWriter,
@@ -319,6 +320,7 @@ describe("assemble", () => {
     order,
     total,
     scores: { recognizability: 0, surprise: 0, brevity: 0, aboutBehavior: 0, warmth: 0 },
+    entry: newEntry({ round: 1, hookId }),
     candidate: {
       hookId,
       mechanism: "hyperbole" as const,

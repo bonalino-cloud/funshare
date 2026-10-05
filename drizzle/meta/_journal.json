@@ -71,6 +71,13 @@
       "when": 1791228760877,
       "tag": "0009_elite_hawkeye",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791235774647,
+      "tag": "0010_generation_traces",
+      "breakpoints": true
     }
   ]
 }

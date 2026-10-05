@@ -2,6 +2,7 @@ import type { GenerationMode, Level, PersonaProfile, Tier } from "@/contracts";
 import type { ProfileFacts } from "../../facts";
 import type { FilterReport } from "../filters";
 import type { JokeLabel } from "../jokes/card";
+import type { WriteTrace } from "./trace";
 
 // Типы шага `write` (roast-engine §5.2–§5.5). Чистые типы: без БД, env и LLM.
 
@@ -107,6 +108,9 @@ export type WriteFailureReason =
   | "invalid_output";
 
 export class WriteFailedError extends Error {
+  /** Трасса провалившегося запуска для `generation_traces`: ставит `writeCandidates`. */
+  trace: WriteTrace | null = null;
+
   constructor(readonly reason: WriteFailureReason) {
     super(`write failed: ${reason}`);
     this.name = "WriteFailedError";
