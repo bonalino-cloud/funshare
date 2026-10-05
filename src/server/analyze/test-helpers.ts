@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import type { ProfileSnapshot } from "@/contracts";
 import { at, makePost, makeSnapshot } from "../facts/fixtures";
 import type { AnalyzeDeps, AnalyzeStepDeps } from "./analyze-persona";
+import type { FetchCoversFn } from "./cover-fetch";
 import type { GenerateFn } from "./llm";
 import type { PersonaRepository, PersonaRow } from "./repository";
 import type { LlmDossier } from "./schema";
@@ -122,8 +123,16 @@ export function makeDeps(responses: unknown[] | GenerateFn = [makeDossier()]) {
           return next;
         },
   );
-  const deps: AnalyzeDeps = { generate, model: "test-model" };
-  return { deps, generate };
+  // Сеть не трогаем: каждая выбранная обложка «скачивается» в байты-заглушку.
+  const fetchCovers = vi.fn<FetchCoversFn>(async (covers) =>
+    covers.map((c) => ({
+      ...c,
+      data: new Uint8Array([0xff, 0xd8, 0xff]),
+      mediaType: "image/jpeg" as const,
+    })),
+  );
+  const deps: AnalyzeDeps = { generate, fetchCovers, model: "test-model" };
+  return { deps, generate, fetchCovers };
 }
 
 /** In-memory репозиторий с семантикой upsert по (snapshotId, promptVersion). */
@@ -143,10 +152,10 @@ export function makeStepDeps(
   responses?: unknown[] | GenerateFn,
   initial?: Record<string, PersonaRow>,
 ) {
-  const { deps, generate } = makeDeps(responses);
+  const { deps, generate, fetchCovers } = makeDeps(responses);
   const repo = makeRepo(initial);
   const stepDeps: AnalyzeStepDeps = { ...deps, personas: repo.personas };
-  return { deps: stepDeps, generate, ...repo };
+  return { deps: stepDeps, generate, fetchCovers, ...repo };
 }
 
 /** Все текстовые части вызова `generate` одной строкой. */

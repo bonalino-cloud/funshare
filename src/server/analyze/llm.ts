@@ -26,7 +26,7 @@ export type GenerateFn = (input: GenerateInput) => Promise<unknown>;
 /**
  * Реальный вызов: AI SDK 7, `generateText` + `Output.object` (`generateObject` в этой версии
  * убран из документации). Ключ читается при вызове, не при импорте; в сообщения ошибок не попадает.
- * Картинки уходят по URL: Anthropic сам их скачивает.
+ * Картинки уходят байтами: их скачивает наш сервер (cover-fetch.ts).
  */
 export function createAnthropicGenerate(): GenerateFn {
   return async ({ system, parts }) => {
@@ -44,7 +44,7 @@ export function createAnthropicGenerate(): GenerateFn {
             content: parts.map((part) =>
               part.type === "text"
                 ? { type: "text" as const, text: part.text }
-                : { type: "file" as const, mediaType: "image", data: new URL(part.url) },
+                : { type: "file" as const, mediaType: part.mediaType, data: part.data },
             ),
           },
         ],

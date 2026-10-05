@@ -6,11 +6,15 @@ import { sanitizeText } from "../../facts/text";
 
 export const PROMPT_VERSION = "analyze/v1";
 
-/** Часть пользовательского сообщения: текст или картинка по URL (только vision-анализ). */
-export type AnalyzePromptPart = { type: "text"; text: string } | { type: "image"; url: string };
+/**
+ * Часть пользовательского сообщения: текст или картинка (байты, скачанные сервером: URL модели
+ * не отдаём, robots.txt CDN Instagram запрещает её загрузчику).
+ */
+export type AnalyzePromptPart =
+  { type: "text"; text: string } | { type: "image"; data: Uint8Array; mediaType: string };
 
 /** Обложка поста для vision: `index` — номер поста во входе (тот же, что в `post:N`). */
-export type PromptCover = { index: number; url: string };
+export type PromptCover = { index: number; data: Uint8Array; mediaType: string };
 
 export type AnalyzePromptInput = {
   facts: ProfileFacts;
@@ -113,7 +117,7 @@ export function buildAnalyzePrompt(input: AnalyzePromptInput): AnalyzePrompt {
     });
     for (const cover of input.covers) {
       parts.push({ type: "text", text: `Обложка поста post:${cover.index}` });
-      parts.push({ type: "image", url: cover.url });
+      parts.push({ type: "image", data: cover.data, mediaType: cover.mediaType });
     }
   } else {
     parts.push({ type: "text", text: "Обложек нет: look = null, referenceIndexes пустой." });

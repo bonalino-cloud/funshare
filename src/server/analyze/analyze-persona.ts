@@ -4,7 +4,8 @@ import { buildProfileFacts, type ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import { buildAnalyzePrompt, PROMPT_VERSION } from "../prompts/analyze/v1";
 import { MIN_POSTS } from "../scrape";
-import { pickCovers, type Cover } from "./covers";
+import { createCoverFetcher, type DownloadedCover, type FetchCoversFn } from "./cover-fetch";
+import { pickCovers } from "./covers";
 import { ANALYZE_MODEL, createAnthropicGenerate, LlmSchemaError, type GenerateFn } from "./llm";
 import { buildPersona } from "./postprocess";
 import { createPersonaRepository, type PersonaRepository } from "./repository";
@@ -25,6 +26,8 @@ export type AnalyzeResult =
 
 export type AnalyzeDeps = {
   generate: GenerateFn;
+  /** Скачивание обложек (байты для модели). В тестах подменяется: сеть не нужна. */
+  fetchCovers: FetchCoversFn;
   /** Подпись модели для `personas.model`. */
   model: string;
 };
@@ -33,7 +36,11 @@ export type AnalyzeStepDeps = AnalyzeDeps & { personas: PersonaRepository };
 
 /** Реальные реализации создаются лениво: сборка и тесты не требуют ключа и БД. */
 function defaultDeps(): AnalyzeDeps {
-  return { generate: createAnthropicGenerate(), model: ANALYZE_MODEL };
+  return {
+    generate: createAnthropicGenerate(),
+    fetchCovers: createCoverFetcher(),
+    model: ANALYZE_MODEL,
+  };
 }
 
 /** В лог — только тип события и имя ошибки: ни текста профиля, ни ответа модели, ни ключа. */
@@ -80,14 +87,25 @@ export async function analyzePersona(
   const blocked = guardrail(snapshot, facts.biography !== "" || facts.captionsForLlm.length > 0);
   if (blocked) return { ok: false, errorCode: blocked };
 
-  const allCovers = pickCovers(snapshot);
+  // Один раз до попыток. Не скачавшиеся обложки пропускаются: `index` у остальных остаётся
+  // индексом поста, постобработка сверяет look.referenceIndexes именно с этим списком.
+  const picked = pickCovers(snapshot);
+  let allCovers: DownloadedCover[] = [];
+  if (picked.length > 0) {
+    try {
+      allCovers = await deps.fetchCovers(picked);
+    } catch (error) {
+      logFailure("сбой скачивания обложек", error);
+    }
+    console.error(`[analyze] обложки: скачано ${allCovers.length} из ${picked.length}`);
+  }
   const displayName = capCodepoints(cleanUntrusted(snapshot.fullName).text, 100);
 
   let retryNote: string | undefined;
   let withImages = true;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const covers: Cover[] = withImages ? allCovers : [];
+    const covers: DownloadedCover[] = withImages ? allCovers : [];
     const prompt = buildAnalyzePrompt({
       facts,
       displayName,
