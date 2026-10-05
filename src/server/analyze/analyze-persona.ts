@@ -6,6 +6,7 @@ import { buildAnalyzePrompt, PROMPT_VERSION } from "../prompts/analyze/v1";
 import { MIN_POSTS } from "../scrape";
 import { createCoverFetcher, type DownloadedCover, type FetchCoversFn } from "./cover-fetch";
 import { pickCovers } from "./covers";
+import type { CostMeter } from "../cost/meter";
 import { ANALYZE_MODEL, createAnthropicGenerate, LlmSchemaError, type GenerateFn } from "./llm";
 import { buildPersona } from "./postprocess";
 import { createPersonaRepository, type PersonaRepository } from "./repository";
@@ -35,9 +36,9 @@ export type AnalyzeDeps = {
 export type AnalyzeStepDeps = AnalyzeDeps & { personas: PersonaRepository };
 
 /** Реальные реализации создаются лениво: сборка и тесты не требуют ключа и БД. */
-function defaultDeps(): AnalyzeDeps {
+export function defaultAnalyzeDeps(meter?: CostMeter): AnalyzeDeps {
   return {
-    generate: createAnthropicGenerate(),
+    generate: createAnthropicGenerate(meter),
     fetchCovers: createCoverFetcher(),
     model: ANALYZE_MODEL,
   };
@@ -75,7 +76,7 @@ function guardrail(snapshot: ProfileSnapshot, bioOrCaptions: boolean): AnalyzeEr
  */
 export async function analyzePersona(
   snapshot: ProfileSnapshot,
-  deps: AnalyzeDeps = defaultDeps(),
+  deps: AnalyzeDeps = defaultAnalyzeDeps(),
 ): Promise<AnalyzeResult> {
   let facts: ProfileFacts;
   try {

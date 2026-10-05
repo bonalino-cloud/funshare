@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileCheckCreated, ProfileCheckStatus } from "@/contracts";
+import { CostMeter } from "../cost";
 import { RESULT_CACHE_TTL_MS, STALE_AFTER_MS } from "./config";
 import { clientIp, createProfileCheck, getProfileCheck } from "./handlers";
 import {
@@ -88,11 +89,11 @@ describe("POST: успех checking → ok", () => {
 
     await t.flush();
     const scraped = okScrape();
-    expect(t.scrape).toHaveBeenCalledExactlyOnceWith("anya.travels");
-    expect(t.analyze).toHaveBeenCalledExactlyOnceWith({
-      snapshotId: "snap-1",
-      snapshot: scraped.ok ? scraped.snapshot : undefined,
-    });
+    expect(t.scrape).toHaveBeenCalledExactlyOnceWith("anya.travels", expect.any(CostMeter));
+    expect(t.analyze).toHaveBeenCalledExactlyOnceWith(
+      { snapshotId: "snap-1", snapshot: scraped.ok ? scraped.snapshot : undefined },
+      expect.any(CostMeter),
+    );
 
     const after = await status(t, id);
     expect(after.res.status).toBe(200);

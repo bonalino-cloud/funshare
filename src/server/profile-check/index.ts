@@ -1,6 +1,7 @@
-import { analyzeStep } from "../analyze";
+import { analyzeStep, defaultAnalyzeDeps } from "../analyze";
+import { createPersonaRepository } from "../analyze/repository";
 import { createRateLimiter, type RateLimiter } from "../ratelimit";
-import { scrapeProfile } from "../scrape";
+import { defaultScrapeDeps, scrapeProfile } from "../scrape";
 import { createAvatarCopier } from "./avatar";
 import type { HandlerDeps } from "./handlers";
 import { createProfileCheckRepository } from "./repository";
@@ -19,8 +20,10 @@ export function defaultDeps(schedule: HandlerDeps["schedule"]): HandlerDeps {
     limiter,
     schedule,
     pipeline: {
-      scrape: (username) => scrapeProfile(username),
-      analyze: (input) => analyzeStep(input),
+      // Счётчик трат один на проверку: его создаёт `runProfileCheck` и отдаёт в оба шага.
+      scrape: (username, meter) => scrapeProfile(username, { ...defaultScrapeDeps(), meter }),
+      analyze: (input, meter) =>
+        analyzeStep(input, { ...defaultAnalyzeDeps(meter), personas: createPersonaRepository() }),
       copyAvatar: avatarCopier,
     },
     now: () => new Date(),

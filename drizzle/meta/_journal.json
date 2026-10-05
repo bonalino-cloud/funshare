@@ -78,6 +78,13 @@
       "when": 1791235774647,
       "tag": "0010_generation_traces",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791237404082,
+      "tag": "0011_cost_log",
+      "breakpoints": true
     }
   ]
 }

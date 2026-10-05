@@ -1,5 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
+import type { CostMeter, SdkUsage } from "../cost/meter";
 import { parseServerEnv } from "../env";
 import { withCanary } from "../prompts/canary";
 import type { AnalyzePromptPart } from "../prompts/analyze/v1";
@@ -29,14 +30,16 @@ export type GenerateFn = (input: GenerateInput) => Promise<unknown>;
  * убран из документации). Ключ читается при вызове, не при импорте; в сообщения ошибок не попадает.
  * Картинки уходят байтами: их скачивает наш сервер (cover-fetch.ts).
  */
-export function createAnthropicGenerate(): GenerateFn {
+export function createAnthropicGenerate(meter?: CostMeter): GenerateFn {
   return async ({ system, parts }) => {
     const apiKey = parseServerEnv(process.env).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY не задан");
     const anthropic = createAnthropic({ apiKey });
 
+    // usage успешного ответа: если `result.output` бросит (нет вывода), токены всё равно учтём.
+    let usage: SdkUsage | undefined;
     try {
-      const { output } = await generateText({
+      const result = await generateText({
         model: anthropic(ANALYZE_MODEL),
         system: withCanary(system, "analyze"),
         messages: [
@@ -55,8 +58,20 @@ export function createAnthropicGenerate(): GenerateFn {
         maxRetries: 1,
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
       });
+      usage = result.totalUsage;
+      // Геттер бросает NoOutputGeneratedError, если вывода нет: учёт после него, иначе вызов
+      // посчитался бы дважды (успехом и провалом).
+      const output: unknown = result.output;
+      meter?.recordLlm({ role: "analyze", model: ANALYZE_MODEL, usage, ok: true });
       return output;
     } catch (error) {
+      // Неудачная попытка тоже стоит денег (повторы ведёт шаг): токены есть, если ответ дошёл.
+      meter?.recordLlm({
+        role: "analyze",
+        model: ANALYZE_MODEL,
+        usage: NoObjectGeneratedError.isInstance(error) ? error.usage : usage,
+        ok: false,
+      });
       if (NoObjectGeneratedError.isInstance(error)) {
         throw new LlmSchemaError("ответ не является JSON по заданной схеме");
       }

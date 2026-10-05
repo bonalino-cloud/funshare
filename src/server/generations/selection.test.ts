@@ -358,7 +358,11 @@ describe("после выбора: draw, сборка и перенос в Ко�
       saveTrace: async () => {},
     };
     const writeDeps = makeWriteDeps();
-    await runWriteStep("kostrishche", { repo, write: () => writeDeps });
+    await runWriteStep("kostrishche", {
+      repo,
+      write: () => writeDeps,
+      costs: { addStepCost: async () => {} },
+    });
     expect(saved.filter((c) => c.fromTrial).map((c) => c.id)).toEqual(["p7", "p2", "p5"]);
   });
 

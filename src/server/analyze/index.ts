@@ -1,4 +1,4 @@
-export { analyzePersona, analyzeStep, MAX_ATTEMPTS } from "./analyze-persona";
+export { analyzePersona, analyzeStep, defaultAnalyzeDeps, MAX_ATTEMPTS } from "./analyze-persona";
 export type {
   AnalyzeDeps,
   AnalyzeErrorCode,
