@@ -8,11 +8,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-artifact-read
+текущая_фаза: be/p1-output-filters
 статус_фазы: чек
 текущий_шаг_карусели: 9
-промт_следующей_фазы: be/p1-output-filters — слои 4 и 5 фильтрации (roast-engine §6), тесты фильтров (задача 12 плана)
-открытые_решения: selection — title/tagline/finale/shareText шаблонные (в дорожку юмора), нет сторожа зависшего ожидания выбора; вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
+промт_следующей_фазы: be/p1-traces — generation_traces, canary, CI-проверка бандла (задача 13 плана)
+открытые_решения: длинное тире: писатель v1 ставит его вопреки промпту, слой 4 режет (~25–40% выхода) — решение Дениса: резать / заменять / пропускать, по умолчанию резать; вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
 обкатка_страницы: нет
 обкатка_чеклист: —
 режим_пингов: подробный

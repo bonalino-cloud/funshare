@@ -6,7 +6,19 @@ import {
   PROMPT_VERSION,
   promptHookId,
 } from "../../prompts/roast/v1";
+import { MODERATOR_PROMPT_VERSION, buildModeratorPrompt } from "../../prompts/roast/moderator-v1";
 import { LlmSchemaError } from "../../analyze/llm";
+import {
+  bump,
+  checkOutputText,
+  emptyReport,
+  formatReport,
+  mergeCounts,
+  totalCount,
+  type Counts,
+  type Layer4Code,
+  type LeakIndex,
+} from "../filters";
 import { listCards } from "../jokes/repository";
 import { pickStyles, type BankCards } from "./bank";
 import {
@@ -23,19 +35,30 @@ import {
   MAX_ROUNDS,
   maxNewCandidates,
   MIN_CANDIDATES_BY_LEVEL,
+  MODERATION_MAX_PASSES,
+  MODERATOR_CANDIDATES_PER_CALL,
   WRITER_HOOKS_PER_CALL,
 } from "./config";
 import { forbiddenTopics } from "../../analyze/forbidden";
 import { eligibleHooks, overlapsForbidden, selectHooks } from "./hooks";
 import {
   createAnthropicJudge,
+  createAnthropicModerator,
   createAnthropicWriter,
   JUDGE_MODEL,
+  MODERATOR_MODEL,
   WRITER_MODEL,
   type GenerateFn,
   type PromptText,
 } from "./llm";
-import { JudgeEnvelope, JudgeItem, WriterEnvelope } from "./schema";
+import { moderationReason } from "./moderate";
+import {
+  JudgeEnvelope,
+  JudgeItem,
+  ModeratorEnvelope,
+  ModeratorItem,
+  WriterEnvelope,
+} from "./schema";
 import {
   WriteFailedError,
   type CarriedPunch,
@@ -50,9 +73,15 @@ import {
 export type WriteDeps = {
   writer: GenerateFn;
   judge: GenerateFn;
+  /** LLM-модератор (слой 5): вердикты по кандидатам, которых увидит человек. */
+  moderator: GenerateFn;
   /** Банк карточек уровня (одобренные, без красных линий в образцах). */
   loadBank: (level: Level) => Promise<BankCards>;
-  models: { writer: string; judge: string };
+  models: { writer: string; judge: string; moderator: string };
+  /** Canary-строки промптов для слоя 4 (задача 13). По умолчанию из `filters/config.ts`. */
+  canaries?: readonly string[];
+  /** Индекс цепочек слов промптов для слоя 4. По умолчанию по настоящим промптам. */
+  leakIndex?: LeakIndex;
   /** Идентификатор нового кандидата. Должен быть уникален; повтор при совпадении проверяет код. */
   newId: () => string;
 };
@@ -62,11 +91,12 @@ export function defaultWriteDeps(): WriteDeps {
   return {
     writer: createAnthropicWriter(),
     judge: createAnthropicJudge(),
+    moderator: createAnthropicModerator(),
     loadBank: async (level) => ({
       skeletons: await listCards({ level, kind: "skeleton" }),
       examples: await listCards({ level, kind: "example" }),
     }),
-    models: { writer: WRITER_MODEL, judge: JUDGE_MODEL },
+    models: { writer: WRITER_MODEL, judge: JUDGE_MODEL, moderator: MODERATOR_MODEL },
     newId: () => `p_${randomUUID().slice(0, 8)}`,
   };
 }
@@ -76,6 +106,8 @@ export type WriteResult = {
   candidates: WrittenCandidate[];
   stats: WriteStats;
   promptVersion: string;
+  /** Версия промпта и модель модератора: для `generation_traces` (задача 13). */
+  moderator: { promptVersion: string; model: string };
 };
 
 /** В лог — только счётчики и имя ошибки: ни текста профиля, ни ответа модели, ни ключа. */
@@ -124,7 +156,16 @@ type Scored = {
   total: number;
 };
 
-type Counters = Pick<WriteStats, "written" | "droppedInvalid" | "droppedByJudge" | "unscored">;
+type Counters = Pick<
+  WriteStats,
+  | "written"
+  | "droppedInvalid"
+  | "droppedByJudge"
+  | "unscored"
+  | "droppedByModerator"
+  | "unmoderated"
+  | "filters"
+>;
 
 function chunk<T>(items: readonly T[], size: number): T[][] {
   const out: T[][] = [];
@@ -184,6 +225,7 @@ async function writeBatch(
   const byHook = new Map<string, HookStyle>();
   for (const s of styles) byHook.set(promptHookId(s.hook.id), s).set(s.hook.id, s);
   const forbidden = forbiddenTopics(input.persona);
+  const checkCtx = { level: input.level, canaries: deps.canaries, leakIndex: deps.leakIndex };
   return withRetries(
     "писатель",
     (retryNote) =>
@@ -203,29 +245,35 @@ async function writeBatch(
       if (!env.success) return { ok: false, note: "ответ не по схеме: нужен объект hooks" };
       const out: RoundCandidate[] = [];
       const localSeen = new Set(seen);
-      let invalid = 0;
+      const drops: Counts<Layer4Code> = {};
       const perHook = new Map<string, number>();
       for (const group of env.data.hooks) {
         const style = byHook.get(group.hookId);
         if (!style) {
-          invalid += group.candidates.length;
+          bump(drops, "unknown_hook", group.candidates.length);
           continue;
         }
         for (const raw of group.candidates) {
           if ((perHook.get(style.hook.id) ?? 0) >= CANDIDATES_PER_HOOK) break;
           const v = validateCandidate(raw, style);
           if (!v.ok) {
-            invalid++;
+            bump(drops, v.reason);
             continue;
           }
-          // Страховка кодом поверх промпта: запретная тема в тексте шутки вычёркивает её.
+          // Слой 4 (§6): детерминированная проверка до судьи, чтобы не платить за брак.
+          const outputReason = checkOutputText(v.value.text, checkCtx);
+          if (outputReason) {
+            bump(drops, outputReason);
+            continue;
+          }
+          // Страховка кодом поверх промпта: запретная тема из досье в тексте вычёркивает шутку.
           if (overlapsForbidden(v.value.text, forbidden)) {
-            invalid++;
+            bump(drops, "avoid_topic");
             continue;
           }
           const key = normalizeForDedupe(v.value.text);
           if (localSeen.has(key)) {
-            invalid++;
+            bump(drops, "duplicate");
             continue;
           }
           localSeen.add(key);
@@ -242,7 +290,8 @@ async function writeBatch(
       // Принятое запоминаем только при успехе попытки: неудачная не должна занять тексты.
       for (const c of out) seen.add(c.key);
       counters.written += out.length;
-      counters.droppedInvalid += invalid;
+      counters.droppedInvalid += totalCount(drops);
+      mergeCounts(counters.filters.layer4, drops);
       return { ok: true, value: out };
     },
   );
@@ -350,6 +399,116 @@ export function assemble(pool: readonly Scored[], max: number): Scored[] {
 }
 
 /**
+ * Модератор (слой 5, §6): один проход над `batch`, пачками по `MODERATOR_CANDIDATES_PER_CALL`.
+ * Возвращает прошедших. Нет вердикта (пачка не получилась или модель пропустила id) — кандидат
+ * отпадает: непроверенное человеку не показываем. Отпали все пачки — `llm_failed`, как у судьи.
+ */
+async function moderateBatch(
+  input: WriteInput,
+  forbidden: readonly string[],
+  batch: readonly Scored[],
+  counters: Counters,
+  deps: WriteDeps,
+): Promise<Scored[]> {
+  const ids = batch.map((s, i) => ({ id: `m${i + 1}`, s }));
+  const results = await settleBatches(
+    "модератор",
+    chunk(ids, MODERATOR_CANDIDATES_PER_CALL).map((part) =>
+      withRetries(
+        "модератор",
+        (retryNote) =>
+          buildModeratorPrompt({
+            candidates: part.map(({ id, s }) => ({ id, text: s.candidate.text })),
+            forbidden,
+            level: input.level,
+            mode: input.mode,
+            retryNote,
+          }),
+        deps.moderator,
+        (raw) => {
+          const env = ModeratorEnvelope.safeParse(raw);
+          if (!env.success) return { ok: false, note: "ответ не по схеме: нужен объект verdicts" };
+          // Только id этой пачки и первый вердикт на id (как у судьи).
+          const own = new Set(part.map(({ id }) => id));
+          const byId = new Map<string, ModeratorItem>();
+          for (const item of env.data.verdicts) {
+            const parsed = ModeratorItem.safeParse(item);
+            if (parsed.success && own.has(parsed.data.id) && !byId.has(parsed.data.id)) {
+              byId.set(parsed.data.id, parsed.data);
+            }
+          }
+          if (byId.size === 0) {
+            return {
+              ok: false,
+              note: "ни одного валидного вердикта: нужны id как во входе и четыре поля true/false",
+            };
+          }
+          return { ok: true, value: byId };
+        },
+      ),
+    ),
+  );
+  const verdicts = new Map<string, ModeratorItem>();
+  for (const r of results) for (const [id, v] of r) verdicts.set(id, v);
+
+  const passed: Scored[] = [];
+  for (const { id, s } of ids) {
+    const verdict = verdicts.get(id);
+    if (!verdict) {
+      counters.unmoderated++;
+      bump(counters.filters.layer5, "no_verdict");
+      continue;
+    }
+    const reason = moderationReason(verdict);
+    if (reason) {
+      counters.droppedByModerator++;
+      bump(counters.filters.layer5, reason);
+      continue;
+    }
+    passed.push(s);
+  }
+  return passed;
+}
+
+/**
+ * Слой 5 с заменой: модерируем лучших по рейтингу судьи (`assemble`); вычеркнутых заменяют
+ * следующие из запасных, пока не набрано `max` или не кончились проходы/запасные. Переписывание
+ * не делаем: дешевле и не порождает непроверенный текст. Уже проверенных повторно не зовём.
+ */
+async function moderateToFill(
+  input: WriteInput,
+  forbidden: readonly string[],
+  pool: readonly Scored[],
+  approved: Scored[],
+  moderated: Set<Scored>,
+  max: number,
+  counters: Counters,
+  deps: WriteDeps,
+): Promise<void> {
+  for (let pass = 1; pass <= MODERATION_MAX_PASSES; pass++) {
+    const need = max - approved.length;
+    if (need <= 0) return;
+    const batch = assemble(
+      pool.filter((s) => !moderated.has(s)),
+      need,
+    );
+    if (batch.length === 0) return;
+    for (const s of batch) moderated.add(s);
+    counters.filters.moderatorChecked += batch.length;
+    counters.filters.moderatorPasses++;
+    try {
+      approved.push(...(await moderateBatch(input, forbidden, batch, counters, deps)));
+    } catch (error) {
+      // Модератор лёг целиком, но одобренные уже есть: не теряем их, хватит ли — решит минимум.
+      if (!(error instanceof WriteFailedError) || approved.length === 0) throw error;
+      counters.unmoderated += batch.length;
+      bump(counters.filters.layer5, "no_verdict", batch.length);
+      return;
+    }
+  }
+}
+
+/**
  * Шаг `write` без БД (roast-engine §5.2–§5.5): досье + факты → крючки → банк → писатель → судья.
  * Всё, что вернула модель, проходит проверку кодом до выдачи. Мало шуток после судьи: второй
  * раунд по другим крючкам (запасные), и если их всё равно меньше минимума уровня — `WriteFailedError`
@@ -366,11 +525,23 @@ export async function writeCandidates(
   const minTotal = MIN_CANDIDATES_BY_LEVEL[input.level];
   const bank = await deps.loadBank(input.level);
 
-  const counters: Counters = { written: 0, droppedInvalid: 0, droppedByJudge: 0, unscored: 0 };
+  const counters: Counters = {
+    written: 0,
+    droppedInvalid: 0,
+    droppedByJudge: 0,
+    unscored: 0,
+    droppedByModerator: 0,
+    unmoderated: 0,
+    filters: emptyReport(),
+  };
+  const forbidden = forbiddenTopics(input.persona);
   const seen = new Set(carried.map((p) => normalizeForDedupe(p.text)));
   const usedHooks = new Set<string>();
   const writtenTexts: string[] = [];
   const pool: Scored[] = [];
+  // Прошедшие модератора и уже отданные ему: раунд 2 не гоняет проверенных повторно.
+  const approved: Scored[] = [];
+  const moderated = new Set<Scored>();
   let rounds = 0;
   let chosen: Scored[] = [];
 
@@ -388,13 +559,15 @@ export async function writeCandidates(
     pool.push(
       ...(await judgeRound(input, hooks, written, counters, deps, pool.length + 1000 * round)),
     );
-    chosen = assemble(pool, maxNew);
+    await moderateToFill(input, forbidden, pool, approved, moderated, maxNew, counters, deps);
+    chosen = assemble(approved, maxNew);
     if (carried.length + chosen.length >= minTotal) break;
   }
 
   const stats: WriteStats = { rounds, ...counters };
+  // Одна строка на генерацию: только коды и числа, без текстов шуток и профиля.
   console.error(
-    `[write] раундов=${rounds} написано=${stats.written} брак=${stats.droppedInvalid} судья_вырезал=${stats.droppedByJudge} без_оценки=${stats.unscored} итог=${chosen.length}+${carried.length}`,
+    `[write] раундов=${rounds} написано=${stats.written} брак=${stats.droppedInvalid} судья_вырезал=${stats.droppedByJudge} без_оценки=${stats.unscored} модератор_вырезал=${stats.droppedByModerator} без_вердикта=${stats.unmoderated} ${formatReport(stats.filters)} итог=${chosen.length}+${carried.length}`,
   );
   if (carried.length + chosen.length < minTotal) {
     throw new WriteFailedError("not_enough_candidates");
@@ -419,6 +592,7 @@ export async function writeCandidates(
 
   return {
     promptVersion: PROMPT_VERSION,
+    moderator: { promptVersion: MODERATOR_PROMPT_VERSION, model: deps.models.moderator },
     stats,
     candidates: [
       ...carried.map((p): WrittenCandidate => ({

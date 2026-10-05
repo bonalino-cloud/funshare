@@ -1,5 +1,6 @@
 import type { GenerationMode, Level, PersonaProfile, Tier } from "@/contracts";
 import type { ProfileFacts } from "../../facts";
+import type { FilterReport } from "../filters";
 import type { JokeLabel } from "../jokes/card";
 
 // Типы шага `write` (roast-engine §5.2–§5.5). Чистые типы: без БД, env и LLM.
@@ -81,9 +82,16 @@ export type WriteInput = {
 export type WriteStats = {
   rounds: number;
   written: number;
+  /** Вычеркнуто слоем 4 (форма, язык, запретные темы, мат, штампы, дубли, утечка промпта). */
   droppedInvalid: number;
   droppedByJudge: number;
   unscored: number;
+  /** Вычеркнуто модератором (слой 5). */
+  droppedByModerator: number;
+  /** Модератор не вернул вердикт: показывать непроверенное нельзя, кандидат отпал. */
+  unmoderated: number;
+  /** Разбивка по слоям и кодам причин (в `generation_traces`, задача 13). */
+  filters: FilterReport;
 };
 
 /** Причина провала шага: наружу (в логи) — только код. */

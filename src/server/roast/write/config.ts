@@ -26,6 +26,13 @@ export const MAX_ATTEMPTS = 3;
 /** Размер пачки: ответ модели ограничен независимо от тарифа (иначе обрезка по токенам). */
 export const WRITER_HOOKS_PER_CALL = 5;
 export const JUDGE_CANDIDATES_PER_CALL = 12;
+/** Модератор отвечает четырьмя флагами на кандидата (~40 токенов): пачка по 12 с большим запасом. */
+export const MODERATOR_CANDIDATES_PER_CALL = 12;
+/**
+ * Проходов модерации на раунд: первый по лучшим, остальные заменяют вычеркнутых следующими по
+ * рейтингу судьи из запасных. Дальше запасной раунд писателя или `not_enough_candidates`.
+ */
+export const MODERATION_MAX_PASSES = 3;
 
 /** Скелеты и образцы на крючок (§5.3). */
 export const SKELETONS_PER_HOOK = 2;

@@ -39,6 +39,19 @@ export type JudgeItem = z.infer<typeof JudgeItem>;
 export const JudgeOutput = z.object({ scores: z.array(JudgeItem) });
 export const JudgeEnvelope = z.object({ scores: z.array(z.unknown()) });
 
+/** Вердикт модератора (слой 5, §6): четыре ответа «да/нет». Элемент проверяется отдельно. */
+export const ModeratorItem = z.object({
+  id: z.string(),
+  aboutBehavior: z.boolean(),
+  hitsForbiddenTopic: z.boolean(),
+  friendSafe: z.boolean(),
+  selfContained: z.boolean(),
+});
+export type ModeratorItem = z.infer<typeof ModeratorItem>;
+
+export const ModeratorOutput = z.object({ verdicts: z.array(ModeratorItem) });
+export const ModeratorEnvelope = z.object({ verdicts: z.array(z.unknown()) });
+
 /** Приватная трасса из БД (jsonb): перенос в Кострище читает её обратно, поэтому проверяем. */
 export const PunchTraceSchema = z.object({
   hookId: z.string(),
