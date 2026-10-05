@@ -41,11 +41,19 @@ describe("publishSql", () => {
         shareText: "s",
       },
       images: [],
+      subject: { username: "u", displayName: "U", avatarUrl: null },
       ownerTokenHash: "h",
       now,
     }),
   );
   const text = flat(q.sql);
+
+  it("subject пишется в колонку и параметром, не текстом", () => {
+    expect(text).toContain("images, subject, owner_token_hash");
+    expect(q.params).toContain(
+      JSON.stringify({ username: "u", displayName: "U", avatarUrl: null }),
+    );
+  });
 
   it("артефакт и ready одной командой, только из awaiting_selection/drawing, без дублей", () => {
     expect(text).toContain("INSERT INTO artifacts");
