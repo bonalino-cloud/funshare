@@ -39,6 +39,12 @@ export function toErrorCode(error: unknown): ErrorCode {
   return "internal";
 }
 
+/** Стоит ли повторить запрос: сеть оборвалась (fetch бросает TypeError) или сервер ответил 5xx. */
+export function isTransient(error: unknown): boolean {
+  if (error instanceof ApiError) return error.status >= 500;
+  return error instanceof TypeError;
+}
+
 export interface Api {
   createProfileCheck(req: ProfileCheckRequest): Promise<ProfileCheckCreated>;
   getProfileCheck(id: string): Promise<ProfileCheckStatus>;

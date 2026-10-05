@@ -160,7 +160,7 @@ export function CheckoutStep({
       <StepTitle accent="к жарке" split>
         Всё готово
       </StepTitle>
-      {profile && <Blaze username={profile.username} />}
+      {profile && <Blaze username={profile.username} avatarUrl={profile.avatarUrl} />}
 
       <div className="mt-[50px] rounded-md border-2 border-white bg-ink px-4 py-2">
         {tier !== undefined && (
