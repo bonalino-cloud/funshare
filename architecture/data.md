@@ -13,11 +13,11 @@
 
 ## Blob
 
-- `raw/<igUsername>/<fetchedAt>.json` — private, сырой ответ Apify.
-- `art/<slug>/<n>.webp` — public, иллюстрации.
+- `raw/<igUsername>/<fetchedAt>.json` — private, сырой ответ Apify. Отдельный private store, токен `BLOB_RAW_READ_WRITE_TOKEN`.
+- `art/<slug>/<n>.webp` — public, иллюстрации. Public store, токен `BLOB_READ_WRITE_TOKEN`.
 
 ## Хранение и удаление
 
-- Сырые снимки и `profile_snapshots` старше 30 дней удаляет ежедневный Cron.
+- Сырые снимки и `profile_snapshots` старше 30 дней удаляет ежедневный Cron. `list`/`del` по `raw/` — с токеном `BLOB_RAW_READ_WRITE_TOKEN` (`rawBlobToken()` из `src/server/scrape/blob.ts`): с токеном по умолчанию SDK смотрит в public store и сырьё не найдёт.
 - `DELETE /api/artifacts/:slug` ставит `deletedAt`, удаляет картинки из Blob. Страница отдаёт 410.
 - IP и `ownerToken` храним только в виде хэша.
