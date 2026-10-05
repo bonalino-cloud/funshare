@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/client/api";
 import { errorLine, generationErrorLine, startErrorLine } from "./errors";
+
+beforeEach(() => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
 
 describe("generationErrorLine", () => {
   it("404 — чужая ссылка или потерянная cookie, а не поломка у нас", () => {
@@ -12,6 +16,7 @@ describe("generationErrorLine", () => {
   it("обрыв сети — про связь, а не «у нас сломалось»", () => {
     const line = generationErrorLine(new TypeError("Failed to fetch"));
     expect(line).toContain("связь");
+    expect(line).toContain("не потеряется");
     expect(line).not.toBe(errorLine("internal"));
   });
 
@@ -35,7 +40,9 @@ describe("startErrorLine", () => {
     );
   });
 
-  it("обрыв сети на старте — про связь", () => {
-    expect(startErrorLine(new TypeError("Failed to fetch"))).toContain("связь");
+  it("обрыв сети на старте — про связь, но без обещания «не потеряется»", () => {
+    const line = startErrorLine(new TypeError("Failed to fetch"));
+    expect(line).toContain("связь");
+    expect(line).not.toContain("не потеряется");
   });
 });

@@ -38,9 +38,15 @@ export function errorLine(code: ErrorCode): string {
 
 type Line = { what: string; next: string };
 
-const OFFLINE: Line = {
+/** На экране генерации «Ещё раз» продолжает опрос: заказ уже создан, прожарка не потеряется. */
+const OFFLINE_POLLING: Line = {
   what: "Пропала связь.",
   next: "Проверь интернет и нажми «Ещё раз», прожарка не потеряется",
+};
+/** На старте ответ мог потеряться уже после создания заказа: обещать нечего. */
+const OFFLINE_START: Line = {
+  what: "Пропала связь, и мы не знаем, дошёл ли запуск.",
+  next: "Проверь интернет и попробуй ещё раз",
 };
 
 /** Один код `internal` на разные причины: тут различаем их по HTTP-статусу. */
@@ -53,8 +59,12 @@ const CHECK_STALE: Line = {
   next: "Проверь профиль заново",
 };
 
-function lineFor(error: unknown, byStatus: Partial<Record<number, Line>>): string {
-  if (error instanceof TypeError) return `${OFFLINE.what} ${OFFLINE.next}`;
+function lineFor(error: unknown, offline: Line, byStatus: Partial<Record<number, Line>>): string {
+  if (error instanceof TypeError) {
+    // Сетевой обрыв и программная ошибка в catch неотличимы: след в консоли оставляем
+    console.error(error);
+    return `${offline.what} ${offline.next}`;
+  }
   const special = error instanceof ApiError ? byStatus[error.status] : undefined;
   if (special) return `${special.what} ${special.next}`;
   return errorLine(toErrorCode(error));
@@ -62,12 +72,12 @@ function lineFor(error: unknown, byStatus: Partial<Record<number, Line>>): strin
 
 /** Ошибка на экране генерации. 404: чужая ссылка или потерянная cookie, а не поломка у нас. */
 export function generationErrorLine(error: unknown): string {
-  return lineFor(error, { 404: GENERATION_GONE });
+  return lineFor(error, OFFLINE_POLLING, { 404: GENERATION_GONE });
 }
 
 /** Ошибка при запуске генерации. 410: проверка профиля старше 24 ч, а не «профиля нет». */
 export function startErrorLine(error: unknown): string {
-  return lineFor(error, { 410: CHECK_STALE });
+  return lineFor(error, OFFLINE_START, { 410: CHECK_STALE });
 }
 
 /** Подсказка под полем, пока ссылка не ушла на сервер. Для `incomplete` молчим. */

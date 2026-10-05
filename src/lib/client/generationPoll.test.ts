@@ -84,4 +84,23 @@ describe("pollGeneration", () => {
     ac.abort();
     await expect(run).rejects.toMatchObject({ name: "AbortError" });
   });
+
+  it.each([429, 409])("%i не повторяет", async (httpStatus) => {
+    const getStatus = sequence([new ApiError("rate_limited", httpStatus), status("ready")]);
+    await expect(pollGeneration(getStatus, fast)).rejects.toBeInstanceOf(ApiError);
+    expect(getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("5xx сверх лимита выходит наружу как ApiError", async () => {
+    const getStatus = sequence([new ApiError("internal", 503)]);
+    await expect(pollGeneration(getStatus, fast)).rejects.toBeInstanceOf(ApiError);
+    expect(getStatus).toHaveBeenCalledTimes(GENERATION_POLL_RETRIES + 1);
+  });
+
+  it("счётчик обрывов сбрасывается после удачного ответа", async () => {
+    const offline = new TypeError("Failed to fetch");
+    const drops = Array.from({ length: GENERATION_POLL_RETRIES }, () => offline);
+    const getStatus = sequence([...drops, status("writing"), ...drops, status("ready")]);
+    await expect(pollGeneration(getStatus, fast)).resolves.toMatchObject({ status: "ready" });
+  });
 });
