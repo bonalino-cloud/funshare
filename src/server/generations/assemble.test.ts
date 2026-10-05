@@ -63,6 +63,28 @@ describe("runAssemble", () => {
       { id: "p1", emoji: "🌅", text: "Шутка 1" },
     ]);
     expect(saved?.content.title).toBe("Прожарка @anya.travels");
+    expect(saved?.subject).toEqual({
+      username: "anya.travels",
+      displayName: "Аня Морозова",
+      avatarUrl: "https://blob.example.com/avatars/abc",
+    });
+  });
+
+  it("subject: аватар не https не пишется", async () => {
+    const { id, art, deps } = await setup({
+      profile: {
+        username: "anya.travels",
+        displayName: "Аня",
+        avatarUrl: "javascript:alert(1)",
+        postsCount: 1,
+      },
+    });
+    expect(await runAssemble(deps, id)).toBe("ready");
+    expect(art.published[0]?.subject).toEqual({
+      username: "anya.travels",
+      displayName: "Аня",
+      avatarUrl: null,
+    });
   });
 
   it("повтор после ready: ничего не пишет заново", async () => {

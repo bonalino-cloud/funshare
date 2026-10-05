@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type {
+  Artifact,
   ArtifactContent,
   ArtifactImage,
   CheckedProfile,
@@ -131,6 +132,8 @@ export const personas = pgTable(
   (t) => [uniqueIndex("personas_snapshot_id_prompt_version_idx").on(t.snapshotId, t.promptVersion)],
 );
 
+export type ArtifactSubject = Artifact["subject"];
+
 export const artifacts = pgTable("artifacts", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -144,6 +147,8 @@ export const artifacts = pgTable("artifacts", {
     .$type<ArtifactImage[]>()
     .notNull()
     .default(sql`'[]'::jsonb`),
+  /** Публичный `subject` на момент публикации; `null` у старых строк (тогда из generations + profile_checks). */
+  subject: jsonb("subject").$type<ArtifactSubject>(),
   ownerTokenHash: text("owner_token_hash").notNull(),
   views: integer("views").notNull().default(0),
   shares: integer("shares").notNull().default(0),

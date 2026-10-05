@@ -36,6 +36,11 @@ export class AssembleFailedError extends Error {
   }
 }
 
+/** Только https: `javascript:` и `data:` в публичный артефакт не пишем. */
+function httpsOrNull(url: string | null): string | null {
+  return url !== null && URL.canParse(url) && new URL(url).protocol === "https:" ? url : null;
+}
+
 const SLUG_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 /** 10 символов из 62: ~59 бит случайности. Адрес публичный, но перебором не находится. */
@@ -111,7 +116,7 @@ export async function runAssemble(
     subject: {
       username,
       displayName: profile.success ? profile.data.displayName : username,
-      avatarUrl: profile.success ? profile.data.avatarUrl : null,
+      avatarUrl: profile.success ? httpsOrNull(profile.data.avatarUrl) : null,
     },
     mode: input.mode,
     content: {
@@ -134,6 +139,7 @@ export async function runAssemble(
     kind: artifact.data.kind,
     content: artifact.data.content,
     images: [],
+    subject: artifact.data.subject,
     ownerTokenHash: input.ownerTokenHash,
     now,
   });
