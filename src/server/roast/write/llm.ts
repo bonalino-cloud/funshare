@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, jsonSchema, NoObjectGeneratedError, Output, zodSchema } from "ai";
 import type { z } from "zod";
 import { LlmSchemaError } from "../../analyze/llm";
+import type { CostMeter, SdkUsage } from "../../cost/meter";
 import { parseServerEnv } from "../../env";
 import { withCanary, type CanaryRole } from "../../prompts/canary";
 import { JudgeOutput, ModeratorOutput, WriterOutput } from "./schema";
@@ -34,6 +35,7 @@ function createAnthropicJson(
   modelId: string,
   schema: z.ZodType,
   maxOutputTokens: number,
+  meter?: CostMeter,
 ): GenerateFn {
   const output = Output.object({
     schema: jsonSchema<unknown>(() => zodSchema(schema).jsonSchema),
@@ -42,6 +44,8 @@ function createAnthropicJson(
     const apiKey = parseServerEnv(process.env).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY не задан");
     const anthropic = createAnthropic({ apiKey });
+    // usage успешного ответа: если `result.output` бросит (нет вывода), токены всё равно учтём.
+    let usage: SdkUsage | undefined;
     try {
       const result = await generateText({
         model: anthropic(modelId),
@@ -53,12 +57,24 @@ function createAnthropicJson(
         maxRetries: 1,
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
       });
+      usage = result.totalUsage;
       // Обрезка по лимиту токенов — главный враг пачек (урок судьи): всё, кроме stop, в лог.
       if (result.finishReason !== "stop") {
         console.error(`[write] ${role} ${modelId}: finishReason=${String(result.finishReason)}`);
       }
-      return result.output;
+      // Геттер бросает NoOutputGeneratedError, если вывода нет: учёт трат (только числа) после
+      // него, иначе вызов посчитался бы дважды (успехом и провалом).
+      const parsed: unknown = result.output;
+      meter?.recordLlm({ role: canary, model: modelId, usage, ok: true });
+      return parsed;
     } catch (error) {
+      // Неудачная попытка тоже стоит денег: у «ответ не по схеме» usage есть, у сетевого сбоя нет.
+      meter?.recordLlm({
+        role: canary,
+        model: modelId,
+        usage: NoObjectGeneratedError.isInstance(error) ? error.usage : usage,
+        ok: false,
+      });
       if (NoObjectGeneratedError.isInstance(error)) {
         // Только метаданные: ни текста ответа, ни данных профиля.
         const length = typeof error.text === "string" ? error.text.length : 0;
@@ -71,15 +87,23 @@ function createAnthropicJson(
   };
 }
 
-export const createAnthropicWriter = (): GenerateFn =>
-  createAnthropicJson("писатель", "writer", WRITER_MODEL, WriterOutput, WRITER_MAX_OUTPUT_TOKENS);
-export const createAnthropicJudge = (): GenerateFn =>
-  createAnthropicJson("судья", "judge", JUDGE_MODEL, JudgeOutput, JUDGE_MAX_OUTPUT_TOKENS);
-export const createAnthropicModerator = (): GenerateFn =>
+export const createAnthropicWriter = (meter?: CostMeter): GenerateFn =>
+  createAnthropicJson(
+    "писатель",
+    "writer",
+    WRITER_MODEL,
+    WriterOutput,
+    WRITER_MAX_OUTPUT_TOKENS,
+    meter,
+  );
+export const createAnthropicJudge = (meter?: CostMeter): GenerateFn =>
+  createAnthropicJson("судья", "judge", JUDGE_MODEL, JudgeOutput, JUDGE_MAX_OUTPUT_TOKENS, meter);
+export const createAnthropicModerator = (meter?: CostMeter): GenerateFn =>
   createAnthropicJson(
     "модератор",
     "moderator",
     MODERATOR_MODEL,
     ModeratorOutput,
     MODERATOR_MAX_OUTPUT_TOKENS,
+    meter,
   );

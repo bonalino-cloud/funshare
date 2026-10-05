@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, gte, or } from "drizzle-orm";
 import type { CheckedProfile, ErrorCode, ProfileCheckStatusCode } from "@/contracts";
+import { CostRun, microUsdToCents } from "../cost/meter";
 import { db, schema } from "../db";
 
 /** Строка проверки. `profile` НЕ доверенный (jsonb): вызывающий парсит `CheckedProfile`. */
@@ -41,11 +42,12 @@ export type ProfileCheckRepository = {
   findCached(igUsername: string, since: Date): Promise<ProfileCheckRow | null>;
   /** Меняют только проверку в `checking`; вернёт `false`, если строка уже закрыта. */
   setHint(id: string, hint: string): Promise<boolean>;
+  /** `cost` — траты проверки (Apify + анализ); без него колонки остаются 0. */
   complete(
     id: string,
-    result: { snapshotId: string; profile: CheckedProfile; checkedAt: Date },
+    result: { snapshotId: string; profile: CheckedProfile; checkedAt: Date; cost?: CostRun },
   ): Promise<boolean>;
-  fail(id: string, errorCode: ErrorCode, checkedAt: Date): Promise<boolean>;
+  fail(id: string, errorCode: ErrorCode, checkedAt: Date, cost?: CostRun): Promise<boolean>;
 };
 
 const columns = {
@@ -61,6 +63,24 @@ const columns = {
   createdAt: schema.profileChecks.createdAt,
   updatedAt: schema.profileChecks.updatedAt,
 };
+
+/**
+ * Колонки трат. Прошло схему до записи (инвариант 9); центы вверх от суммы. Не прошло — траты
+ * не пишем (в лог только факт), но проверку закрываем: учёт не должен ронять закрытие.
+ */
+export function costColumns(cost: CostRun | undefined) {
+  if (!cost) return {};
+  const parsed = CostRun.safeParse(cost);
+  if (!parsed.success) {
+    console.error("[profile-check] траты не прошли схему, не записаны");
+    return {};
+  }
+  return {
+    costCents: microUsdToCents(parsed.data.microUsd),
+    costMicroUsd: parsed.data.microUsd,
+    costDetail: parsed.data,
+  };
+}
 
 export function createProfileCheckRepository(): ProfileCheckRepository {
   const stillChecking = (id: string) =>
@@ -132,10 +152,23 @@ export function createProfileCheckRepository(): ProfileCheckRepository {
 
     setHint: (id, hint) => updateChecking(id, { hint }),
 
-    complete: (id, { snapshotId, profile, checkedAt }) =>
-      updateChecking(id, { status: "ok", hint: null, snapshotId, profile, checkedAt }),
+    complete: (id, { snapshotId, profile, checkedAt, cost }) =>
+      updateChecking(id, {
+        status: "ok",
+        hint: null,
+        snapshotId,
+        profile,
+        checkedAt,
+        ...costColumns(cost),
+      }),
 
-    fail: (id, errorCode, checkedAt) =>
-      updateChecking(id, { status: "failed", hint: null, errorCode, checkedAt }),
+    fail: (id, errorCode, checkedAt, cost) =>
+      updateChecking(id, {
+        status: "failed",
+        hint: null,
+        errorCode,
+        checkedAt,
+        ...costColumns(cost),
+      }),
   };
 }

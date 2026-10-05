@@ -8,6 +8,7 @@ import {
 } from "../../prompts/roast/v1";
 import { MODERATOR_PROMPT_VERSION, buildModeratorPrompt } from "../../prompts/roast/moderator-v1";
 import { LlmSchemaError } from "../../analyze/llm";
+import { CostMeter } from "../../cost/meter";
 import {
   bump,
   checkOutputText,
@@ -95,16 +96,20 @@ export type WriteDeps = {
   canaries?: readonly string[];
   /** Индекс цепочек слов промптов для слоя 4. По умолчанию по настоящим промптам. */
   leakIndex?: LeakIndex;
+  /** Счётчик трат шага (токены всех вызовов, включая ретраи). Нет — учёта нет, поведение то же. */
+  meter?: CostMeter;
   /** Идентификатор нового кандидата. Должен быть уникален; повтор при совпадении проверяет код. */
   newId: () => string;
 };
 
 /** Реальные реализации создаются лениво: сборка и тесты не требуют ключа и БД. */
 export function defaultWriteDeps(): WriteDeps {
+  const meter = new CostMeter();
   return {
-    writer: createAnthropicWriter(),
-    judge: createAnthropicJudge(),
-    moderator: createAnthropicModerator(),
+    meter,
+    writer: createAnthropicWriter(meter),
+    judge: createAnthropicJudge(meter),
+    moderator: createAnthropicModerator(meter),
     loadBank: async (level) => ({
       skeletons: await listCards({ level, kind: "skeleton" }),
       examples: await listCards({ level, kind: "example" }),

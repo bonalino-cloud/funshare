@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileSnapshot } from "@/contracts";
+import { CostMeter } from "../cost";
 import { ScrapeTransportError } from "./apify";
 import emptyDataset from "./fixtures/empty-dataset.json";
 import fewPosts from "./fixtures/few-posts.json";
@@ -229,5 +230,54 @@ describe("scrapeProfile: сбои хранилищ и логи", () => {
     await scrapeProfile("test.user", deps);
     const logged = JSON.stringify(vi.mocked(console.error).mock.calls);
     expect(logged).not.toContain("secret-token-123");
+  });
+});
+
+describe("scrapeProfile: учёт стоимости Apify", () => {
+  it("успех: одна попытка, один результат", async () => {
+    const meter = new CostMeter();
+    const { deps } = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
+    await scrapeProfile("test.user", { ...deps, meter });
+    expect(meter.snapshot().apify).toMatchObject({ attempts: 1, results: 1, source: "estimate" });
+  });
+
+  it("ретрай после битой схемы: платим за обе попытки (ответ пришёл оба раза)", async () => {
+    const meter = new CostMeter();
+    const { deps } = makeDeps({ fetchRaw: vi.fn(async () => malformed) });
+    await scrapeProfile("someone", { ...deps, meter });
+    const apify = meter.snapshot().apify;
+    expect(apify?.attempts).toBe(2);
+    expect(apify?.results).toBe(2 * (malformed as unknown[]).length);
+  });
+
+  it("сетевая ошибка и успех: попытки 2, результат 1", async () => {
+    const meter = new CostMeter();
+    const fetchRaw = vi
+      .fn()
+      .mockRejectedValueOnce(new ScrapeTransportError("5xx", true))
+      .mockResolvedValueOnce(openProfile);
+    const { deps } = makeDeps({ fetchRaw });
+    await scrapeProfile("test.user", { ...deps, meter });
+    expect(meter.snapshot().apify).toMatchObject({ attempts: 2, results: 1 });
+  });
+
+  it("кэш снимка: Apify не зовём, трат нет", async () => {
+    const meter = new CostMeter();
+    const first = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
+    await scrapeProfile("test.user", first.deps);
+    const { deps } = makeDeps();
+    deps.snapshots.findFresh.mockResolvedValue({
+      id: "snap-cached",
+      data: first.stored[0]?.data,
+      fetchedAt: NOW,
+    });
+    const result = await scrapeProfile("test.user", { ...deps, meter });
+    expect(result).toMatchObject({ ok: true, cached: true });
+    expect(meter.snapshot().apify).toBeNull();
+  });
+
+  it("без счётчика поведение прежнее", async () => {
+    const { deps } = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
+    expect(await scrapeProfile("test.user", deps)).toMatchObject({ ok: true });
   });
 });

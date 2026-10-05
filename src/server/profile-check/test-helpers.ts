@@ -57,12 +57,14 @@ export function makeRepo() {
       rows.set(id, { ...row, hint });
       return true;
     }),
-    complete: vi.fn<ProfileCheckRepository["complete"]>(async (id, r) => {
-      const row = rows.get(id);
-      if (!row || !closeable(id)) return false;
-      rows.set(id, { ...row, status: "ok", hint: null, ...r });
-      return true;
-    }),
+    complete: vi.fn<ProfileCheckRepository["complete"]>(
+      async (id, { snapshotId, profile, checkedAt }) => {
+        const row = rows.get(id);
+        if (!row || !closeable(id)) return false;
+        rows.set(id, { ...row, status: "ok", hint: null, snapshotId, profile, checkedAt });
+        return true;
+      },
+    ),
     fail: vi.fn<ProfileCheckRepository["fail"]>(async (id, errorCode, checkedAt) => {
       const row = rows.get(id);
       if (!row || !closeable(id)) return false;

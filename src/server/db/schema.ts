@@ -30,6 +30,7 @@ import {
   ProfileCheckStatusCode,
 } from "@/contracts";
 import { JOKE_HEATS, JOKE_MECHANISMS, JOKE_SLOTS, JOKE_TOPICS } from "../roast/jokes/card";
+import type { CostRun } from "../cost/meter";
 import type { PunchTrace } from "../roast/write/types";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
@@ -84,7 +85,12 @@ export const generations = pgTable(
     ownerTokenHash: text("owner_token_hash").notNull(),
     ipHash: text("ip_hash").notNull(),
     stepTimings: jsonb("step_timings").$type<StepTimings>().notNull().default({}),
+    /** Итог трат на генерацию в центах: ceil от `costMicroUsd`. Стоимость проверки профиля сюда НЕ входит. */
     costCents: integer("cost_cents").notNull().default(0),
+    /** Точная сумма трат шагов генерации, микро-USD (1e-6). Копится атомарным UPDATE. */
+    costMicroUsd: integer("cost_micro_usd").notNull().default(0),
+    /** Разбивка по шагам: `{ [шаг]: CostRun[] }`, прогон на каждое выполнение шага (ретраи тоже). */
+    costDetail: jsonb("cost_detail").$type<Record<string, CostRun[]>>().notNull().default({}),
     artifactId: text("artifact_id"),
     ...timestamps,
   },
@@ -182,6 +188,11 @@ export const profileChecks = pgTable(
     ownerTokenHash: text("owner_token_hash").notNull(),
     ipHash: text("ip_hash").notNull(),
     checkedAt: timestamp("checked_at", { withTimezone: true }),
+    /** Траты самой проверки (Apify + анализ), центы вверх. Копия из кэша и `checking` — 0. */
+    costCents: integer("cost_cents").notNull().default(0),
+    costMicroUsd: integer("cost_micro_usd").notNull().default(0),
+    /** Один `CostRun`; null, пока проверка не закрыта или это копия из кэша. */
+    costDetail: jsonb("cost_detail").$type<CostRun>(),
     ...timestamps,
   },
   (t) => [index("profile_checks_ig_username_checked_at_idx").on(t.igUsername, t.checkedAt)],

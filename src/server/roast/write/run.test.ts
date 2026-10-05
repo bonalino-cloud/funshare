@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CostMeter, type CostRun } from "../../cost";
 import { richRu } from "../../facts/fixtures";
 import { runWriteStep, type WriteStepDeps } from "./run";
 import type { TrialPunchRow, WriteInputRow, WriteRepository } from "./repository";
@@ -39,8 +40,14 @@ function setup(over: Partial<WriteInputRow> | null = {}, trial: TrialPunchRow[] 
     }),
   };
   const writeDeps = makeWriteDeps();
-  const deps: WriteStepDeps = { repo, write: () => writeDeps };
-  return { repo, deps, saved, writeDeps, traces };
+  const costs = {
+    saved: [] as { generationId: string; step: string; run: CostRun }[],
+    addStepCost: vi.fn(async (generationId: string, step: string, run: CostRun) => {
+      costs.saved.push({ generationId, step, run });
+    }),
+  };
+  const deps: WriteStepDeps = { repo, write: () => writeDeps, costs };
+  return { repo, deps, saved, writeDeps, traces, costs };
 }
 
 const reason = async (p: Promise<unknown>) => {
@@ -167,5 +174,80 @@ describe("runWriteStep", () => {
     await runWriteStep("g1", s.deps);
     await runWriteStep("g1", s.deps);
     expect(s.repo.saveTrace).toHaveBeenCalledTimes(1);
+  });
+  describe("учёт стоимости", () => {
+    /** Писатель, который, как настоящая обёртка, записывает токены вызова в счётчик. */
+    function meteredWriter(s: ReturnType<typeof setup>) {
+      const meter = new CostMeter();
+      const inner = s.writeDeps.writer;
+      s.writeDeps.meter = meter;
+      s.writeDeps.writer = async (prompt) => {
+        meter.recordLlm({
+          role: "writer",
+          model: "claude-sonnet-5",
+          usage: { inputTokens: 1000, outputTokens: 500 },
+          ok: true,
+        });
+        return inner(prompt);
+      };
+    }
+
+    it("успех: траты шага пишутся в generations один раз, в лог только числа", async () => {
+      const s = setup();
+      meteredWriter(s);
+      await runWriteStep("g1", s.deps);
+      expect(s.costs.saved).toHaveLength(1);
+      expect(s.costs.saved[0]).toMatchObject({ generationId: "g1", step: "write" });
+      expect(s.costs.saved[0]?.run.microUsd).toBeGreaterThan(0);
+      const logged = vi
+        .mocked(console.error)
+        .mock.calls.map((c) => c.join(" "))
+        .filter((l) => l.startsWith("[cost]"));
+      expect(logged).toHaveLength(1);
+      expect(logged[0]).toMatch(/вход=\d+ выход=\d+/);
+    });
+
+    it("провал шага тоже пишет траты: деньги потрачены", async () => {
+      const s = setup();
+      meteredWriter(s);
+      s.writeDeps.judge = vi.fn(async () => ({ scores: [] }));
+      await expect(runWriteStep("g", s.deps)).rejects.toBeInstanceOf(WriteFailedError);
+      expect(s.costs.saved).toHaveLength(1);
+      expect(s.costs.saved[0]?.run.llm[0]?.calls).toBeGreaterThan(0);
+    });
+
+    it("сбой записи трат не роняет шаг, в лог только имя ошибки", async () => {
+      const s = setup();
+      meteredWriter(s);
+      class PgError extends Error {
+        constructor() {
+          super("секретный SQL");
+          this.name = "PgError";
+        }
+      }
+      s.costs.addStepCost.mockRejectedValueOnce(new PgError());
+      await expect(runWriteStep("g", s.deps)).resolves.toBeUndefined();
+      expect(s.saved.length).toBeGreaterThan(0);
+      const logged = vi
+        .mocked(console.error)
+        .mock.calls.map((c) => c.join(" "))
+        .join(" | ");
+      expect(logged).toContain("стоимость не записана: PgError");
+      expect(logged).not.toContain("секретный");
+    });
+
+    it("без счётчика (фейки) траты не пишутся", async () => {
+      const s = setup();
+      await runWriteStep("g", s.deps);
+      expect(s.costs.addStepCost).not.toHaveBeenCalled();
+    });
+
+    it("повтор шага с готовыми кандидатами не пишет траты второй раз", async () => {
+      const s = setup();
+      meteredWriter(s);
+      await runWriteStep("g1", s.deps);
+      await runWriteStep("g1", s.deps);
+      expect(s.costs.addStepCost).toHaveBeenCalledTimes(1);
+    });
   });
 });
