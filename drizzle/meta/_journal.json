@@ -57,6 +57,13 @@
       "when": 1791205870257,
       "tag": "0007_punch_candidates",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791226918469,
+      "tag": "0008_punch_selection",
+      "breakpoints": true
     }
   ]
 }

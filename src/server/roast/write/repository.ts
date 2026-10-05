@@ -25,7 +25,7 @@ export type WriteRepository = {
   hasCandidates(generationId: string): Promise<boolean>;
   /** Вход шага; `null`, если строки, проверки профиля, снимка (его чистит Cron) или досье нет. */
   loadInput(generationId: string): Promise<WriteInputRow | null>;
-  /** Выбранные шутки Поджога (`selected = true`) по порядку. */
+  /** Выбранные шутки Поджога (`selected = true`) в порядке выбора. */
   listSelected(generationId: string): Promise<TrialPunchRow[]>;
   /**
    * Все кандидаты одной SQL-командой (атомарно). Повтор не дублирует: конфликт
@@ -92,18 +92,21 @@ export function createWriteRepository(): WriteRepository {
     },
 
     async listSelected(generationId) {
-      return db()
-        .select({
-          punchId: punchCandidates.punchId,
-          emoji: punchCandidates.emoji,
-          text: punchCandidates.text,
-          trace: punchCandidates.trace,
-        })
-        .from(punchCandidates)
-        .where(
-          and(eq(punchCandidates.generationId, generationId), eq(punchCandidates.selected, true)),
-        )
-        .orderBy(punchCandidates.position);
+      return (
+        db()
+          .select({
+            punchId: punchCandidates.punchId,
+            emoji: punchCandidates.emoji,
+            text: punchCandidates.text,
+            trace: punchCandidates.trace,
+          })
+          .from(punchCandidates)
+          .where(
+            and(eq(punchCandidates.generationId, generationId), eq(punchCandidates.selected, true)),
+          )
+          // Порядок выбора человека (`selectionPosition`), а не порядок кандидатов.
+          .orderBy(punchCandidates.selectionPosition)
+      );
     },
 
     async saveCandidates(generationId, candidates, promptVersion) {
