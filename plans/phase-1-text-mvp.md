@@ -40,7 +40,7 @@
 - [ ] 12. `be/p1-output-filters` — слои 4 и 5, тесты фильтров
 - [ ] 13. `be/p1-traces` — `generation_traces`, canary, CI-проверка бандла
 - [ ] 14. `be/p1-cost-log` — учёт токенов и стоимости Apify на генерацию
-- [ ] 15. `be/p1-eval-set` — 10 реальных публичных профилей × 3 уровня, скрипт прогона и сравнения версий промптов. Станет основой замера в [humor-track.md](humor-track.md)
+- [ ] 15. `be/p1-eval-set` — 10 реальных публичных профилей × 3 уровня, скрипт прогона и сравнения версий промптов. Станет основой замера в [humor-track.md](humor-track.md), в плане кода — задача H3 [humor-build.md](humor-build.md)
 
 Админка и аналитика — отдельным блоком в [roast-engine.md §12](../architecture/roast-engine.md), после пунктов 1–11.
 
