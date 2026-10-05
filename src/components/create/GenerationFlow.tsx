@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import koster from "@/components/roast/assets/level-koster.png";
+import { isTransient } from "@/lib/client/api";
 import { resetDraft } from "@/lib/client/draft";
 import { recallLevel } from "@/lib/client/history";
 import { useGeneration } from "@/lib/client/useGeneration";
 import { CreateShell } from "./CreateShell";
-import { errorLine } from "./errors";
+import { errorLine, generationErrorLine } from "./errors";
 import { LEVEL_ART } from "./levelArt";
 import { Loader } from "./Loader";
 import { PickPunches } from "./PickPunches";
@@ -39,7 +40,14 @@ export function GenerationFlow({ id }: { id: string }) {
     resetDraft();
   }, []);
 
-  const failed = error ?? (status?.status === "failed" ? status.errorCode : null);
+  const failedLine = error
+    ? generationErrorLine(error.cause)
+    : status?.status === "failed"
+      ? errorLine(status.errorCode ?? "internal")
+      : null;
+  // Связь пропала, а конвейер на сервере идёт и заказ уже создан: «Ещё раз» продолжает опрос,
+  // а не уводит запускать новую прожарку
+  const canResume = error !== null && isTransient(error.cause);
   const step = status?.status === "ready" ? 7 : 6;
 
   return (
@@ -48,10 +56,10 @@ export function GenerationFlow({ id }: { id: string }) {
       progress={status?.status !== "ready"}
       flush={status?.status === "ready"}
     >
-      {failed ? (
+      {failedLine ? (
         <>
           <StepTitle size="m">Не вышло</StepTitle>
-          <p className="border-l-2 border-red pl-3 type-body text-paper">{errorLine(failed)}</p>
+          <p className="border-l-2 border-red pl-3 type-body text-paper">{failedLine}</p>
           <div className="mt-auto pt-4">
             <Button
               type="button"
@@ -59,7 +67,7 @@ export function GenerationFlow({ id }: { id: string }) {
               look="display"
               arrow={false}
               className="h-16 w-full"
-              onClick={() => router.push("/create")}
+              onClick={canResume ? resume : () => router.push("/create")}
             >
               Ещё раз
             </Button>

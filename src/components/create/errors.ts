@@ -1,4 +1,5 @@
 import type { ErrorCode } from "@/contracts";
+import { ApiError, toErrorCode } from "@/lib/client/api";
 import type { InputIssue } from "@/lib/client/instagram";
 
 /**
@@ -33,6 +34,40 @@ export const ERROR_TEXT: Record<ErrorCode, { what: string; next: string }> = {
 export function errorLine(code: ErrorCode): string {
   const t = ERROR_TEXT[code];
   return `${t.what} ${t.next}`;
+}
+
+type Line = { what: string; next: string };
+
+const OFFLINE: Line = {
+  what: "Пропала связь.",
+  next: "Проверь интернет и нажми «Ещё раз», прожарка не потеряется",
+};
+
+/** Один код `internal` на разные причины: тут различаем их по HTTP-статусу. */
+const GENERATION_GONE: Line = {
+  what: "Эта прожарка открывается только там, где её запускали.",
+  next: "Открой ссылку на том устройстве или сделай новую",
+};
+const CHECK_STALE: Line = {
+  what: "Проверка профиля устарела.",
+  next: "Проверь профиль заново",
+};
+
+function lineFor(error: unknown, byStatus: Partial<Record<number, Line>>): string {
+  if (error instanceof TypeError) return `${OFFLINE.what} ${OFFLINE.next}`;
+  const special = error instanceof ApiError ? byStatus[error.status] : undefined;
+  if (special) return `${special.what} ${special.next}`;
+  return errorLine(toErrorCode(error));
+}
+
+/** Ошибка на экране генерации. 404: чужая ссылка или потерянная cookie, а не поломка у нас. */
+export function generationErrorLine(error: unknown): string {
+  return lineFor(error, { 404: GENERATION_GONE });
+}
+
+/** Ошибка при запуске генерации. 410: проверка профиля старше 24 ч, а не «профиля нет». */
+export function startErrorLine(error: unknown): string {
+  return lineFor(error, { 410: CHECK_STALE });
 }
 
 /** Подсказка под полем, пока ссылка не ушла на сервер. Для `incomplete` молчим. */

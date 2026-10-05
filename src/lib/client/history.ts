@@ -66,6 +66,12 @@ export function recallLevel(id: string): Level | undefined {
   return read().find((e) => e.id === id)?.level;
 }
 
+/** Когда этот браузер запустил генерацию: счётчик «дольше обычного» переживает перезагрузку. */
+export function recallStartedAt(id: string): number | undefined {
+  const createdAt = read().find((e) => e.id === id)?.createdAt;
+  return createdAt === undefined ? undefined : Date.parse(createdAt);
+}
+
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
   // Прожарка в соседней вкладке тоже попадает в историю
