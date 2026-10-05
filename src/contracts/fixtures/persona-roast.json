@@ -1,0 +1,34 @@
+{
+  "username": "anya.travels",
+  "displayName": "Аня Морозова",
+  "language": "ru",
+  "summary": "Путешественница, которая снимает закаты и кофе в каждом городе.",
+  "vibe": "тёплая, чуть самоироничная",
+  "traits": ["любопытная", "организованная", "сентиментальная"],
+  "interests": ["путешествия", "кофе", "плёночная фотография"],
+  "habits": ["закат в каждой подписи", "сторис из аэропорта"],
+  "aesthetics": "тёплые плёночные тона",
+  "humorAngles": ["закаты", "аэропорты"],
+  "avoidTopics": ["переезд из-за войны"],
+  "look": null,
+  "observations": [
+    {
+      "id": "obs_1",
+      "claim": "40 сторис из аэропорта и ноль из дома",
+      "evidence": ["post:3", "fact:location:Шереметьево=12"],
+      "recognizability": 5,
+      "safe": true
+    },
+    {
+      "id": "obs_2",
+      "claim": "Слово «закат» в каждой второй подписи",
+      "evidence": ["fact:hashtag:sunset=47"],
+      "recognizability": 4,
+      "safe": true
+    }
+  ],
+  "warmFacts": ["Каждый раз находит в городе место, куда хочется вернуться"],
+  "signatureMoves": ["закат в каждой подписи"],
+  "sensitiveEvents": ["переезд из-за войны"],
+  "flags": { "isPrivate": false, "likelyMinor": false, "insufficientData": false }
+}

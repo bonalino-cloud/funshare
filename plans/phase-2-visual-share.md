@@ -13,18 +13,22 @@
 
 ## FE
 
-- [ ] `fe/p2-visual-style` — стиль иллюстраций: 2–3 референса и текстовое описание стиля для промптов (передать BE)
-- [ ] `fe/p2-artifact-final` — финальная вёрстка с картинками, анимация раскрытия секций, альтернативная вёрстка для режима «Для друга»
-- [ ] `fe/p2-og-image` — `opengraph-image.tsx` для `/a/[slug]`: картинка-открытка 1200×630, кириллица, проверка в Telegram и WhatsApp
-- [ ] `fe/p2-share` — кнопки: Web Share API на мобильных, «Скопировать ссылку», Telegram, WhatsApp; события в `events`
-- [ ] `fe/p2-viral-cta` — у зрителя чужого артефакта кнопка «Сделать такой же про себя»
-- [ ] `fe/p2-owner-controls` — у владельца: «Удалить», «Сделать ещё»
+Сверено с кодом `dev` 2026-10-03. Формат артефакта сменился: 6 карточек 9:16 для сторис ([roast-engine.md §7.0](../architecture/roast-engine.md)), шаринг — в Instagram Stories.
+
+- [x] `fe/p2-visual-style` — закрыто решением 2026-10-02: стиль и палитра фона из Figma вписаны в промпт холста (`draw-v1`, §7.0), отдельных рефов от FE не нужно
+- [x] `fe/p2-roast-cards` — карточки 9:16 (Short / Medium / Long), подгонка шутки до 140 знаков, картинка + цвет фона из `punchImages`, экспорт PNG, полноэкранный просмотр (#36)
+- [x] `fe/p2-share` (основа) — «Поделиться» = PNG 9:16 в системное меню → Instagram «История», ссылка в буфер; «Скачать все», «Ссылка»
+- [x] `fe/p2-viral-cta` — на чужом артефакте «Прожарь в ответ» → `/create`
+- [ ] 1. `fe/p2-cards-real-images` — проверить карточки на живых картинках BE: шов картинки и фона, градиент при неоднотонном фоне, карточка без картинки (упавшая клетка, Поджог). **Ждёт `be/p2-draw-step`**
+- [ ] 2. `fe/p2-og-image` — `opengraph-image.tsx` для `/a/[slug]`: первая карточка в открытку 1200×630, кириллица, проверка в Telegram, WhatsApp, iMessage. **Ждёт `getArtifact(slug)`** (`be/p1-artifact-read`)
+- [ ] 3. `fe/p2-share-events` — события `story_share`, `copy_link`, `cta_click`, `view`. **Ждёт `be/p2-events-api`**
+- [ ] 4. `fe/p2-owner-controls` — у владельца «Удалить» (по `ownerToken`); «Ещё раз» уже есть на экране результата. **Ждёт `be/p2-delete`**
 
 ## Точки синхронизации
 
-1. `fe/p2-visual-style` → вход для `be/p2-image-prompts`. **Делать в начале фазы.**
+1. ~~`fe/p2-visual-style` → вход для `be/p2-image-prompts`~~ — стиль задан в промпте холста §7.0.
 2. `contracts/images-v1`, если меняется форма `images`.
-3. `be/p2-events-api` → FE подключает события в `fe/p2-share`.
+3. `be/p2-events-api` → `fe/p2-share-events`.
 
 ## Definition of Done
 

@@ -12,3 +12,8 @@ test-results/
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+/.swc
+/.workflow-data/
+
+# Ревью-таблицы банка шуток: внутри тексты 18+
+/.jokes-review/

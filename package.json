@@ -14,14 +14,23 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "jokes:ingest": "tsx --env-file-if-exists=.env.local scripts/jokes/ingest.ts",
+    "jokes:review:export": "tsx --env-file-if-exists=.env.local scripts/jokes/review-export.ts",
+    "jokes:review:import": "tsx --env-file-if-exists=.env.local scripts/jokes/review-import.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.71",
     "@neondatabase/serverless": "^1.1.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
+    "@vercel/blob": "^2.8.0",
+    "ai": "^7.0.127",
     "drizzle-orm": "^0.45.3",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "workflow": "^5.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -36,6 +45,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.2"
   },

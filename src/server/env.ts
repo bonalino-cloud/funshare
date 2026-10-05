@@ -10,6 +10,11 @@ const serverEnvSchema = z.object({
   KIE_API_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  // Upstash из Vercel Marketplace кладёт в env именно эти имена; переименовывать их не нужно.
+  KV_REST_API_URL: z.url().optional(),
+  KV_REST_API_TOKEN: z.string().min(1).optional(),
+  // Секрет для хэшей IP и ownerToken (инвариант 6). Без него хэш работает с запасной солью.
+  HASH_SALT: z.string().min(16).optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 
@@ -19,4 +24,11 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
   // Пустая строка в .env означает «не задано».
   const cleaned = Object.fromEntries(Object.entries(source).filter(([, v]) => v !== ""));
   return serverEnvSchema.parse(cleaned);
+}
+
+/** Доступ к Redis. Принимаем обе пары имён; явные `UPSTASH_REDIS_*` приоритетнее `KV_REST_API_*`. */
+export function redisCredentials(env: ServerEnv): { url: string; token: string } | null {
+  const url = env.UPSTASH_REDIS_REST_URL ?? env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN ?? env.KV_REST_API_TOKEN;
+  return url && token ? { url, token } : null;
 }

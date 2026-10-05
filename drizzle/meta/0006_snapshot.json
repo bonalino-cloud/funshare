@@ -1,0 +1,1357 @@
+{
+  "id": "148fd2c3-d3c6-4b6a-9b95-1dee1cd0e58c",
+  "prevId": "6b693e5d-6762-4858-88b8-4970ebdfd873",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.artifacts": {
+      "name": "artifacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "artifact_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "images": {
+          "name": "images",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "owner_token_hash": {
+          "name": "owner_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "views": {
+          "name": "views",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "shares": {
+          "name": "shares",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "artifacts_generation_id_generations_id_fk": {
+          "name": "artifacts_generation_id_generations_id_fk",
+          "tableFrom": "artifacts",
+          "tableTo": "generations",
+          "columnsFrom": [
+            "generation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "artifacts_slug_unique": {
+          "name": "artifacts_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        },
+        "artifacts_generation_id_unique": {
+          "name": "artifacts_generation_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "generation_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.generations": {
+      "name": "generations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "generation_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "error_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ig_username": {
+          "name": "ig_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mode": {
+          "name": "mode",
+          "type": "generation_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "artifact_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_check_id": {
+          "name": "profile_check_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tier": {
+          "name": "tier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level": {
+          "name": "level",
+          "type": "generation_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_facts": {
+          "name": "extra_facts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "trial_generation_id": {
+          "name": "trial_generation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_token_hash": {
+          "name": "owner_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_hash": {
+          "name": "ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step_timings": {
+          "name": "step_timings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "cost_cents": {
+          "name": "cost_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "artifact_id": {
+          "name": "artifact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "generations_ip_hash_created_at_idx": {
+          "name": "generations_ip_hash_created_at_idx",
+          "columns": [
+            {
+              "expression": "ip_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "generations_ig_username_idx": {
+          "name": "generations_ig_username_idx",
+          "columns": [
+            {
+              "expression": "ig_username",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "generations_profile_check_id_profile_checks_id_fk": {
+          "name": "generations_profile_check_id_profile_checks_id_fk",
+          "tableFrom": "generations",
+          "tableTo": "profile_checks",
+          "columnsFrom": [
+            "profile_check_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "generations_tier": {
+          "name": "generations_tier",
+          "value": "\"generations\".\"tier\" IS NULL OR \"generations\".\"tier\" BETWEEN 1 AND 3"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.joke_cards": {
+      "name": "joke_cards",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "section": {
+          "name": "section",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_hash": {
+          "name": "text_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mechanism": {
+          "name": "mechanism",
+          "type": "joke_mechanism",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skeleton": {
+          "name": "skeleton",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slots": {
+          "name": "slots",
+          "type": "joke_slot[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::joke_slot[]"
+        },
+        "heat": {
+          "name": "heat",
+          "type": "joke_heat",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "topic": {
+          "name": "topic",
+          "type": "joke_topic",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "redline": {
+          "name": "redline",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "well_done_only": {
+          "name": "well_done_only",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nsfw": {
+          "name": "nsfw",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transferable": {
+          "name": "transferable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approved": {
+          "name": "approved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "score": {
+          "name": "score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "label_version": {
+          "name": "label_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label_model": {
+          "name": "label_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "joke_cards_source_idx": {
+          "name": "joke_cards_source_idx",
+          "columns": [
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "joke_cards_text_hash_idx": {
+          "name": "joke_cards_text_hash_idx",
+          "columns": [
+            {
+              "expression": "text_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "joke_cards_redline_topic": {
+          "name": "joke_cards_redline_topic",
+          "value": "\"joke_cards\".\"topic\" NOT IN ('health', 'family') OR \"joke_cards\".\"redline\""
+        },
+        "joke_cards_well_done_only_topic": {
+          "name": "joke_cards_well_done_only_topic",
+          "value": "\"joke_cards\".\"topic\" NOT IN ('body', 'sex') OR \"joke_cards\".\"well_done_only\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "generation_id": {
+          "name": "generation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tier": {
+          "name": "tier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "list_amount": {
+          "name": "list_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discount_amount": {
+          "name": "discount_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "final_amount": {
+          "name": "final_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "promo_id": {
+          "name": "promo_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "order_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "order_reason",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_token_hash": {
+          "name": "owner_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_hash": {
+          "name": "ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "orders_generation_id_idx": {
+          "name": "orders_generation_id_idx",
+          "columns": [
+            {
+              "expression": "generation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orders_first_free_owner_idx": {
+          "name": "orders_first_free_owner_idx",
+          "columns": [
+            {
+              "expression": "owner_token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"orders\".\"reason\" = 'first_free' AND \"orders\".\"status\" <> 'voided'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orders_first_free_ip_idx": {
+          "name": "orders_first_free_ip_idx",
+          "columns": [
+            {
+              "expression": "ip_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"orders\".\"reason\" = 'first_free' AND \"orders\".\"status\" <> 'voided'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "orders_promo_id_promo_codes_id_fk": {
+          "name": "orders_promo_id_promo_codes_id_fk",
+          "tableFrom": "orders",
+          "tableTo": "promo_codes",
+          "columnsFrom": [
+            "promo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "orders_tier": {
+          "name": "orders_tier",
+          "value": "\"orders\".\"tier\" BETWEEN 1 AND 3"
+        },
+        "orders_amounts": {
+          "name": "orders_amounts",
+          "value": "\"orders\".\"list_amount\" >= 0 AND \"orders\".\"discount_amount\" >= 0 AND \"orders\".\"discount_amount\" <= \"orders\".\"list_amount\" AND \"orders\".\"final_amount\" = \"orders\".\"list_amount\" - \"orders\".\"discount_amount\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.personas": {
+      "name": "personas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "personas_snapshot_id_prompt_version_idx": {
+          "name": "personas_snapshot_id_prompt_version_idx",
+          "columns": [
+            {
+              "expression": "snapshot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "prompt_version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "personas_snapshot_id_profile_snapshots_id_fk": {
+          "name": "personas_snapshot_id_profile_snapshots_id_fk",
+          "tableFrom": "personas",
+          "tableTo": "profile_snapshots",
+          "columnsFrom": [
+            "snapshot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_checks": {
+      "name": "profile_checks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ig_username": {
+          "name": "ig_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "profile_check_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'checking'"
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "error_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hint": {
+          "name": "hint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile": {
+          "name": "profile",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_token_hash": {
+          "name": "owner_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_hash": {
+          "name": "ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "profile_checks_ig_username_checked_at_idx": {
+          "name": "profile_checks_ig_username_checked_at_idx",
+          "columns": [
+            {
+              "expression": "ig_username",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "checked_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "profile_checks_snapshot_id_profile_snapshots_id_fk": {
+          "name": "profile_checks_snapshot_id_profile_snapshots_id_fk",
+          "tableFrom": "profile_checks",
+          "tableTo": "profile_snapshots",
+          "columnsFrom": [
+            "snapshot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_snapshots": {
+      "name": "profile_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ig_username": {
+          "name": "ig_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raw_blob_key": {
+          "name": "raw_blob_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "profile_snapshots_ig_username_fetched_at_idx": {
+          "name": "profile_snapshots_ig_username_fetched_at_idx",
+          "columns": [
+            {
+              "expression": "ig_username",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fetched_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.promo_codes": {
+      "name": "promo_codes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "percent_off": {
+          "name": "percent_off",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tiers": {
+          "name": "tiers",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_redemptions": {
+          "name": "max_redemptions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "redeemed": {
+          "name": "redeemed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "per_device_limit": {
+          "name": "per_device_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "per_ip_limit": {
+          "name": "per_ip_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_from": {
+          "name": "valid_from",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_until": {
+          "name": "valid_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "promo_codes_code_idx": {
+          "name": "promo_codes_code_idx",
+          "columns": [
+            {
+              "expression": "code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "promo_codes_code_not_empty": {
+          "name": "promo_codes_code_not_empty",
+          "value": "length(\"promo_codes\".\"code\") > 0"
+        },
+        "promo_codes_percent_off": {
+          "name": "promo_codes_percent_off",
+          "value": "\"promo_codes\".\"percent_off\" BETWEEN 1 AND 100"
+        },
+        "promo_codes_max_redemptions": {
+          "name": "promo_codes_max_redemptions",
+          "value": "\"promo_codes\".\"max_redemptions\" > 0"
+        },
+        "promo_codes_redeemed": {
+          "name": "promo_codes_redeemed",
+          "value": "\"promo_codes\".\"redeemed\" >= 0"
+        },
+        "promo_codes_limits": {
+          "name": "promo_codes_limits",
+          "value": "(\"promo_codes\".\"per_device_limit\" IS NULL OR \"promo_codes\".\"per_device_limit\" > 0) AND (\"promo_codes\".\"per_ip_limit\" IS NULL OR \"promo_codes\".\"per_ip_limit\" > 0)"
+        },
+        "promo_codes_tiers": {
+          "name": "promo_codes_tiers",
+          "value": "cardinality(\"promo_codes\".\"tiers\") > 0 AND \"promo_codes\".\"tiers\" <@ ARRAY[1, 2, 3]"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.promo_redemptions": {
+      "name": "promo_redemptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "promo_id": {
+          "name": "promo_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_token_hash": {
+          "name": "owner_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_hash": {
+          "name": "ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "released_at": {
+          "name": "released_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "promo_redemptions_promo_owner_idx": {
+          "name": "promo_redemptions_promo_owner_idx",
+          "columns": [
+            {
+              "expression": "promo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "owner_token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "promo_redemptions_promo_ip_idx": {
+          "name": "promo_redemptions_promo_ip_idx",
+          "columns": [
+            {
+              "expression": "promo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ip_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "promo_redemptions_promo_id_promo_codes_id_fk": {
+          "name": "promo_redemptions_promo_id_promo_codes_id_fk",
+          "tableFrom": "promo_redemptions",
+          "tableTo": "promo_codes",
+          "columnsFrom": [
+            "promo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "promo_redemptions_order_id_orders_id_fk": {
+          "name": "promo_redemptions_order_id_orders_id_fk",
+          "tableFrom": "promo_redemptions",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "promo_redemptions_order_id_unique": {
+          "name": "promo_redemptions_order_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "order_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.artifact_kind": {
+      "name": "artifact_kind",
+      "schema": "public",
+      "values": [
+        "dossier_2027",
+        "roast_v1"
+      ]
+    },
+    "public.error_code": {
+      "name": "error_code",
+      "schema": "public",
+      "values": [
+        "invalid_url",
+        "profile_not_found",
+        "profile_private",
+        "not_enough_data",
+        "minor_detected",
+        "rate_limited",
+        "free_used",
+        "promo_invalid",
+        "payment_required",
+        "internal"
+      ]
+    },
+    "public.generation_level": {
+      "name": "generation_level",
+      "schema": "public",
+      "values": [
+        "rare",
+        "medium",
+        "well_done"
+      ]
+    },
+    "public.generation_mode": {
+      "name": "generation_mode",
+      "schema": "public",
+      "values": [
+        "self",
+        "friend"
+      ]
+    },
+    "public.generation_status": {
+      "name": "generation_status",
+      "schema": "public",
+      "values": [
+        "queued",
+        "writing",
+        "awaiting_selection",
+        "drawing",
+        "ready",
+        "failed"
+      ]
+    },
+    "public.joke_heat": {
+      "name": "joke_heat",
+      "schema": "public",
+      "values": [
+        "mild",
+        "medium",
+        "hard"
+      ]
+    },
+    "public.joke_mechanism": {
+      "name": "joke_mechanism",
+      "schema": "public",
+      "values": [
+        "hyperbole",
+        "reversal",
+        "faux_compliment",
+        "false_expectation",
+        "list_escalation",
+        "role_swap",
+        "meta",
+        "understatement",
+        "template"
+      ]
+    },
+    "public.joke_slot": {
+      "name": "joke_slot",
+      "schema": "public",
+      "values": [
+        "habit",
+        "object",
+        "place",
+        "number",
+        "time"
+      ]
+    },
+    "public.joke_topic": {
+      "name": "joke_topic",
+      "schema": "public",
+      "values": [
+        "behavior",
+        "content",
+        "lifestyle",
+        "body",
+        "health",
+        "family",
+        "sex",
+        "meta"
+      ]
+    },
+    "public.order_reason": {
+      "name": "order_reason",
+      "schema": "public",
+      "values": [
+        "first_free",
+        "promo_free"
+      ]
+    },
+    "public.order_status": {
+      "name": "order_status",
+      "schema": "public",
+      "values": [
+        "created",
+        "free",
+        "paid",
+        "refunded",
+        "voided"
+      ]
+    },
+    "public.profile_check_status": {
+      "name": "profile_check_status",
+      "schema": "public",
+      "values": [
+        "checking",
+        "ok",
+        "failed"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
