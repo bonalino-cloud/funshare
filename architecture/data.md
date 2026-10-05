@@ -13,11 +13,14 @@
 
 ## Blob
 
-- `raw/<igUsername>/<fetchedAt>.json` — private, сырой ответ Apify.
-- `art/<slug>/<n>.webp` — public, иллюстрации.
+- `raw/<igUsername>/<fetchedAt>.json` — private, сырой ответ Apify. Отдельный private store, токен `BLOB_RAW_READ_WRITE_TOKEN`.
+- `art/<slug>/<n>.webp` — public, иллюстрации. Public store, токен `BLOB_READ_WRITE_TOKEN`.
+- `avatars/<HMAC(ник)[:32]>` — public, копия аватара Instagram (CDN Instagram отдаёт `Cross-Origin-Resource-Policy: same-origin`, браузер исходный URL не покажет). Public store, токен `BLOB_READ_WRITE_TOKEN`. Ключ детерминированный, без ника и расширения (тип — `contentType` по байтам): повтор проверки того же ника перезаписывает файл. Копируется шагом проверки профиля (`src/server/profile-check/avatar.ts`) только после успешного `analyze`, поэтому фото закрытых профилей и младше 16 в Blob не попадает. Любой сбой → `avatarUrl: null`, проверка не падает.
+  - В `CheckedProfile.avatarUrl` (`profile_checks.profile`) и в `subject.avatarUrl` артефакта лежит НАШ Blob URL. `ProfileSnapshot.avatarUrl` остаётся URL Instagram: он нужен только серверу. Сборка артефакта берёт `subject.avatarUrl` из проверки профиля, не из снимка.
 
 ## Хранение и удаление
 
-- Сырые снимки и `profile_snapshots` старше 30 дней удаляет ежедневный Cron.
+- Сырые снимки и `profile_snapshots` старше 30 дней удаляет ежедневный Cron. `list`/`del` по `raw/` — с токеном `BLOB_RAW_READ_WRITE_TOKEN` (`rawBlobToken()` из `src/server/scrape/blob.ts`): с токеном по умолчанию SDK смотрит в public store и сырьё не найдёт.
+- Аватары `avatars/` храним столько же, как сырьё: 30 дней. TODO (Cron очистки): удалять `avatars/` старше 30 дней — `list`/`del` с публичным `BLOB_READ_WRITE_TOKEN`. Пока Cron нет, файлы копятся (один файл на ник, до 1 МБ). Учесть в задачах Cron и `DELETE /api/artifacts/:slug`: `subject.avatarUrl` артефакта указывает на этот же файл, он один на ник и общий для всех артефактов этого ника. После удаления файла артефакт должен показывать букву ника (как `Avatar` на FE), а не битую картинку.
 - `DELETE /api/artifacts/:slug` ставит `deletedAt`, удаляет картинки из Blob. Страница отдаёт 410.
 - IP и `ownerToken` храним только в виде хэша.

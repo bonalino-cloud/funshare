@@ -6,9 +6,21 @@ import { CheckedProfile, GenerationMode, Level, Tier } from "@/contracts";
  * Черновик флоу создания (шаги 1–5). Живёт в sessionStorage: перезагрузка вкладки его не теряет,
  * закрытие вкладки — теряет. После запуска генерации черновик больше не нужен.
  */
+/**
+ * Проверка профиля, которая ещё идёт (на живом API до минуты). Перезагрузка вкладки или уход
+ * в Instagram и обратно продолжают её, а не запускают новую: новая тратит лимит проверок.
+ */
+export const PendingCheck = z.object({
+  id: z.string().min(1),
+  instagramUrl: z.string(),
+  startedAt: z.number(),
+});
+export type PendingCheck = z.infer<typeof PendingCheck>;
+
 export const CreateDraft = z.object({
   mode: GenerationMode.default("self"),
   instagramUrl: z.string().default(""),
+  pendingCheck: PendingCheck.optional(),
   profileCheckId: z.string().optional(),
   profile: CheckedProfile.optional(),
   extraFacts: z.array(z.string()).default([]),

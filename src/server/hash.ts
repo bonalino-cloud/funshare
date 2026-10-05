@@ -25,7 +25,7 @@ function salt(): string {
 }
 
 /** `purpose` разводит пространства: хэш IP никогда не совпадёт с хэшем токена. */
-export function hashValue(purpose: "ip" | "owner", value: string): string {
+export function hashValue(purpose: "ip" | "owner" | "avatar", value: string): string {
   return createHmac("sha256", salt()).update(`${purpose}:${value}`).digest("hex");
 }
 

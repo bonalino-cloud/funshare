@@ -411,6 +411,75 @@ describe("обложки", () => {
     expect(parts.filter((p) => p.type === "image")).toHaveLength(6);
   });
 
+  it("в generate уходят байты и mediaType, а не URL", async () => {
+    const { deps, generate } = makeDeps();
+    ok(await analyzePersona(makeProfile(), deps));
+    const images = generate.mock.calls[0]![0].parts.filter((p) => p.type === "image");
+    expect(images).toHaveLength(6);
+    for (const image of images) {
+      expect(image).toEqual({
+        type: "image",
+        data: expect.any(Uint8Array),
+        mediaType: "image/jpeg",
+      });
+      expect(image).not.toHaveProperty("url");
+    }
+  });
+
+  it("скачивание один раз, не на каждой попытке", async () => {
+    const { deps, fetchCovers } = makeDeps([new Error("boom"), { bad: 1 }, makeDossier()]);
+    ok(await analyzePersona(makeProfile(), deps));
+    expect(fetchCovers).toHaveBeenCalledTimes(1);
+  });
+
+  it("часть обложек не скачалась: остальные с верными номерами постов", async () => {
+    const { deps, generate, fetchCovers } = makeDeps([
+      makeDossier({ look: { description: "борода", referenceIndexes: [1, 3] } }),
+    ]);
+    // из выбранных [1, 3, 0, 7, 6, 5] доходят только посты 3 и 7
+    fetchCovers.mockImplementation(async (covers) =>
+      covers
+        .filter((c) => c.index === 3 || c.index === 7)
+        .map((c) => ({ ...c, data: new Uint8Array([1]), mediaType: "image/png" as const })),
+    );
+    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    const parts = generate.mock.calls[0]![0].parts;
+    const text = textOf(generate.mock.calls[0]![0]);
+    expect(parts.filter((p) => p.type === "image")).toHaveLength(2);
+    expect(text).toContain("Обложка поста post:3");
+    expect(text).toContain("Обложка поста post:7");
+    expect(text).not.toContain("Обложка поста post:1");
+    // пост 1 не скачан: ссылка look на него отброшена, пост 3 остался
+    expect(persona.look?.referenceImageUrls).toEqual([
+      "https://cdn.example.com/avatar.jpg",
+      "https://cdn.example.com/p3.jpg",
+    ]);
+  });
+
+  it("ни одна обложка не скачалась → шаг идёт без картинок, look = null", async () => {
+    const { deps, generate, fetchCovers } = makeDeps();
+    fetchCovers.mockResolvedValue([]);
+    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    expect(generate.mock.calls[0]![0].parts.some((p) => p.type === "image")).toBe(false);
+    expect(textOf(generate.mock.calls[0]![0])).toContain("Обложек нет");
+    expect(persona.look).toBeNull();
+  });
+
+  it("сбой самого скачивания не роняет шаг", async () => {
+    const { deps, generate, fetchCovers } = makeDeps();
+    fetchCovers.mockRejectedValue(new Error("boom"));
+    ok(await analyzePersona(makeProfile(), deps));
+    expect(generate.mock.calls[0]![0].parts.some((p) => p.type === "image")).toBe(false);
+  });
+
+  it("в лог идут только счётчики обложек, без URL", async () => {
+    const { deps } = makeDeps();
+    ok(await analyzePersona(makeProfile(), deps));
+    const logged = vi.mocked(console.error).mock.calls.flat().join(" ");
+    expect(logged).toContain("обложки: скачано 6 из 6");
+    expect(logged).not.toContain("cdn.example.com");
+  });
+
   it("ни одной подходящей картинки → модель вызывается без картинок, look = null", async () => {
     const profile = makeProfile({ avatarUrl: null });
     const posts = profile.posts.map((p) => ({ ...p, imageUrl: null }));

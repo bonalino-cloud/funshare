@@ -28,6 +28,7 @@ import {
   ProfileCheckStatusCode,
 } from "@/contracts";
 import { JOKE_HEATS, JOKE_MECHANISMS, JOKE_SLOTS, JOKE_TOPICS } from "../roast/jokes/card";
+import type { PunchTrace } from "../roast/write/types";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
 const values = <T extends string>(options: readonly T[]) => options as [T, ...T[]];
@@ -348,5 +349,39 @@ export const jokeCards = pgTable(
       "joke_cards_well_done_only_topic",
       sql`${t.topic} NOT IN ('body', 'sex') OR ${t.wellDoneOnly}`,
     ),
+  ],
+);
+
+/**
+ * Кандидаты шага `write` (roast-engine §5.5): до 10 шуток у Поджога, до 20 новых (и перенесённые
+ * из Поджога) у Кострища. Строка = один `PunchCandidate` контракта плюс приватная трасса.
+ *
+ * `trace` (механика, оценки судьи, `jokeCardId` скелета) наружу не отдаётся никогда: ответ API
+ * собирается из `punchId`, `emoji`, `text`, `fromTrial` и проходит `.parse()` (инвариант 20).
+ * `selected` ставит шаг выбора (`be/p1-selection`); перенос в Кострище читает только выбранные.
+ * Повтор шага не дублирует строки: уникален (`generationId`, `punchId`).
+ */
+export const punchCandidates = pgTable(
+  "punch_candidates",
+  {
+    id: text("id").primaryKey(),
+    generationId: text("generation_id")
+      .notNull()
+      .references(() => generations.id, { onDelete: "cascade" }),
+    /** `PunchCandidate.id` из контракта; у перенесённых сохраняется от Поджога. */
+    punchId: text("punch_id").notNull(),
+    /** Порядок в списке кандидатов (с нуля). */
+    position: integer("position").notNull(),
+    emoji: text("emoji").notNull(),
+    text: text("text").notNull(),
+    fromTrial: boolean("from_trial").notNull().default(false),
+    selected: boolean("selected").notNull().default(false),
+    trace: jsonb("trace").$type<PunchTrace>().notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("punch_candidates_generation_punch_idx").on(t.generationId, t.punchId),
+    check("punch_candidates_text_len", sql`char_length(${t.text}) BETWEEN 1 AND 140`),
   ],
 );

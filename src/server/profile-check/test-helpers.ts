@@ -87,10 +87,13 @@ export const okAnalyze = (): AnalyzeStepResult => ({
   cached: false,
 });
 
+/** Что отдаёт фейковый копировщик аватара: наш Blob, не Instagram. */
+export const OUR_AVATAR_URL = "https://blob.example.com/avatars/abc";
+
 export const EXPECTED_PROFILE: CheckedProfile = {
   username: "anya.travels",
   displayName: "Аня Морозова",
-  avatarUrl: "https://cdn.example.com/avatar.jpg",
+  avatarUrl: OUR_AVATAR_URL,
   postsCount: 8,
 };
 
@@ -100,12 +103,13 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const tasks: (() => Promise<void>)[] = [];
   const scrape = vi.fn<HandlerDeps["pipeline"]["scrape"]>(async () => okScrape());
   const analyze = vi.fn<HandlerDeps["pipeline"]["analyze"]>(async () => okAnalyze());
+  const copyAvatar = vi.fn<HandlerDeps["pipeline"]["copyAvatar"]>(async () => OUR_AVATAR_URL);
   const check = vi.fn<HandlerDeps["limiter"]["check"]>(async () => true);
   const deps: HandlerDeps = {
     repo,
     limiter: { check },
     schedule: (task) => void tasks.push(task),
-    pipeline: { scrape, analyze },
+    pipeline: { scrape, analyze, copyAvatar },
     now: () => NOW,
     secureCookie: true,
     ...over,
@@ -113,7 +117,7 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const flush = async () => {
     while (tasks.length > 0) await tasks.shift()?.();
   };
-  return { deps, repo, rows, scrape, analyze, check, tasks, flush };
+  return { deps, repo, rows, scrape, analyze, copyAvatar, check, tasks, flush };
 }
 
 export function post(body: unknown, init: { token?: string; ip?: string } = {}) {
