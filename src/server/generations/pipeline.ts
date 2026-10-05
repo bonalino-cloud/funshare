@@ -1,4 +1,5 @@
 import { releaseOrder, createOrderRepository, type OrderRepository } from "../orders";
+import { runWriteStep } from "../roast/write";
 import { createGenerationRepository, type GenerationRepository } from "./repository";
 
 /**
@@ -8,13 +9,15 @@ import { createGenerationRepository, type GenerationRepository } from "./reposit
  * Правила каждого шага: переход условный (только из ожидаемого статуса, одной SQL-командой вместе с
  * `stepTimings`), поэтому повтор после рестарта не дублирует и не откатывает статус назад.
  *
- * СКЕЛЕТ: шаги ничего не генерируют. `ready` здесь не ставится никогда: по контракту `ready`
- * без `artifactSlug` недопустим, а артефакта скелет не создаёт.
+ * `write` пишет кандидатов (`roast/write`); `draw` пока заглушка. `ready` здесь не ставится
+ * никогда: по контракту `ready` без `artifactSlug` недопустим, а артефакта шаги не создают.
  */
 export type PipelineDeps = {
   repo: Pick<GenerationRepository, "get" | "advance" | "markFailed">;
   orders: Pick<OrderRepository, "orderIdFor" | "release">;
   now: () => Date;
+  /** Тело шага `write`: кандидаты в хранилище. Бросает `WriteFailedError`, если слабое не выдаём. */
+  write: (generationId: string) => Promise<void>;
 };
 
 /** Боевые зависимости. Лениво на каждый вызов шага: сборка и тесты не требуют БД. */
@@ -23,21 +26,30 @@ export function defaultPipelineDeps(): PipelineDeps {
     repo: createGenerationRepository(),
     orders: createOrderRepository(),
     now: () => new Date(),
+    write: (generationId) => runWriteStep(generationId),
   };
 }
 
 /**
- * `queued → writing → awaiting_selection`. Заглушка: кандидатов шагу пока взять неоткуда.
+ * `queued → writing → awaiting_selection`: писатель и судья, кандидаты в `punch_candidates`.
  * `true` — строка в `awaiting_selection`; `false` — генерация уже закрыта (`failed`) или её нет.
+ *
+ * Повтор после рестарта: статус `writing` не двигается назад, а тело шага идемпотентно (готовые
+ * кандидаты не пишутся заново и модель не зовётся). Закрытую снаружи генерацию (`failed` из
+ * POST) не обрабатываем: платных вызовов нет.
  */
 export async function runWrite(deps: PipelineDeps, generationId: string): Promise<boolean> {
-  await deps.repo.advance(generationId, {
+  const started = await deps.repo.advance(generationId, {
     from: ["queued"],
     to: "writing",
     start: ["write"],
     now: deps.now(),
   });
-  // TODO(be/p1-write): писатель, судья, фильтры → кандидаты (до N) в хранилище.
+  const status = started ? "writing" : (await deps.repo.get(generationId))?.status;
+  if (status !== "writing") return status === "awaiting_selection";
+
+  await deps.write(generationId);
+
   const moved = await deps.repo.advance(generationId, {
     from: ["writing"],
     to: "awaiting_selection",

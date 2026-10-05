@@ -1,7 +1,10 @@
+import { FatalError } from "workflow";
 import { defaultPipelineDeps, failGeneration, runWrite } from "@/server/generations/pipeline";
+import { WriteFailedError } from "@/server/roast/write";
 
 /**
- * Конвейер генерации (roast-engine §3). СКЕЛЕТ: шаги-заглушки меняют статус и пишут `stepTimings`.
+ * Конвейер генерации (roast-engine §3). `write` пишет кандидатов, остальное заглушки; шаги меняют
+ * статус и пишут `stepTimings`.
  * Запускается только из `startWorkflow` (сервер после записи строки и заказа); публичного входа нет.
  *
  * Сейчас останавливается на `awaiting_selection`: `ready` без артефакта контракт не допускает.
@@ -30,6 +33,8 @@ async function writeStep(generationId: string): Promise<boolean> {
   } catch (error) {
     // Только имя ошибки: тексты провайдеров и профилей в логи не пишем.
     console.error(`[workflow] write не выполнен: ${error instanceof Error ? error.name : ""}`);
+    // Слабый результат или битый вход повтор не исправит, а модель за повтор стоит денег.
+    if (error instanceof WriteFailedError) throw new FatalError(`write: ${error.reason}`);
     throw error;
   }
 }
