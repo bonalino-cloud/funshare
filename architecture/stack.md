@@ -35,7 +35,8 @@
 | Переменная | Кто использует |
 |---|---|
 | `DATABASE_URL` | BE |
-| `BLOB_READ_WRITE_TOKEN` | BE |
+| `BLOB_READ_WRITE_TOKEN` | BE (публичный store) |
+| `BLOB_RAW_READ_WRITE_TOKEN` — приватный store для сырья скрейпа | BE |
 | `ANTHROPIC_API_KEY` — отдельный ключ проекта | BE |
 | `KIE_API_KEY` — отдельный ключ проекта | BE |
 | `APIFY_TOKEN` | BE |

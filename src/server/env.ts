@@ -5,6 +5,8 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   DATABASE_URL: z.url().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+  // Токен ПРИВАТНОГО Blob-store для сырья скрейпа (подключён с префиксом BLOB_RAW). Только он, без запасных.
+  BLOB_RAW_READ_WRITE_TOKEN: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   APIFY_TOKEN: z.string().min(1).optional(),
   KIE_API_KEY: z.string().min(1).optional(),
