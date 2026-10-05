@@ -8,11 +8,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-write-step
-статус_фазы: принято
+текущая_фаза: be/p1-output-filters
+статус_фазы: чек
 текущий_шаг_карусели: 9
-промт_следующей_фазы: be/p1-selection — GET /api/generations/:id/candidates, POST …/selection: проверка id и числа (1..selectCount), ставит punch_candidates.selected, авторитетная сборка артефакта из выбранных (задача 10 плана)
-открытые_решения: вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
+промт_следующей_фазы: be/p1-traces — generation_traces, canary, CI-проверка бандла (задача 13 плана)
+открытые_решения: PR #74 (be/p1-artifact-read, карусель 9/9) ждёт зелёный CI — сбой GitHub Actions 05.10, влить и db:migrate 0009 после; вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
 обкатка_страницы: нет
 обкатка_чеклист: —
 режим_пингов: подробный
