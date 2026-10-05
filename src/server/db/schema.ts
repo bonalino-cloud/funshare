@@ -398,3 +398,28 @@ export const punchCandidates = pgTable(
     ),
   ],
 );
+
+/**
+ * Приватные трассы шагов конвейера (roast-engine §8, §9.5): что писал писатель, кого вырезали
+ * фильтры и судья, версии промптов и моделей. Читает только админка (BE); ни один публичный
+ * роут эту таблицу не отдаёт и не джойнит. Срок хранения 30 дней (`data.md`), очистка Cron.
+ * Одна строка на (`generationId`, `step`): повтор шага перезаписывает трассу, а не множит её.
+ * `data` — JSON шага, форма зависит от `step` (для `write` это `WriteTrace`).
+ */
+export const generationTraces = pgTable(
+  "generation_traces",
+  {
+    id: text("id").primaryKey(),
+    generationId: text("generation_id")
+      .notNull()
+      .references(() => generations.id, { onDelete: "cascade" }),
+    step: text("step").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("generation_traces_generation_step_idx").on(t.generationId, t.step),
+    // Для очистки по сроку хранения.
+    index("generation_traces_created_idx").on(t.createdAt),
+  ],
+);
