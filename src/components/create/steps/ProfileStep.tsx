@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ErrorCode, GenerationMode } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
 import { Segmented } from "@/components/ui/Segmented";
 import { Spinner } from "@/components/ui/Spinner";
 import extinguisher from "@/components/roast/assets/sticker-extinguisher.png";
-import { api, toErrorCode } from "@/lib/client/api";
+import { api, isTransient, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { checkInstagramInput } from "@/lib/client/instagram";
 import { pollUntil } from "@/lib/client/poll";
@@ -24,22 +24,46 @@ const MODES: ReadonlyArray<{ value: GenerationMode; label: string }> = [
   { value: "friend", label: "Друга" },
 ];
 
-type Phase = { kind: "idle" } | { kind: "checking" } | { kind: "error"; code: ErrorCode };
+type Phase =
+  { kind: "idle" } | { kind: "starting"; startedAt: number } | { kind: "error"; code: ErrorCode };
+
+/** `hint` от сервера по проверке `id`: первый увиденный и последний. */
+type Hints = { id: string; first?: string; last?: string };
+
+/** Живая проверка идёт 30–70 с; после этого порога честно говорим, что профиль непростой. */
+const SLOW_AFTER_MS = 40_000;
+const SLOW_LEAD = "Профиль попался непростой. Ещё немного…";
+const FIRST_LEAD = "Идёт поиск…";
+
+/**
+ * Строка под заголовком, пока идёт проверка. Первый этап — «Идёт поиск…»; когда сервер переходит
+ * к следующему этапу и присылает новый `hint`, показываем его («Смотрим, можно ли жарить…»).
+ */
+function checkingLead(hints: Hints | undefined, slow: boolean): string {
+  if (slow) return SLOW_LEAD;
+  if (hints?.last && hints.last !== hints.first) return hints.last;
+  return FIRST_LEAD;
+}
 
 /**
  * Шаг 1. Проверка профиля идёт до оплаты: открыт, постов хватает, владельцу есть 16.
+ * Запущенная проверка лежит в черновике (`pendingCheck`), поллинг идёт по ней: перезагрузка
+ * или возврат на шаг продолжают ту же проверку, а не тратят лимит на новую.
  * Успех сохраняется в черновик, экран сменяется на «Нашли!», дальше кнопка «Дальше».
  */
 export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: CreateStep) => void }) {
-  const [value, setValue] = useState(draft.instagramUrl);
+  const pending = draft.profile ? undefined : draft.pendingCheck;
+  const [value, setValue] = useState(pending?.instagramUrl ?? draft.instagramUrl);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-  const abort = useRef<AbortController | null>(null);
+  const [hints, setHints] = useState<Hints>();
+  const [slow, setSlow] = useState(false);
 
   const [settled, setSettled] = useState(value);
 
   const input = checkInstagramInput(value);
   const username = input.ok ? input.username : null;
-  const checking = phase.kind === "checking";
+  const checking = phase.kind === "starting" || pending !== undefined;
+  const startedAt = pending?.startedAt ?? (phase.kind === "starting" ? phase.startedAt : null);
 
   // Подсказку показываем, когда человек перестал печатать: не мигаем на «https://ins…»
   useEffect(() => {
@@ -48,32 +72,72 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
   }, [value]);
   const liveHint = settled === value && !input.ok ? inputHint(input.issue) : undefined;
 
-  useEffect(() => () => abort.current?.abort(), []);
+  // Порог «долго» считаем от начала проверки, в том числе продолженной после перезагрузки
+  useEffect(() => {
+    if (startedAt === null) return;
+    const t = setTimeout(() => setSlow(true), Math.max(0, startedAt + SLOW_AFTER_MS - Date.now()));
+    return () => {
+      clearTimeout(t);
+      setSlow(false);
+    };
+  }, [startedAt]);
+
+  // Поллинг проверки из черновика: только что запущенной или продолженной; уход со шага — стоп
+  useEffect(() => {
+    if (!pending) return;
+    const { id, instagramUrl } = pending;
+    const ac = new AbortController();
+    pollUntil(
+      () => api.getProfileCheck(id),
+      (s) => s.status !== "checking",
+      {
+        signal: ac.signal,
+        // До ~10 с без связи (лифт, переключение в Instagram) не роняют проверку
+        retries: 5,
+        isRetryable: isTransient,
+        onTick: (s) => {
+          if (s.status !== "checking") return;
+          setHints((h) =>
+            h?.id === id ? { ...h, last: s.hint } : { id, first: s.hint, last: s.hint },
+          );
+        },
+      },
+    ).then(
+      (result) => {
+        if (result.status === "ok" && result.profile) {
+          patchDraft({
+            instagramUrl,
+            pendingCheck: undefined,
+            profileCheckId: id,
+            profile: result.profile,
+          });
+        } else {
+          patchDraft({ pendingCheck: undefined });
+          setPhase({ kind: "error", code: result.errorCode ?? "internal" });
+        }
+      },
+      (e: unknown) => {
+        if (ac.signal.aborted) return;
+        patchDraft({ pendingCheck: undefined });
+        setPhase({ kind: "error", code: toErrorCode(e) });
+      },
+    );
+    return () => ac.abort();
+  }, [pending]);
 
   async function check() {
     if (!username) {
       setPhase({ kind: "error", code: "invalid_url" });
       return;
     }
-    abort.current?.abort();
-    const ac = new AbortController();
-    abort.current = ac;
-    setPhase({ kind: "checking" });
+    const startedAt = Date.now();
+    setPhase({ kind: "starting", startedAt });
     try {
       const { id } = await api.createProfileCheck({ instagramUrl: value });
-      const result = await pollUntil(
-        () => api.getProfileCheck(id),
-        (s) => s.status !== "checking",
-        { signal: ac.signal },
-      );
-      if (result.status === "ok" && result.profile) {
-        patchDraft({ instagramUrl: value, profileCheckId: id, profile: result.profile });
-        setPhase({ kind: "idle" });
-      } else {
-        setPhase({ kind: "error", code: result.errorCode ?? "internal" });
-      }
+      // Дальше проверку ведёт поллинг по черновику, в том числе если со шага уже ушли
+      patchDraft({ pendingCheck: { id, instagramUrl: value, startedAt } });
+      setPhase({ kind: "idle" });
     } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
       setPhase({ kind: "error", code: toErrorCode(e) });
     }
   }
@@ -112,7 +176,11 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
       }}
     >
       <StepTitle accent="жарим?">Кого</StepTitle>
-      <StepLead>{checking ? "Идёт поиск…" : "Кидай ссылку на открытый Instagram"}</StepLead>
+      <StepLead>
+        {checking
+          ? checkingLead(hints?.id === pending?.id ? hints : undefined, slow)
+          : "Кидай ссылку на открытый Instagram"}
+      </StepLead>
 
       {phase.kind === "error" ? (
         <ArtStage src={extinguisher} size="md" wiggle />
