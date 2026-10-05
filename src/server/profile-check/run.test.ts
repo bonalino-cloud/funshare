@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeProfile } from "../analyze/test-helpers";
 import { HINTS } from "./config";
 import { runProfileCheck, safeAvatarUrl, toCheckedProfile } from "./run";
-import { EXPECTED_PROFILE, makeHandlerDeps, NOW } from "./test-helpers";
+import { EXPECTED_PROFILE, makeHandlerDeps, NOW, OUR_AVATAR_URL } from "./test-helpers";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -43,6 +43,45 @@ describe("runProfileCheck", () => {
     });
   });
 
+  it("аватар: в копировщик уходит URL из снимка, на экран — наш URL, не Instagram", async () => {
+    const t = await setup();
+    const snapshot = makeProfile({ avatarUrl: "https://scontent.cdninstagram.com/a.jpg" });
+    t.scrape.mockResolvedValue({ ok: true, snapshot, snapshotId: "snap-1", cached: false });
+    await runProfileCheck(t.id, "anya.travels", t.pipeline);
+    expect(t.copyAvatar).toHaveBeenCalledWith({
+      username: "anya.travels",
+      url: "https://scontent.cdninstagram.com/a.jpg",
+    });
+    expect(t.rows.get(t.id)?.profile).toMatchObject({ avatarUrl: OUR_AVATAR_URL });
+  });
+
+  it("аватар: копировщик вернул null → проверка ok с avatarUrl null", async () => {
+    const t = await setup();
+    t.copyAvatar.mockResolvedValue(null);
+    await runProfileCheck(t.id, "anya.travels", t.pipeline);
+    expect(t.rows.get(t.id)).toMatchObject({ status: "ok", profile: { avatarUrl: null } });
+  });
+
+  it("аватар: копировщик бросил → проверка ok, в лог только имя ошибки", async () => {
+    const t = await setup();
+    const error = new Error("https://scontent.cdninstagram.com/a.jpg anya.travels");
+    error.name = "BlobError";
+    t.copyAvatar.mockRejectedValue(error);
+    await runProfileCheck(t.id, "anya.travels", t.pipeline);
+    expect(t.rows.get(t.id)).toMatchObject({ status: "ok", profile: { avatarUrl: null } });
+    const logged = vi.mocked(console.error).mock.calls.flat().join(" ");
+    expect(logged).toContain("BlobError");
+    expect(logged).not.toContain("cdninstagram");
+    expect(logged).not.toContain("anya.travels");
+  });
+
+  it("аватар не копируется, если analyze отказал (закрытый, младше 16)", async () => {
+    const t = await setup();
+    t.analyze.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    await runProfileCheck(t.id, "anya.travels", t.pipeline);
+    expect(t.copyAvatar).not.toHaveBeenCalled();
+  });
+
   it("дедлайн: зависший шаг закрывается как internal", async () => {
     vi.useFakeTimers();
     const t = await setup();
@@ -79,7 +118,7 @@ describe("runProfileCheck", () => {
 
 describe("toCheckedProfile", () => {
   it("берёт только username, displayName, avatarUrl, postsCount", () => {
-    expect(Object.keys(toCheckedProfile(makeProfile())).sort()).toEqual([
+    expect(Object.keys(toCheckedProfile(makeProfile(), null)).sort()).toEqual([
       "avatarUrl",
       "displayName",
       "postsCount",
@@ -88,18 +127,26 @@ describe("toCheckedProfile", () => {
   });
 
   it("пустое имя → ник", () => {
-    expect(toCheckedProfile(makeProfile({ fullName: "   " })).displayName).toBe("anya.travels");
+    expect(toCheckedProfile(makeProfile({ fullName: "   " }), null).displayName).toBe(
+      "anya.travels",
+    );
   });
 
   it("имя режется по длине и чистится от телефонов", () => {
-    const long = toCheckedProfile(makeProfile({ fullName: `Аня ${"я".repeat(300)}` })).displayName;
+    const long = toCheckedProfile(
+      makeProfile({ fullName: `Аня ${"я".repeat(300)}` }),
+      null,
+    ).displayName;
     expect([...long].length).toBeLessThanOrEqual(100);
-    const phone = toCheckedProfile(makeProfile({ fullName: "Аня +7 912 345-67-89" })).displayName;
+    const phone = toCheckedProfile(
+      makeProfile({ fullName: "Аня +7 912 345-67-89" }),
+      null,
+    ).displayName;
     expect(phone).not.toContain("345-67-89");
   });
 
-  it("небезопасный avatarUrl → null", () => {
-    expect(toCheckedProfile(makeProfile({ avatarUrl: "data:text/html,x" })).avatarUrl).toBeNull();
+  it("небезопасная схема avatarUrl → null (защита второго рубежа)", () => {
+    expect(toCheckedProfile(makeProfile(), "data:text/html,x").avatarUrl).toBeNull();
   });
 });
 

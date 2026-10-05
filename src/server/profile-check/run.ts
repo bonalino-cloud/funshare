@@ -2,10 +2,13 @@ import type { CheckedProfile, ErrorCode, ProfileSnapshot } from "@/contracts";
 import type { AnalyzeStepResult } from "../analyze";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import type { ScrapeResult } from "../scrape";
+import type { CopyAvatar } from "./avatar";
 import { HINTS, PIPELINE_DEADLINE_MS } from "./config";
 import type { ProfileCheckRepository } from "./repository";
 
 export type PipelineDeps = {
+  /** Копия аватара в наш Blob: URL Instagram браузер не покажет (CORP same-origin). Не бросает. */
+  copyAvatar: CopyAvatar;
   scrape: (username: string) => Promise<ScrapeResult>;
   analyze: (input: { snapshotId: string; snapshot: ProfileSnapshot }) => Promise<AnalyzeStepResult>;
   repo: ProfileCheckRepository;
@@ -30,13 +33,19 @@ export function safeAvatarUrl(url: string | null): string | null {
   }
 }
 
-/** Что уходит на экран «Нашли!»: без био, подписей и фактов, имя чистится как любой чужой текст. */
-export function toCheckedProfile(snapshot: ProfileSnapshot): CheckedProfile {
+/**
+ * Что уходит на экран «Нашли!»: без био, подписей и фактов, имя чистится как любой чужой текст.
+ * `avatarUrl` — уже НАШ URL из Blob (или null): исходный URL Instagram сюда не попадает.
+ */
+export function toCheckedProfile(
+  snapshot: ProfileSnapshot,
+  avatarUrl: string | null,
+): CheckedProfile {
   const name = capCodepoints(cleanUntrusted(snapshot.fullName).text.trim(), 100);
   return {
     username: snapshot.username,
     displayName: name === "" ? snapshot.username : name,
-    avatarUrl: safeAvatarUrl(snapshot.avatarUrl),
+    avatarUrl: safeAvatarUrl(avatarUrl),
     postsCount: snapshot.postsCount,
   };
 }
@@ -78,10 +87,17 @@ export async function runProfileCheck(
     });
     if (!analyzed.ok) return { ok: false, errorCode: analyzed.errorCode };
 
+    // Аватар копируем только после успешного analyze: фото закрытого/несовершеннолетнего не храним.
+    let avatarUrl: string | null = null;
+    try {
+      avatarUrl = await deps.copyAvatar({ username, url: scraped.snapshot.avatarUrl });
+    } catch (error) {
+      logFailure("аватар не скопирован", error); // копировщик не бросает, но проверка не должна падать
+    }
     return {
       ok: true,
       snapshotId: scraped.snapshotId,
-      profile: toCheckedProfile(scraped.snapshot),
+      profile: toCheckedProfile(scraped.snapshot, avatarUrl),
     };
   };
 
