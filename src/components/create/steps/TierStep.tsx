@@ -8,12 +8,12 @@ import koster from "@/components/roast/assets/level-koster.png";
 import peklo from "@/components/roast/assets/level-peklo.png";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import { formatRub } from "@/lib/client/money";
 import { errorLine } from "../errors";
 import { TIER_NAME } from "../labels";
 import { ChilliIcon } from "../icons";
 import { StepTitle } from "../StepTitle";
 import { TierCard, TierList, TierName } from "../TierCard";
+import { tierCardState } from "../tier-state";
 import type { CreateStep } from "../steps";
 
 /** Названия, цвета и маскоты живут у FE; цены и состав приходят из /api/pricing */
@@ -92,8 +92,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
           {([1, 2, 3] as const).map((tier) => {
             const ui = TIER_UI[tier];
             const info = pricing?.tiers.find((t) => t.tier === tier);
-            // Поджог бесплатный и один раз на человека; Пекло — заглушка до конца MVP
-            const trialUsed = tier === 1 && pricing?.freeTrialAvailable === false;
+            const state = info && pricing ? tierCardState(info, pricing.freeTrialAvailable) : null;
             const soon = info?.available === false;
             return (
               <TierCard
@@ -101,7 +100,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                 tone={ui.tone}
                 image={ui.image}
                 onClick={() => pick(tier)}
-                disabled={soon || trialUsed}
+                disabled={state?.disabled ?? false}
                 corner={
                   soon ? (
                     <span className="inline-block rounded-sm border-2 border-dashed border-ink px-2 py-1 type-label">
@@ -120,15 +119,9 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
                   </>
                 }
                 footer={
-                  info ? (
+                  state ? (
                     <span className="relative z-10 flex flex-wrap items-center gap-2 font-wide text-lg leading-none font-extrabold">
-                      {soon
-                        ? "Скоро"
-                        : trialUsed
-                          ? "Уже был"
-                          : info.listAmount === 0
-                            ? "Бесплатно"
-                            : formatRub(info.listAmount)}
+                      {state.footer}
                     </span>
                   ) : (
                     <span
