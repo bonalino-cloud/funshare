@@ -25,10 +25,13 @@ export type ModelPrice = {
 };
 
 /**
- * `claude-sonnet-5`: вход и выход — прайс Anthropic из справочника `claude-api` (кэш 2026-09-25):
- * $2 / $10 за 1M. Кэш: чтение $0.20 (0.1x), запись $2.50 (1.25x для 5-минутного кэша) выведены
- * из множителей, поэтому `verified: false`, пока цифры не сверит человек в console.anthropic.com.
- * Сейчас промпт-кэш в вызовах не используется, на сумму это не влияет.
+ * `claude-sonnet-5`, $ за 1M токенов. Сверено 2026-10-06 со страницей цен Anthropic
+ * (https://platform.claude.com/docs/en/about-claude/pricing): вход $2, выход $10, чтение кэша $0.20,
+ * запись в 5-минутный кэш $2.50 (запись в 1-часовой кэш $4 не используем). $2 / $10 были вводной
+ * ценой, на дату сверки это постоянный стандарт. Параметр `inference_geo: "us"` даёт ×1.1: мы его
+ * не передаём (глобальная маршрутизация по умолчанию), цену не множим. Если начнём передавать,
+ * цену надо поднять здесь.
+ * Сейчас промпт-кэш в вызовах не используется, на сумму кэш-цены не влияют.
  */
 export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
   "claude-sonnet-5": {
@@ -36,7 +39,7 @@ export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
     outputUsdPerMTok: 10,
     cacheReadUsdPerMTok: 0.2,
     cacheWriteUsdPerMTok: 2.5,
-    verified: false,
+    verified: true,
   },
 };
 
@@ -62,14 +65,24 @@ export type ApifyPrice = {
 };
 
 /**
- * Apify `apify~instagram-profile-scraper`. Эндпоинт `run-sync-get-dataset-items` отдаёт только
- * элементы датасета: ни `usageTotalUsd`, ни фактического списания в ответе нет (клиента
- * `apify-client` нет, запросы идут через `fetch`). Поэтому стоимость — ОЦЕНКА: число результатов
- * × цена за результат. ЗАГЛУШКА $2.30 за 1000 профилей: цифра не взята из репо и не сверена,
- * её надо подтвердить на странице актора и в Billing Apify (открытый вопрос задачи).
+ * Apify `apify~instagram-profile-scraper`. Сверено 2026-10-06 по публичному API актора
+ * (поле `pricingInfos`) и странице https://apify.com/apify/instagram-profile-scraper. Модель
+ * PAY_PER_EVENT, основное событие `profile` («каждый профиль, записанный в датасет»). Цена события
+ * зависит от плана аккаунта Apify: FREE $0.0026, BRONZE (Starter) $0.0023, SILVER $0.002,
+ * GOLD $0.0016, PLATINUM $0.0011, DIAMOND $0.0005. Аккаунт проекта на плане FREE, берём $0.0026.
+ * СМЕНИЛИ ПЛАН Apify: правим цифру здесь и `PRICES_CHECKED_AT`.
+ *
+ * Платную надстройку `about-account` (FREE $0.007 за профиль) НЕ включаем: вход актора в
+ * `scrape/apify.ts` только `{ usernames: [username] }`. Включим: цену надстройки надо добавить сюда.
+ *
+ * Стоимость скрейпа по-прежнему ОЦЕНКА (число результатов × цена за результат): эндпоинт
+ * `run-sync-get-dataset-items` отдаёт только элементы датасета, ни `usageTotalUsd`, ни фактического
+ * списания в ответе нет (клиента `apify-client` нет, запросы идут через `fetch`). Поэтому строка
+ * Apify в `CostRun` остаётся с `source: "estimate"`, а `verified` говорит лишь о том, что сама цена
+ * за результат сверена.
  */
 export const APIFY_PRICE: ApifyPrice = {
   actor: "apify~instagram-profile-scraper",
-  usdPerResult: 0.0023,
-  verified: false,
+  usdPerResult: 0.0026,
+  verified: true,
 };
