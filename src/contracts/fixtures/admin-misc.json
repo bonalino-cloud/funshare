@@ -1,0 +1,18 @@
+{
+  "login": { "token": "test-admin-token" },
+  "session": { "actor": "foxawear-lab" },
+  "error": { "adminErrorCode": "unauthorized", "message": "Войдите в админку" },
+  "audit": {
+    "items": [
+      {
+        "id": "aud_01",
+        "actor": "foxawear-lab",
+        "action": "promo.create",
+        "target": "promo_01",
+        "payload": { "percentOff": 100, "maxRedemptions": 1 },
+        "createdAt": "2026-10-05T10:00:00.000Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}

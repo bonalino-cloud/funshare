@@ -13,6 +13,7 @@ src/contracts/
   profile.ts         ProfileSnapshot (нормализованный скрейп)      — только BE
   persona.ts         PersonaProfile (источник истины)             — только BE
   artifact.ts        ArtifactContent, RoastContent, Artifact (union по kind) — BE пишет, FE рисует
+  admin.ts           Админка (roast-engine §9.3–9.5): AdminPromo*, AdminGeneration*, AdminAudit*, AdminLoginRequest, AdminErrorCode — добавлено, версия не менялась
   index.ts           реэкспорт + CONTRACT_VERSION
   fixtures/          готовые JSON-примеры для моков FE и тестов BE
     profile-check-ok.json      checking → ok с профилем

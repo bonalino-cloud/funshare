@@ -1,0 +1,59 @@
+{
+  "code": {
+    "id": "promo_01",
+    "code": "FUN7K39XPA",
+    "percentOff": 100,
+    "tiers": [2],
+    "maxRedemptions": 1,
+    "redeemed": 1,
+    "perDeviceLimit": 2,
+    "perIpLimit": 4,
+    "validFrom": null,
+    "validUntil": "2026-12-31T20:59:59.000Z",
+    "active": true,
+    "note": "тестеры Сергея",
+    "createdBy": "foxawear-lab",
+    "createdAt": "2026-10-05T10:00:00.000Z"
+  },
+  "createRequest": {
+    "percentOff": 50,
+    "tiers": [2],
+    "maxRedemptions": 20,
+    "validUntil": "2026-12-31T20:59:59.000Z",
+    "note": "чат друзей"
+  },
+  "createNamedRequest": {
+    "code": "ПОГНАЛИ100",
+    "percentOff": 100,
+    "tiers": [1, 2],
+    "maxRedemptions": 5,
+    "perDeviceLimit": 1
+  },
+  "updateRequest": { "active": false, "perIpLimit": null },
+  "bulkRequest": {
+    "count": 3,
+    "prefix": "BETA",
+    "percentOff": 100,
+    "tiers": [2],
+    "note": "закрытая бета"
+  },
+  "redemptions": {
+    "items": [
+      {
+        "id": "red_01",
+        "createdAt": "2026-10-05T12:30:00.000Z",
+        "orderId": "ord_01",
+        "generationId": "gen_mock_01",
+        "releasedAt": null
+      },
+      {
+        "id": "red_02",
+        "createdAt": "2026-10-05T13:10:00.000Z",
+        "orderId": "ord_02",
+        "generationId": "gen_mock_02",
+        "releasedAt": "2026-10-05T13:12:00.000Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
