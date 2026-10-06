@@ -83,6 +83,8 @@ export const WriteTrace = z.object({
   level: z.enum(["rare", "medium", "well_done"]),
   mode: z.enum(["self", "friend"]),
   tier: z.number().int().min(1).max(3),
+  /** Пакет вкуса (`taste/vN`); у трасс до H1 поля нет. */
+  tastePack: z.string().max(ID_CAP).optional(),
   prompts: z.object({ writer: z.string(), judge: z.string(), moderator: z.string() }),
   models: z.object({ writer: z.string(), judge: z.string(), moderator: z.string() }),
   /** Крючки по раундам: id наблюдений из досье (текст наблюдений лежит в `personas`). */
@@ -175,6 +177,7 @@ export class TraceRecorder {
       level: WriteTrace["level"];
       mode: WriteTrace["mode"];
       tier: number;
+      tastePack: string;
       prompts: WriteTrace["prompts"];
       models: WriteTrace["models"];
     },

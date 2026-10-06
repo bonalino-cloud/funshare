@@ -1,13 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Level } from "@/contracts";
-import {
-  buildJudgePrompt,
-  buildModeratorPrompt,
-  buildWriterPrompt,
-  MODERATOR_PROMPT_VERSION,
-  promptHookId,
-  ROAST_PROMPT_VERSION as PROMPT_VERSION,
-} from "../../prompts/active";
+import { getTastePack, type TastePack } from "../../taste";
 import { LlmSchemaError } from "../../analyze/llm";
 import { CostMeter } from "../../cost/meter";
 import {
@@ -36,7 +29,6 @@ import {
 import {
   CANDIDATES_PER_HOOK,
   JUDGE_CANDIDATES_PER_CALL,
-  judgeThresholds,
   MAX_ATTEMPTS,
   MAX_ROUNDS,
   maxNewCandidates,
@@ -124,6 +116,8 @@ export type WriteResult = {
   /** Сначала перенесённые из Поджога, затем новые по убыванию оценки судьи. */
   candidates: WrittenCandidate[];
   stats: WriteStats;
+  /** Пакет вкуса, по которому написаны шутки (`taste/vN`). */
+  tastePack: string;
   promptVersion: string;
   /** Версия промпта и модель модератора: для `generation_traces` (задача 13). */
   moderator: { promptVersion: string; model: string };
@@ -233,11 +227,12 @@ async function writeRound(
   counters: Counters,
   deps: WriteDeps,
   rec: TraceRecorder,
+  pack: TastePack,
 ): Promise<RoundCandidate[]> {
   const parts = await settleBatches(
     "писатель",
     chunk(styles, WRITER_HOOKS_PER_CALL).map((part) =>
-      writeBatch(input, part, alreadyWritten, seen, counters, deps, rec),
+      writeBatch(input, part, alreadyWritten, seen, counters, deps, rec, pack),
     ),
   );
   return parts.flat();
@@ -251,16 +246,17 @@ async function writeBatch(
   counters: Counters,
   deps: WriteDeps,
   rec: TraceRecorder,
+  pack: TastePack,
 ): Promise<RoundCandidate[]> {
   // Модель видит id после чистки промпта и отвечает им; сырой id тоже принимаем.
   const byHook = new Map<string, HookStyle>();
-  for (const s of styles) byHook.set(promptHookId(s.hook.id), s).set(s.hook.id, s);
+  for (const s of styles) byHook.set(pack.writer.hookId(s.hook.id), s).set(s.hook.id, s);
   const forbidden = forbiddenTopics(input.persona);
   const checkCtx = { level: input.level, canaries: deps.canaries, leakIndex: deps.leakIndex };
   return withRetries(
     "писатель",
     (retryNote) =>
-      buildWriterPrompt({
+      pack.writer.buildPrompt({
         persona: input.persona,
         facts: input.facts,
         extraFacts: input.extraFacts,
@@ -365,9 +361,10 @@ async function judgeRound(
   counters: Counters,
   deps: WriteDeps,
   orderBase: number,
+  pack: TastePack,
 ): Promise<Scored[]> {
   const ids = candidates.map((c, i) => ({ id: `c${i + 1}`, c }));
-  const thresholds = judgeThresholds(input.level);
+  const thresholds = pack.judgeThresholds(input.level);
 
   const batches = await settleBatches(
     "судья",
@@ -375,7 +372,7 @@ async function judgeRound(
       withRetries(
         "судья",
         (retryNote) =>
-          buildJudgePrompt({
+          pack.judge.buildPrompt({
             hooks,
             candidates: batch.map(({ id, c }) => ({ id, hookId: c.hookId, text: c.text })),
             level: input.level,
@@ -472,6 +469,7 @@ async function moderateBatch(
   batch: readonly Scored[],
   counters: Counters,
   deps: WriteDeps,
+  pack: TastePack,
 ): Promise<Scored[]> {
   const ids = batch.map((s, i) => ({ id: `m${i + 1}`, s }));
   const results = await settleBatches(
@@ -480,7 +478,7 @@ async function moderateBatch(
       withRetries(
         "модератор",
         (retryNote) =>
-          buildModeratorPrompt({
+          pack.moderator.buildPrompt({
             candidates: part.map(({ id, s }) => ({ id, text: s.candidate.text })),
             forbidden,
             level: input.level,
@@ -552,6 +550,7 @@ async function moderateToFill(
   max: number,
   counters: Counters,
   deps: WriteDeps,
+  pack: TastePack,
 ): Promise<void> {
   for (let pass = 1; pass <= MODERATION_MAX_PASSES; pass++) {
     const need = max - approved.length;
@@ -565,7 +564,7 @@ async function moderateToFill(
     counters.filters.moderatorChecked += batch.length;
     counters.filters.moderatorPasses++;
     try {
-      approved.push(...(await moderateBatch(input, forbidden, batch, counters, deps)));
+      approved.push(...(await moderateBatch(input, forbidden, batch, counters, deps, pack)));
     } catch (error) {
       // Модератор лёг целиком, но одобренные уже есть: не теряем их, хватит ли — решит минимум.
       if (!(error instanceof WriteFailedError) || approved.length === 0) throw error;
@@ -590,19 +589,22 @@ export async function writeCandidates(
   input: WriteInput,
   deps: WriteDeps = defaultWriteDeps(),
 ): Promise<WriteResult> {
+  // Неизвестное имя пакета: ошибка до БД и LLM (деньги не тратим).
+  const pack = getTastePack(input.tastePack);
   const rec = new TraceRecorder({
     level: input.level,
     mode: input.mode,
     tier: input.tier,
+    tastePack: pack.name,
     prompts: {
-      writer: PROMPT_VERSION,
-      judge: PROMPT_VERSION,
-      moderator: MODERATOR_PROMPT_VERSION,
+      writer: pack.writer.version,
+      judge: pack.judge.version,
+      moderator: pack.moderator.version,
     },
     models: deps.models,
   });
   try {
-    return await writeWithTrace(input, deps, rec);
+    return await writeWithTrace(input, deps, rec, pack);
   } catch (error) {
     // Провал шага самый интересный для разбора: трасса едет к вызывающему вместе с ошибкой.
     if (error instanceof WriteFailedError) {
@@ -616,6 +618,7 @@ async function writeWithTrace(
   input: WriteInput,
   deps: WriteDeps,
   rec: TraceRecorder,
+  pack: TastePack,
 ): Promise<WriteResult> {
   if (eligibleHooks(input.persona).length === 0) throw new WriteFailedError("no_hooks");
 
@@ -658,14 +661,22 @@ async function writeWithTrace(
       round,
       hooks.map((h) => h.id),
     );
-    const written = await writeRound(input, styles, writtenTexts, seen, counters, deps, rec);
+    const written = await writeRound(input, styles, writtenTexts, seen, counters, deps, rec, pack);
     for (const h of hooks) usedHooks.add(h.id);
     writtenTexts.push(...written.map((c) => c.text));
 
     pool.push(
-      ...(await judgeRound(input, hooks, written, counters, deps, pool.length + 1000 * round)),
+      ...(await judgeRound(
+        input,
+        hooks,
+        written,
+        counters,
+        deps,
+        pool.length + 1000 * round,
+        pack,
+      )),
     );
-    await moderateToFill(input, forbidden, pool, approved, moderated, maxNew, counters, deps);
+    await moderateToFill(input, forbidden, pool, approved, moderated, maxNew, counters, deps, pack);
     chosen = assemble(approved, maxNew);
     if (carried.length + chosen.length >= minTotal) break;
   }
@@ -693,14 +704,16 @@ async function writeWithTrace(
     throw new WriteFailedError("llm_failed");
   };
   const meta = {
-    promptVersion: PROMPT_VERSION,
+    tastePack: pack.name,
+    promptVersion: pack.writer.version,
     writerModel: deps.models.writer,
     judgeModel: deps.models.judge,
   };
 
   const result: WriteResult = {
-    promptVersion: PROMPT_VERSION,
-    moderator: { promptVersion: MODERATOR_PROMPT_VERSION, model: deps.models.moderator },
+    tastePack: pack.name,
+    promptVersion: pack.writer.version,
+    moderator: { promptVersion: pack.moderator.version, model: deps.models.moderator },
     stats,
     trace: null,
     candidates: [
