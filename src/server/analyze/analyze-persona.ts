@@ -2,7 +2,7 @@ import type { ErrorCode, PersonaProfile as PersonaProfileType, ProfileSnapshot }
 import { PersonaProfile } from "@/contracts";
 import { buildProfileFacts, type ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
-import { buildAnalyzePrompt, PROMPT_VERSION } from "../prompts/analyze/v1";
+import { ANALYZE_PROMPT_VERSION as PROMPT_VERSION, buildAnalyzePrompt } from "../prompts/active";
 import { MIN_POSTS } from "../scrape";
 import { createCoverFetcher, type DownloadedCover, type FetchCoversFn } from "./cover-fetch";
 import { pickCovers } from "./covers";

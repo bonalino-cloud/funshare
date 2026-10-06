@@ -29,9 +29,9 @@ describe("трасса шага write", () => {
     expect(trace.result).toBe("ok");
     expect(trace.failure).toBeNull();
     expect(trace.prompts).toEqual({
-      writer: "roast/v1",
-      judge: "roast/v1",
-      moderator: "roast/moderator-v1",
+      writer: "roast/v2",
+      judge: "roast/v2",
+      moderator: "roast/moderator-v2",
     });
     expect(trace.models).toEqual({
       writer: "test-writer",

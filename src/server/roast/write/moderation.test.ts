@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LlmSchemaError } from "../../analyze/llm";
-import { MODERATOR_PROMPT_VERSION } from "../../prompts/roast/moderator-v1";
+import { MODERATOR_PROMPT_VERSION } from "../../prompts/active";
 import { WriteFailedError } from "./types";
 import type { PromptText } from "./llm";
 import { writeCandidates } from "./write-candidates";

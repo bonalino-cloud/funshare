@@ -38,8 +38,8 @@ describe("writeCandidates", () => {
       candidates: r.candidates.map((c) => ({ id: c.id, emoji: c.emoji, text: c.text })),
     });
     expect(parsed.success).toBe(true);
-    expect(r.promptVersion).toBe("roast/v1");
-    expect(r.candidates[0]!.trace.promptVersion).toBe("roast/v1");
+    expect(r.promptVersion).toBe("roast/v2");
+    expect(r.candidates[0]!.trace.promptVersion).toBe("roast/v2");
     expect(r.candidates[0]!.trace.writerModel).toBe("test-writer");
   });
 
@@ -114,13 +114,13 @@ describe("writeCandidates", () => {
 
   it("шутка с запретной темой вычёркивается кодом", async () => {
     const writer = fakeWriter((hookId, n) =>
-      n === 1 ? `Опять про деньги ${hookId}` : `Закат ${hookId} вариант ${n}`,
+      n === 1 ? `Опять про онкологию ${hookId}` : `Закат ${hookId} вариант ${n}`,
     );
     const r = await writeCandidates(
       inputBase({ tier: 2, persona: makePersona({}, 14) }),
       makeWriteDeps({ writer }),
     );
-    expect(r.candidates.some((c) => c.text.includes("деньги"))).toBe(false);
+    expect(r.candidates.some((c) => c.text.includes("онколог"))).toBe(false);
     expect(r.stats.droppedInvalid).toBeGreaterThan(0);
   });
 

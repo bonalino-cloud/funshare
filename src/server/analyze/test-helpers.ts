@@ -94,7 +94,7 @@ export function makeDossier(over: Partial<LlmDossier> = {}): LlmDossier {
     habits: ["закат в каждой подписи"],
     aesthetics: "тёплые тона",
     humorAngles: ["закаты", "аэропорты"],
-    avoidTopics: ["деньги"],
+    avoidTopics: ["болезни"],
     look: { description: "тёмные волосы до плеч, очки", referenceIndexes: [1, 3] },
     observations: Array.from({ length: 8 }, (_, i) =>
       makeObservation({ claim: `Наблюдение номер ${i + 1}`, evidence: [`post:${i}`] }),

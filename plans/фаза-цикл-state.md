@@ -9,8 +9,8 @@
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
 текущая_фаза: be/p1-topics-policy
-статус_фазы: генерация
-текущий_шаг_карусели: 0
+статус_фазы: чек
+текущий_шаг_карусели: 9
 промт_следующей_фазы: после принятия be/p1-topics-policy (14а) следующая — H1 be/humor-taste-pack (plans/humor-build.md), только после решений Дениса из открытые_решения; затем H3 be/humor-eval-set — закрывает фазу 1 (задача 15 и метрики DoD)
 открытые_решения: ДО H1 (humor-build.md «Когда запускать»): 1) приватность репозитория — пакет вкуса, промпты и корпус 18+ в git (§13 п.2), решать с Сергеем, владелец репо он; 2) шаг ворот +10 п. п. или другой; 3) эталон 10 или 30 профилей, список от Дениса или подбор агентом; сверить цены Apify и Anthropic в src/server/cost/prices.ts (verified: false); текст Сергею про productionBrowserSourceMaps и server-only — ждёт «ок» Дениса; Cron очистки generation_traces 30 дней; длинное тире: писатель v1 ставит его вопреки промпту, слой 4 режет (~25–40% выхода) — пока режем, лечение в бэклоге дорожки юмора (humor-build.md); вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
 обкатка_страницы: нет
