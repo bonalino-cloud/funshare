@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { ALL_CANARIES } from "../../src/server/prompts/canary";
-import { ANALYZE_SYSTEM } from "../../src/server/prompts/analyze/v1";
+import { allAnalyzeSystemPrompts } from "../../src/server/prompts/registry";
 import { promptSources } from "../../src/server/roast/filters/prompt-leak";
 import { collectNeedles, findLeaks } from "./bundle-leaks";
 
@@ -45,7 +45,7 @@ if (!exists(buildDir)) {
   process.exit(2);
 }
 
-const needles = collectNeedles(ALL_CANARIES, [...promptSources(), ANALYZE_SYSTEM]);
+const needles = collectNeedles(ALL_CANARIES, [...promptSources(), ...allAnalyzeSystemPrompts()]);
 const canaryCount = needles.filter((n) => n.kind === "canary").length;
 if (canaryCount === 0 || needles.length <= canaryCount) {
   console.error("Список для поиска пуст: проверка ничего бы не нашла.");

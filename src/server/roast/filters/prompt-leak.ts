@@ -1,5 +1,4 @@
-import { buildWriterSystem, JUDGE_SYSTEM } from "../../prompts/roast/v1";
-import { MODERATOR_SYSTEM } from "../../prompts/roast/moderator-v1";
+import { allWriteSystemPrompts } from "../../prompts/registry";
 import { MIN_CANARY_LENGTH, PROMPT_CANARIES, PROMPT_LEAK_CHAIN_WORDS } from "./config";
 import { normalizedWords } from "./normalize";
 
@@ -39,16 +38,12 @@ export function hasCanary(text: string, canaries: readonly string[]): boolean {
 }
 
 /**
- * Все системные промпты шагов `write`: писатель на всех степенях и режимах, судья, модератор.
- * Выпуск `v2` / `moderator-v2`: импорты здесь меняются вместе с `write-candidates.ts`, иначе
- * индекс останется на старом тексте и утечку нового промпта не поймает.
+ * Все системные промпты шагов `write` ВСЕХ версий (v1 и v2): писатель на всех степенях и
+ * режимах, судья, модератор. Список версий ведёт `prompts/registry.ts`: новая версия должна
+ * попасть туда, иначе утечку её текста индекс не поймает.
  */
 export function promptSources(): string[] {
-  const out: string[] = [JUDGE_SYSTEM, MODERATOR_SYSTEM];
-  for (const level of ["rare", "medium", "well_done"] as const) {
-    for (const mode of ["self", "friend"] as const) out.push(buildWriterSystem(level, mode));
-  }
-  return out;
+  return allWriteSystemPrompts();
 }
 
 let defaultIndex: LeakIndex | undefined;

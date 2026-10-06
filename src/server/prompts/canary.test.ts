@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectNeedles, decodeUnicodeEscapes, findLeaks } from "../../../scripts/ci/bundle-leaks";
 import { PROMPT_CANARIES } from "../roast/filters/config";
 import { checkOutputText, hasCanary } from "../roast/filters";
-import { ANALYZE_SYSTEM } from "./analyze/v1";
+import * as active from "./active";
 import { ALL_CANARIES, CANARIES, withCanary } from "./canary";
-import { MODERATOR_SYSTEM } from "./roast/moderator-v1";
-import { buildWriterSystem, JUDGE_SYSTEM } from "./roast/v1";
+import { allAnalyzeSystemPrompts, allWriteSystemPrompts } from "./registry";
+import { JUDGE_SYSTEM } from "./roast/v1";
 
 const generateText = vi.hoisted(() => vi.fn());
 vi.mock("ai", async (importOriginal) => ({
@@ -34,14 +34,25 @@ describe("canary-строки", () => {
     }
   });
 
-  it("метка не лежит в текстах версий: тексты v1 не правились", () => {
-    const sources = [
-      JUDGE_SYSTEM,
-      MODERATOR_SYSTEM,
-      ANALYZE_SYSTEM,
-      buildWriterSystem("medium", "self"),
-    ];
+  it("метка не лежит в текстах версий: ни v1, ни v2", () => {
+    const sources = [...allWriteSystemPrompts(), ...allAnalyzeSystemPrompts()];
     for (const text of sources) for (const c of ALL_CANARIES) expect(text).not.toContain(c);
+  });
+
+  it("реестр версий покрывает активные промпты: утечку активной версии поймают слой 4 и CI", () => {
+    const write = allWriteSystemPrompts();
+    const analyze = allAnalyzeSystemPrompts();
+    expect(write).toContain(active.JUDGE_SYSTEM);
+    expect(write).toContain(active.MODERATOR_SYSTEM);
+    for (const level of ["rare", "medium", "well_done"] as const) {
+      for (const mode of ["self", "friend"] as const) {
+        expect(write).toContain(active.buildWriterSystem(level, mode));
+      }
+    }
+    expect(analyze).toContain(active.ANALYZE_SYSTEM);
+    // v1 остаётся в реестре: он может лежать в старых трассах и нужен для отката.
+    expect(write).toContain(JUDGE_SYSTEM);
+    expect(analyze.length).toBeGreaterThanOrEqual(2);
   });
 
   it("withCanary: текст промпта нетронут, метка своей роли в конце, чужих меток нет", () => {
@@ -87,11 +98,18 @@ describe("метка уходит в модель на каждом реальн
 
 describe("проверка бандла (scripts/ci/bundle-leaks)", () => {
   const needles = collectNeedles(ALL_CANARIES, [
-    JUDGE_SYSTEM,
-    MODERATOR_SYSTEM,
-    ANALYZE_SYSTEM,
-    buildWriterSystem("rare", "friend"),
+    ...allWriteSystemPrompts(),
+    ...allAnalyzeSystemPrompts(),
   ]);
+
+  it("образцы берутся и из v2: строка текста, которой нет в v1, есть среди фраз", () => {
+    const line = active.JUDGE_SYSTEM.split("\n").find(
+      (l) => l.length > 40 && !JUDGE_SYSTEM.includes(l) && !/["'`\$]/.test(l.trim().slice(0, 40)),
+    );
+    expect(line).toBeDefined();
+    const phrase = line!.trim().slice(0, 40);
+    expect(needles.some((n) => n.kind === "phrase" && n.value === phrase)).toBe(true);
+  });
 
   it("образцы: все canary и много фраз промптов, без кавычек и подстановок", () => {
     expect(needles.filter((n) => n.kind === "canary")).toHaveLength(ALL_CANARIES.length);

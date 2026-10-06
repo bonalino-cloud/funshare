@@ -3,7 +3,7 @@ import { generateText, NoObjectGeneratedError, Output } from "ai";
 import type { CostMeter, SdkUsage } from "../cost/meter";
 import { parseServerEnv } from "../env";
 import { withCanary } from "../prompts/canary";
-import type { AnalyzePromptPart } from "../prompts/analyze/v1";
+import type { AnalyzePromptPart } from "../prompts/active";
 import { LlmDossier } from "./schema";
 
 /** Модель досье (architecture/stack.md). Пишется в `personas.model`. */

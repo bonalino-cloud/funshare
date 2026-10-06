@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import type { Level } from "@/contracts";
 import {
   buildJudgePrompt,
+  buildModeratorPrompt,
   buildWriterPrompt,
-  PROMPT_VERSION,
+  MODERATOR_PROMPT_VERSION,
   promptHookId,
-} from "../../prompts/roast/v1";
-import { MODERATOR_PROMPT_VERSION, buildModeratorPrompt } from "../../prompts/roast/moderator-v1";
+  ROAST_PROMPT_VERSION as PROMPT_VERSION,
+} from "../../prompts/active";
 import { LlmSchemaError } from "../../analyze/llm";
 import { CostMeter } from "../../cost/meter";
 import {

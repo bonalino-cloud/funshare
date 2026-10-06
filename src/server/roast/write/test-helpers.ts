@@ -20,7 +20,7 @@ export function makePersona(over: Partial<PersonaProfile> = {}, observations = 1
     habits: ["закат в каждой подписи"],
     aesthetics: "тёплые тона",
     humorAngles: ["закаты"],
-    avoidTopics: ["деньги"],
+    avoidTopics: ["болезни"],
     look: null,
     observations: Array.from({ length: observations }, (_, i) => ({
       id: `o${i + 1}`,

@@ -128,7 +128,7 @@ describe("runWriteStep", () => {
     const trace = WriteTrace.parse(s.traces[0]?.data);
     expect(s.traces[0]).toMatchObject({ generationId: "g1", step: "write" });
     expect(trace.result).toBe("ok");
-    expect(trace.prompts.moderator).toBe("roast/moderator-v1");
+    expect(trace.prompts.moderator).toBe("roast/moderator-v2");
     const chosen = trace.candidates.filter((c) => c.outcome === "chosen").map((c) => c.punchId);
     expect(chosen.sort()).toEqual(s.saved.map((c) => c.id).sort());
   });
