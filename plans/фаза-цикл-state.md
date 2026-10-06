@@ -13,7 +13,7 @@
 статус_фазы: генерация
 текущий_шаг_карусели: 0
 промт_следующей_фазы: сессия «Продукт» (plans/две-сессии.md). be/p1-prices-verify — сверить цены Apify и Anthropic в src/server/cost/prices.ts с официальными страницами, verified: true, источник и дата в комментарии. Затем блок админки (roast-engine.md §12): contracts/admin-v1 (ревью Сергея) → be/p1-admin-api (вход, промокоды) → be/p1-admin-generations; затем хвосты: Cron очистки generation_traces 30 дней, сторож зависших writing, server-only после пакета от Сергея. Скрейп (1) и проверка профиля (4) — живой прогон, как только Сергей заведёт переменные Vercel. Юмор (H1–H9, слова про тело, eval-set) — НЕ здесь, это сессия «Юмор», plans/humor-state.md
-открытые_решения: Сергей: ревью invariants.md п.3 (PR #82), issue #81 (source maps, server-only); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
+открытые_решения: Сергей: ревью invariants.md п.3 (PR #82); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
 входящие: —
 обкатка_страницы: нет
 обкатка_чеклист: —
