@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import type {
+  Artifact,
   ArtifactImage,
   ArtifactKind,
   GenerationMode,
@@ -29,6 +30,8 @@ export type NewArtifact = {
   kind: ArtifactKind;
   content: RoastContent;
   images: ArtifactImage[];
+  /** Публичный `subject`, уже проверенный схемой `Artifact`: артефакт не зависит от `profile_checks`. */
+  subject: Artifact["subject"];
   ownerTokenHash: string;
   now: Date;
 };
@@ -56,8 +59,8 @@ export function publishSql(input: NewArtifact) {
   const timings = timingsSql({ finish: ["awaiting_selection", "draw"], now: input.now });
   return sql`
     WITH art AS (
-      INSERT INTO artifacts (id, slug, generation_id, kind, content, images, owner_token_hash, created_at)
-      SELECT ${randomUUID()}, ${input.slug}, ${input.generationId}, ${input.kind}::artifact_kind, ${JSON.stringify(input.content)}::jsonb, ${JSON.stringify(input.images)}::jsonb, ${input.ownerTokenHash}, ${at}::timestamptz
+      INSERT INTO artifacts (id, slug, generation_id, kind, content, images, subject, owner_token_hash, created_at)
+      SELECT ${randomUUID()}, ${input.slug}, ${input.generationId}, ${input.kind}::artifact_kind, ${JSON.stringify(input.content)}::jsonb, ${JSON.stringify(input.images)}::jsonb, ${JSON.stringify(input.subject)}::jsonb, ${input.ownerTokenHash}, ${at}::timestamptz
       WHERE EXISTS (SELECT 1 FROM generations g WHERE g.id = ${input.generationId} AND g.status IN ('awaiting_selection', 'drawing') FOR UPDATE)
       ON CONFLICT (generation_id) DO NOTHING
       RETURNING id

@@ -1,5 +1,6 @@
 import type { CheckedProfile, ErrorCode, ProfileSnapshot } from "@/contracts";
 import type { AnalyzeStepResult } from "../analyze";
+import { CostMeter, formatCostLog } from "../cost";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import type { ScrapeResult } from "../scrape";
 import type { CopyAvatar } from "./avatar";
@@ -9,8 +10,12 @@ import type { ProfileCheckRepository } from "./repository";
 export type PipelineDeps = {
   /** Копия аватара в наш Blob: URL Instagram браузер не покажет (CORP same-origin). Не бросает. */
   copyAvatar: CopyAvatar;
-  scrape: (username: string) => Promise<ScrapeResult>;
-  analyze: (input: { snapshotId: string; snapshot: ProfileSnapshot }) => Promise<AnalyzeStepResult>;
+  /** `meter` — счётчик трат этой проверки; шаг передаёт его в Apify-вызовы. */
+  scrape: (username: string, meter: CostMeter) => Promise<ScrapeResult>;
+  analyze: (
+    input: { snapshotId: string; snapshot: ProfileSnapshot },
+    meter: CostMeter,
+  ) => Promise<AnalyzeStepResult>;
   repo: ProfileCheckRepository;
   now: () => Date;
   deadlineMs?: number;
@@ -66,6 +71,7 @@ export async function runProfileCheck(
   deps: PipelineDeps,
 ): Promise<void> {
   const { repo } = deps;
+  const meter = new CostMeter();
 
   const setHint = async (hint: string) => {
     try {
@@ -77,14 +83,14 @@ export async function runProfileCheck(
 
   const work = async (): Promise<Outcome> => {
     await setHint(HINTS.scrape);
-    const scraped = await deps.scrape(username);
+    const scraped = await deps.scrape(username, meter);
     if (!scraped.ok) return { ok: false, errorCode: scraped.errorCode };
 
     await setHint(HINTS.analyze);
-    const analyzed = await deps.analyze({
-      snapshotId: scraped.snapshotId,
-      snapshot: scraped.snapshot,
-    });
+    const analyzed = await deps.analyze(
+      { snapshotId: scraped.snapshotId, snapshot: scraped.snapshot },
+      meter,
+    );
     if (!analyzed.ok) return { ok: false, errorCode: analyzed.errorCode };
 
     // Аватар копируем только после успешного analyze: фото закрытого/несовершеннолетнего не храним.
@@ -108,13 +114,28 @@ export async function runProfileCheck(
       resolve({ ok: false, errorCode: "internal" });
     }, deps.deadlineMs ?? PIPELINE_DEADLINE_MS);
   });
-  const guarded = work().catch((error: unknown): Outcome => {
-    logFailure("сбой конвейера", error);
-    return { ok: false, errorCode: "internal" };
-  });
+  let settled = false;
+  const guarded = work()
+    .catch((error: unknown): Outcome => {
+      logFailure("сбой конвейера", error);
+      return { ok: false, errorCode: "internal" };
+    })
+    .finally(() => {
+      settled = true;
+    });
 
   const outcome = await Promise.race([guarded, deadline]);
   clearTimeout(timer);
+
+  // Деньги потрачены при любом исходе (и при отказе, и по дедлайну): пишем то, что уже накоплено.
+  const cost = meter.snapshot();
+  if (cost.apify || cost.llm.length > 0) console.error(formatCostLog("profile-check", cost));
+  if (!settled) {
+    // Дедлайн: работа ещё идёт и тратит. В БД строка уже закрыта, полный итог — только в лог.
+    void guarded.then(() =>
+      console.error(formatCostLog("profile-check после дедлайна", meter.snapshot())),
+    );
+  }
 
   try {
     const checkedAt = deps.now();
@@ -123,9 +144,10 @@ export async function runProfileCheck(
         snapshotId: outcome.snapshotId,
         profile: outcome.profile,
         checkedAt,
+        cost,
       });
     } else {
-      await repo.fail(id, outcome.errorCode, checkedAt);
+      await repo.fail(id, outcome.errorCode, checkedAt, cost);
     }
   } catch (error) {
     logFailure("не записали результат", error);

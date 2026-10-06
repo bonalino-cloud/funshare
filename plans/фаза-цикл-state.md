@@ -8,11 +8,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-write-step
-статус_фазы: принято
+текущая_фаза: be/p1-cost-log
+статус_фазы: ждёт_принято
 текущий_шаг_карусели: 9
-промт_следующей_фазы: be/p1-selection — GET /api/generations/:id/candidates, POST …/selection: проверка id и числа (1..selectCount), ставит punch_candidates.selected, авторитетная сборка артефакта из выбранных (задача 10 плана)
-открытые_решения: вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
+промт_следующей_фазы: задачи BE фазы 1 закрыты (11–14 в dev; 15 закрывает H3 дорожки юмора, plans/humor-build.md, PR #73). Дальше — H1 be/humor-taste-pack после решений Дениса: приватность репо, шаг ворот, эталон 10/30 профилей
+открытые_решения: сверить цены Apify и Anthropic в src/server/cost/prices.ts (verified: false); текст Сергею про productionBrowserSourceMaps и server-only — ждёт «ок» Дениса; Cron очистки generation_traces 30 дней; длинное тире: писатель v1 ставит его вопреки промпту, слой 4 режет (~25–40% выхода) — решение Дениса: резать / заменять / пропускать, по умолчанию резать; вкус прожарки — вынесен в постоянную дорожку plans/humor-track.md (05.10, Денис: код принят, юмор нет; разбор системы позже, при возврате выдать файл целиком); корпус 18+ в публичном репо — вернуться до запуска (§13 п.2); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; server-only не подключён в src/server; сторож зависших writing; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате миграция будет 0008; stack.md: generateObject → generateText; profile_checks в data.md и retention; BotID (Сергей)
 обкатка_страницы: нет
 обкатка_чеклист: —
 режим_пингов: подробный

@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type {
+  Artifact,
   ArtifactContent,
   ArtifactImage,
   CheckedProfile,
@@ -29,6 +30,7 @@ import {
   ProfileCheckStatusCode,
 } from "@/contracts";
 import { JOKE_HEATS, JOKE_MECHANISMS, JOKE_SLOTS, JOKE_TOPICS } from "../roast/jokes/card";
+import type { CostRun } from "../cost/meter";
 import type { PunchTrace } from "../roast/write/types";
 
 // Enum-ы берём из контрактов, чтобы у поля был один набор значений везде.
@@ -83,7 +85,12 @@ export const generations = pgTable(
     ownerTokenHash: text("owner_token_hash").notNull(),
     ipHash: text("ip_hash").notNull(),
     stepTimings: jsonb("step_timings").$type<StepTimings>().notNull().default({}),
+    /** Итог трат на генерацию в центах: ceil от `costMicroUsd`. Стоимость проверки профиля сюда НЕ входит. */
     costCents: integer("cost_cents").notNull().default(0),
+    /** Точная сумма трат шагов генерации, микро-USD (1e-6). Копится атомарным UPDATE. */
+    costMicroUsd: integer("cost_micro_usd").notNull().default(0),
+    /** Разбивка по шагам: `{ [шаг]: CostRun[] }`, прогон на каждое выполнение шага (ретраи тоже). */
+    costDetail: jsonb("cost_detail").$type<Record<string, CostRun[]>>().notNull().default({}),
     artifactId: text("artifact_id"),
     ...timestamps,
   },
@@ -131,6 +138,8 @@ export const personas = pgTable(
   (t) => [uniqueIndex("personas_snapshot_id_prompt_version_idx").on(t.snapshotId, t.promptVersion)],
 );
 
+export type ArtifactSubject = Artifact["subject"];
+
 export const artifacts = pgTable("artifacts", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -144,6 +153,8 @@ export const artifacts = pgTable("artifacts", {
     .$type<ArtifactImage[]>()
     .notNull()
     .default(sql`'[]'::jsonb`),
+  /** Публичный `subject` на момент публикации; `null` у старых строк (тогда из generations + profile_checks). */
+  subject: jsonb("subject").$type<ArtifactSubject>(),
   ownerTokenHash: text("owner_token_hash").notNull(),
   views: integer("views").notNull().default(0),
   shares: integer("shares").notNull().default(0),
@@ -177,6 +188,11 @@ export const profileChecks = pgTable(
     ownerTokenHash: text("owner_token_hash").notNull(),
     ipHash: text("ip_hash").notNull(),
     checkedAt: timestamp("checked_at", { withTimezone: true }),
+    /** Траты самой проверки (Apify + анализ), центы вверх. Копия из кэша и `checking` — 0. */
+    costCents: integer("cost_cents").notNull().default(0),
+    costMicroUsd: integer("cost_micro_usd").notNull().default(0),
+    /** Один `CostRun`; null, пока проверка не закрыта или это копия из кэша. */
+    costDetail: jsonb("cost_detail").$type<CostRun>(),
     ...timestamps,
   },
   (t) => [index("profile_checks_ig_username_checked_at_idx").on(t.igUsername, t.checkedAt)],
@@ -391,5 +407,30 @@ export const punchCandidates = pgTable(
       "punch_candidates_selection",
       sql`${t.selected} = (${t.selectionPosition} IS NOT NULL) AND (${t.selectionPosition} IS NULL OR ${t.selectionPosition} > 0)`,
     ),
+  ],
+);
+
+/**
+ * Приватные трассы шагов конвейера (roast-engine §8, §9.5): что писал писатель, кого вырезали
+ * фильтры и судья, версии промптов и моделей. Читает только админка (BE); ни один публичный
+ * роут эту таблицу не отдаёт и не джойнит. Срок хранения 30 дней (`data.md`), очистка Cron.
+ * Одна строка на (`generationId`, `step`): повтор шага перезаписывает трассу, а не множит её.
+ * `data` — JSON шага, форма зависит от `step` (для `write` это `WriteTrace`).
+ */
+export const generationTraces = pgTable(
+  "generation_traces",
+  {
+    id: text("id").primaryKey(),
+    generationId: text("generation_id")
+      .notNull()
+      .references(() => generations.id, { onDelete: "cascade" }),
+    step: text("step").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("generation_traces_generation_step_idx").on(t.generationId, t.step),
+    // Для очистки по сроку хранения.
+    index("generation_traces_created_idx").on(t.createdAt),
   ],
 );

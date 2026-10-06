@@ -4,7 +4,14 @@ import type { GenerationMode, Level, Tier } from "@/contracts";
 import { db, schema } from "../../db";
 import type { PunchTrace, WrittenCandidate } from "./types";
 
-const { generations, profileChecks, profileSnapshots, personas, punchCandidates } = schema;
+const {
+  generations,
+  profileChecks,
+  profileSnapshots,
+  personas,
+  punchCandidates,
+  generationTraces,
+} = schema;
 
 /** Вход шага `write` из БД. `snapshot` и `persona` НЕ доверенные (jsonb): вызывающий парсит. */
 export type WriteInputRow = {
@@ -36,6 +43,8 @@ export type WriteRepository = {
     candidates: readonly WrittenCandidate[],
     promptVersion: string,
   ): Promise<void>;
+  /** Приватная трасса шага (`generation_traces`); повтор перезаписывает строку шага. */
+  saveTrace(generationId: string, step: string, data: Record<string, unknown>): Promise<void>;
 };
 
 export function createWriteRepository(): WriteRepository {
@@ -128,6 +137,16 @@ export function createWriteRepository(): WriteRepository {
         )
         .onConflictDoNothing({
           target: [punchCandidates.generationId, punchCandidates.punchId],
+        });
+    },
+
+    async saveTrace(generationId, step, data) {
+      await db()
+        .insert(generationTraces)
+        .values({ id: randomUUID(), generationId, step, data })
+        .onConflictDoUpdate({
+          target: [generationTraces.generationId, generationTraces.step],
+          set: { data, createdAt: new Date() },
         });
     },
   };

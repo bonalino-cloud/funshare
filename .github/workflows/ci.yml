@@ -25,3 +25,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm test
+      # Сборка без секретов: env читается лениво, на этапе build ключи не нужны.
+      - run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      # Промпты и canary-строки не должны попасть в то, что уходит в браузер (roast-engine §8).
+      - run: pnpm exec tsx scripts/ci/check-bundle-leaks.ts

@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CostRun } from "../cost";
 import { makeProfile } from "../analyze/test-helpers";
 import { HINTS } from "./config";
 import { runProfileCheck, safeAvatarUrl, toCheckedProfile } from "./run";
-import { EXPECTED_PROFILE, makeHandlerDeps, NOW, OUR_AVATAR_URL } from "./test-helpers";
+import {
+  EXPECTED_PROFILE,
+  makeHandlerDeps,
+  NOW,
+  OUR_AVATAR_URL,
+  okAnalyze as okAnalyzeResult,
+  okScrape as okScrapeResult,
+} from "./test-helpers";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -26,6 +34,75 @@ async function setup() {
 }
 
 describe("runProfileCheck", () => {
+  describe("учёт стоимости", () => {
+    /** Шаги, которые, как настоящие, пишут траты в общий счётчик проверки. */
+    async function metered() {
+      const t = await setup();
+      t.scrape.mockImplementation(async (_u, meter) => {
+        meter.recordApify({ results: 1 });
+        return okScrapeResult();
+      });
+      t.analyze.mockImplementation(async (_i, meter) => {
+        meter.recordLlm({
+          role: "analyze",
+          model: "claude-sonnet-5",
+          usage: { inputTokens: 20_000, outputTokens: 3_000 },
+          ok: true,
+        });
+        return okAnalyzeResult();
+      });
+      return t;
+    }
+
+    it("успех: траты Apify и анализа уходят в complete и проходят схему", async () => {
+      const t = await metered();
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const cost = t.repo.complete.mock.calls[0]?.[1].cost;
+      const parsed = CostRun.parse(cost);
+      expect(parsed.apify).toMatchObject({ attempts: 1, results: 1, source: "estimate" });
+      expect(parsed.llm).toHaveLength(1);
+      expect(parsed.estimated).toBe(true);
+      // 20k вход * $2/M + 3k выход * $10/M = $0.07 + Apify $0.0023
+      expect(parsed.microUsd).toBe(70_000 + 2_300);
+    });
+
+    it("отказ тоже пишет траты: scrape заплатил, analyze не запускался", async () => {
+      const t = await metered();
+      t.scrape.mockImplementation(async (_u, meter) => {
+        meter.recordApify({ results: 1 });
+        return { ok: false, errorCode: "profile_private" };
+      });
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const cost = t.repo.fail.mock.calls[0]?.[3];
+      expect(cost?.apify?.results).toBe(1);
+      expect(cost?.llm).toEqual([]);
+    });
+
+    it("в лог одна строка с числами, без ника и текстов", async () => {
+      const t = await metered();
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const lines = vi
+        .mocked(console.error)
+        .mock.calls.map((c) => c.join(" "))
+        .filter((l) => l.startsWith("[cost]"));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain("центов=");
+      expect(lines[0]).not.toContain("anya");
+    });
+
+    it("кэш (ничего не потрачено): строки лога нет, в БД нулевой прогон", async () => {
+      const t = await setup();
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const cost = t.repo.complete.mock.calls[0]?.[1].cost;
+      expect(cost?.microUsd).toBe(0);
+      const lines = vi
+        .mocked(console.error)
+        .mock.calls.map((c) => c.join(" "))
+        .filter((l) => l.startsWith("[cost]"));
+      expect(lines).toHaveLength(0);
+    });
+  });
+
   it("hint идёт по шагам человеческими словами", async () => {
     const t = await setup();
     await runProfileCheck(t.id, "anya.travels", t.pipeline);
@@ -90,6 +167,28 @@ describe("runProfileCheck", () => {
     await vi.advanceTimersByTimeAsync(1001);
     await done;
     expect(t.rows.get(t.id)).toMatchObject({ status: "failed", errorCode: "internal" });
+  });
+
+  it("дедлайн: траты, дошедшие после закрытия, попадают в лог отдельной строкой", async () => {
+    vi.useFakeTimers();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const t = await setup();
+    let release: () => void = () => {};
+    t.scrape.mockImplementation(async (_u, meter) => {
+      meter.recordApify({ results: 1 });
+      await new Promise<void>((r) => (release = r));
+      return { ok: false, errorCode: "internal" };
+    });
+    const done = runProfileCheck(t.id, "anya.travels", { ...t.pipeline, deadlineMs: 1000 });
+    await vi.advanceTimersByTimeAsync(1001);
+    await done;
+    expect(t.repo.fail.mock.calls[0]?.[3]?.apify?.results).toBe(1);
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+    const late = errors.mock.calls
+      .map((c) => String(c[0]))
+      .filter((l) => l.startsWith("[cost] profile-check после дедлайна"));
+    expect(late).toHaveLength(1);
   });
 
   it("не бросает, если не удалось записать результат (закроет GET по STALE)", async () => {

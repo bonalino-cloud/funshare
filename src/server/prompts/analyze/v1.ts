@@ -131,3 +131,6 @@ export function buildAnalyzePrompt(input: AnalyzePromptInput): AnalyzePrompt {
 
   return { system: SYSTEM, parts };
 }
+
+/** Системный промпт `analyze/v1` для проверки утечек в бандле (текст не меняется). */
+export const ANALYZE_SYSTEM = SYSTEM;
