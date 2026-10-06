@@ -52,6 +52,8 @@ export type ModeratorItem = z.infer<typeof ModeratorItem>;
 export const ModeratorOutput = z.object({ verdicts: z.array(ModeratorItem) });
 export const ModeratorEnvelope = z.object({ verdicts: z.array(z.unknown()) });
 
+export const LEGACY_TASTE_PACK = "pre-taste";
+
 /** Приватная трасса из БД (jsonb): перенос в Кострище читает её обратно, поэтому проверяем. */
 export const PunchTraceSchema = z.object({
   hookId: z.string(),
@@ -68,6 +70,8 @@ export const PunchTraceSchema = z.object({
     })
     .nullable(),
   totalScore: z.number().nullable(),
+  /** Записи до пакетов вкуса (H1) поля не имеют: помечаем явно, а не выдаём за `taste/v1`. */
+  tastePack: z.string().default(LEGACY_TASTE_PACK),
   promptVersion: z.string(),
   writerModel: z.string(),
   judgeModel: z.string(),

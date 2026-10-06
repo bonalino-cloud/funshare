@@ -87,6 +87,7 @@ export const makeTrace = (over: Partial<PunchTrace> = {}): PunchTrace => ({
   jokeCardId: null,
   scores: null,
   totalScore: null,
+  tastePack: "taste/v1",
   promptVersion: "roast/v1",
   writerModel: "w",
   judgeModel: "j",
