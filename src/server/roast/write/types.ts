@@ -52,6 +52,8 @@ export type PunchTrace = {
   jokeCardId: string | null;
   scores: JudgeScores | null;
   totalScore: number | null;
+  /** Пакет вкуса (`taste/vN`), по которому написана шутка; `promptVersion` — промпт внутри него. */
+  tastePack: string;
   promptVersion: string;
   writerModel: string;
   judgeModel: string;
@@ -77,6 +79,8 @@ export type WriteInput = {
   mode: GenerationMode;
   level: Level;
   tier: Tier;
+  /** Имя пакета вкуса; нет — текущий (`CURRENT_TASTE_PACK`). Неизвестное имя: ошибка до LLM. */
+  tastePack?: string;
   carried?: CarriedPunch[];
 };
 

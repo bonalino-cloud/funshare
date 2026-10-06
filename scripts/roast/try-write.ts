@@ -10,8 +10,9 @@ import {
 import { db, schema } from "../../src/server/db";
 import { buildProfileFacts } from "../../src/server/facts";
 import { defaultWriteDeps, writeCandidates } from "../../src/server/roast/write";
+import { listTastePacks } from "../../src/server/taste";
 
-// pnpm roast:try --ig <nick> [--level rare|medium|well_done] [--tier 1|2|3] [--mode self|friend] [--extra "факт"]
+// pnpm roast:try --ig <nick> [--level rare|medium|well_done] [--tier 1|2|3] [--mode self|friend] [--extra "факт"] [--taste taste/v1]
 // Берёт последний снимок и досье по нику, зовёт РЕАЛЬНУЮ модель (нужен ANTHROPIC_API_KEY),
 // печатает кандидатов. Генерацию и кандидатов в БД не пишет.
 
@@ -21,6 +22,7 @@ const { values } = parseArgs({
     level: { type: "string", default: "medium" },
     tier: { type: "string", default: "2" },
     mode: { type: "string", default: "self" },
+    taste: { type: "string" },
     extra: { type: "string", multiple: true, default: [] },
   },
 });
@@ -35,7 +37,14 @@ async function main(): Promise<number> {
   const mode = GenerationMode.safeParse(values.mode);
   const tier = Number(values.tier);
   if (!nick || !level.success || !mode.success || ![1, 2, 3].includes(tier)) {
-    console.error("использование: --ig <ник> [--level ...] [--tier 1|2|3] [--mode self|friend]");
+    console.error(
+      "использование: --ig <ник> [--level ...] [--tier 1|2|3] [--mode self|friend] [--taste <пакет>]",
+    );
+    return 1;
+  }
+  // Имя пакета проверяем до БД: опечатка в `--taste` не должна стоить запросов.
+  if (values.taste !== undefined && !listTastePacks().includes(values.taste)) {
+    console.error(`неизвестный пакет вкуса; есть: ${listTastePacks().join(", ")}`);
     return 1;
   }
 
@@ -70,6 +79,7 @@ async function main(): Promise<number> {
       mode: mode.data,
       level: level.data,
       tier: tier as Tier,
+      tastePack: values.taste,
     },
     defaultWriteDeps(),
   );
@@ -80,7 +90,9 @@ async function main(): Promise<number> {
       `   механизм: ${c.trace.mechanism}, оценка: ${c.trace.totalScore}, зацепка: ${c.trace.hookId}`,
     );
   }
-  console.log(`\nкандидатов: ${result.candidates.length}, промпт: ${result.promptVersion}`);
+  console.log(
+    `\nкандидатов: ${result.candidates.length}, пакет: ${result.tastePack}, промпт: ${result.promptVersion}`,
+  );
   return 0;
 }
 

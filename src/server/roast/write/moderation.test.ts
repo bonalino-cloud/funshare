@@ -201,6 +201,7 @@ describe("слой 5: LLM-модератор", () => {
           jokeCardId: null,
           scores: null,
           totalScore: null,
+          tastePack: "taste/v1",
           promptVersion: "roast/v1",
           writerModel: "w",
           judgeModel: "j",

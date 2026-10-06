@@ -178,6 +178,7 @@ describe("трасса шага write", () => {
 
   it("слишком много записей: трасса обрезается, а не теряется", () => {
     const rec = new TraceRecorder({
+      tastePack: "taste/v1",
       level: "rare",
       mode: "self",
       tier: 1,
