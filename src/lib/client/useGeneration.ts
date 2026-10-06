@@ -26,11 +26,9 @@ export function useGeneration(id: string) {
       signal: ac.signal,
       onTick: setStatus,
       selectionSent: sent,
-    }).catch(
-      (cause: unknown) => {
-        if (!(cause instanceof DOMException && cause.name === "AbortError")) setError({ cause });
-      },
-    );
+    }).catch((cause: unknown) => {
+      if (!(cause instanceof DOMException && cause.name === "AbortError")) setError({ cause });
+    });
     return () => ac.abort();
   }, [id, round, sent]);
 
