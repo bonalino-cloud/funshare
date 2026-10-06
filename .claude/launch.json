@@ -2,10 +2,34 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "funshare-dev",
+      "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "port": 3000
+      "runtimeArgs": [
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "web-live",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "NEXT_PUBLIC_USE_MOCKS=0",
+        "pnpm",
+        "dev",
+        "--port",
+        "3001"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "wireframes",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "const h=require('http'),f=require('fs'),p=require('path'),r=p.resolve('wireframes');const t={'.html':'text/html;charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};h.createServer((q,s)=>{const u=decodeURIComponent(q.url.split('?')[0]);const x=p.join(r,u==='/'?'/create-flow-v2-styled.html':u);if(!x.startsWith(r)){s.writeHead(403);return s.end()}f.readFile(x,(e,b)=>{if(e){s.writeHead(404);return s.end('404')}s.writeHead(200,{'content-type':t[p.extname(x)]||'application/octet-stream'});s.end(b)})}).listen(4173)"
+      ],
+      "port": 4173
     }
   ]
 }
