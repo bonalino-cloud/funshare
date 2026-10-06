@@ -54,7 +54,7 @@ describe("писатель roast/v2: открытые и закрытые тем
     const s = writerV2(level, "self");
     expect(s).toMatch(/ОТКРЫТО на любой степени/);
     for (const word of [
-      "вес, спорт, тренировки",
+      "вес, фигура, спорт, тренировки",
       "сон, кофе, диеты",
       "партнёр, родители",
       "траты",
@@ -77,6 +77,11 @@ describe("писатель roast/v2: открытые и закрытые тем
         .find((l) => l.startsWith("ЗАПРЕЩЕНО на этой степени"));
       expect(line).toMatch(/внешность лица/);
       expect(line).toMatch(/сексуальность/);
+      // Решение 06.10: оценочные слова про тело не запрещены, а прямо разрешены.
+      expect(line).not.toMatch(/толст|тело/);
+    }
+    for (const level of levels) {
+      expect(writerV2(level, "self")).toContain("«толстый»");
     }
     expect(writerV2("well_done", "self")).not.toMatch(/ЗАПРЕЩЕНО на этой степени/);
   });

@@ -24,6 +24,7 @@ const OPEN = [
   "Траты на кофе выросли вместе со стаканчиками",
   "Муж снимает закат лучше, чем ты",
   "Весишь меньше, чем твой штатив",
+  "Толстый кот в кадре чаще, чем закат",
 ];
 const CLOSED = [
   "После развода снимаешь только закаты",
@@ -52,7 +53,7 @@ describe.each(levels)("write на степени %s", (level) => {
       expect(OPEN.some((t) => c.text.startsWith(t))).toBe(true);
     }
     const l4 = r.stats.filters.layer4;
-    // Открытых тем (деньги, семья, вес) в лексиконе больше нет: кодов topic_* для них не бывает.
+    // Открытых тем (деньги, семья, вес, оценочные слова про тело) в лексиконе больше нет: кодов topic_* для них не бывает.
     expect(Object.keys(l4).filter((k) => /^topic_(money|family|weight)$/.test(k))).toEqual([]);
     expect(l4.topic_appearance).toBeUndefined();
     // Закрытые режутся на любой степени.
