@@ -25,7 +25,7 @@ const noSubscribe = () => () => {};
 
 export function GenerationFlow({ id }: { id: string }) {
   const router = useRouter();
-  const { status, error, resume, startedAt } = useGeneration(id);
+  const { status, error, resume, selectionSent, startedAt } = useGeneration(id);
   // Картинка лоудера = картинка выбранной степени; степень неизвестна (ссылка с другого
   // устройства) — костёр. На сервере localStorage нет, поэтому серверный снимок пустой
   const level = useSyncExternalStore(
@@ -80,7 +80,7 @@ export function GenerationFlow({ id }: { id: string }) {
       ) : status.status === "drawing" ? (
         <Loader image={art} phase="drawing" startedAt={startedAt} />
       ) : status.status === "awaiting_selection" ? (
-        <PickPunches id={id} onDone={resume} />
+        <PickPunches id={id} onDone={selectionSent} />
       ) : (
         <ResultScreen slug={status.artifactSlug ?? ""} />
       )}

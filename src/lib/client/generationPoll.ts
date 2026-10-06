@@ -15,20 +15,28 @@ const STOP: ReadonlySet<GenerationStatus["status"]> = new Set([
  */
 export const GENERATION_POLL_RETRIES = 5;
 
-/** Статус генерации раз в 2 с до паузы на выбор или конца. Обрыв сети и 5xx — повтор, 4xx — сразу наружу. */
+/**
+ * Статус генерации раз в 2 с до паузы на выбор или конца. Обрыв сети и 5xx — повтор, 4xx — сразу наружу.
+ * `selectionSent` — выбор уже отправлен: сервер отвечает 202 раньше, чем меняет статус, поэтому
+ * `awaiting_selection` тут больше не пауза, ждём следующий статус.
+ */
 export function pollGeneration(
   getStatus: () => Promise<GenerationStatus>,
   {
     signal,
     onTick,
     intervalMs,
+    selectionSent = false,
   }: {
     signal?: AbortSignal;
     onTick?: (status: GenerationStatus) => void;
     intervalMs?: number;
+    selectionSent?: boolean;
   } = {},
 ): Promise<GenerationStatus> {
-  return pollUntil(getStatus, (s) => STOP.has(s.status), {
+  const isDone = (s: GenerationStatus) =>
+    STOP.has(s.status) && !(selectionSent && s.status === "awaiting_selection");
+  return pollUntil(getStatus, isDone, {
     signal,
     onTick,
     intervalMs,
