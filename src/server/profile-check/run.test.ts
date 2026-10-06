@@ -61,9 +61,9 @@ describe("runProfileCheck", () => {
       const parsed = CostRun.parse(cost);
       expect(parsed.apify).toMatchObject({ attempts: 1, results: 1, source: "estimate" });
       expect(parsed.llm).toHaveLength(1);
-      expect(parsed.estimated).toBe(true);
-      // 20k вход * $2/M + 3k выход * $10/M = $0.07 + Apify $0.0023
-      expect(parsed.microUsd).toBe(70_000 + 2_300);
+      expect(parsed.estimated).toBe(false);
+      // 20k вход * $2/M + 3k выход * $10/M = $0.07 + Apify $0.0026
+      expect(parsed.microUsd).toBe(70_000 + 2_600);
     });
 
     it("отказ тоже пишет траты: scrape заплатил, analyze не запускался", async () => {

@@ -43,7 +43,10 @@ export const CostRun = z.object({
   apify: ApifyCostLine.nullable(),
   /** Итог прогона, микро-USD (сумма строк). Центы считаются из суммы, а не из строк. */
   microUsd: count,
-  /** `true`, если хоть одна цена — заглушка или оценка (см. `prices.ts`). */
+  /**
+   * `true`, если хоть одна цена не сверена (`verified: false`) или модель неизвестна (см. `prices.ts`).
+   * Оценочность суммы Apify (результаты × тариф) сюда не входит: она в `apify.source`.
+   */
   estimated: z.boolean(),
   /** Дата сверки таблицы цен, по которой считали. */
   pricesAsOf: z.string(),

@@ -40,6 +40,7 @@ describe("CostMeter: LLM", () => {
     // 4000 * $2/M + 1000 * $10/M = $0.018
     expect(run.microUsd).toBe(18_000);
     expect(run.pricesAsOf).toBe(PRICES_CHECKED_AT);
+    expect(run.estimated).toBe(false); // известная сверенная модель
   });
 
   it("неудачные вызовы и ретраи учитываются: с токенами и без", () => {
@@ -136,6 +137,7 @@ describe("CostMeter: LLM", () => {
     expect(run.estimated).toBe(true);
     expect(run.microUsd).toBe(2_000_000);
     expect(priceForModel("mystery").known).toBe(false);
+    expect(priceForModel("mystery").price.verified).toBe(false);
   });
 });
 
@@ -166,11 +168,34 @@ describe("CostMeter: Apify", () => {
       actor: APIFY_PRICE.actor,
       attempts: 1,
       results: 1,
-      microUsd: 2300,
+      microUsd: 2600,
       source: "estimate",
     });
-    expect(run.estimated).toBe(true);
-    expect(run.microUsd).toBe(2300);
+    // цена за результат сверена, поэтому прогон не estimated; оценочность строки Apify — source
+    expect(run.estimated).toBe(false);
+    expect(run.microUsd).toBe(2600);
+  });
+
+  it("несверенная цена (известная модель или Apify) делает прогон estimated", () => {
+    const model = MODEL_PRICES[M];
+    if (!model) throw new Error("нет цены модели");
+    const saved = { model: model.verified, apify: APIFY_PRICE.verified };
+    const run = (modelVerified: boolean, apifyVerified: boolean) => {
+      try {
+        model.verified = modelVerified;
+        APIFY_PRICE.verified = apifyVerified;
+        const m = new CostMeter();
+        m.recordLlm({ role: "writer", model: M, usage: { inputTokens: 1 }, ok: true });
+        m.recordApify({ results: 1 });
+        return m.snapshot().estimated;
+      } finally {
+        model.verified = saved.model;
+        APIFY_PRICE.verified = saved.apify;
+      }
+    };
+    expect(run(false, true)).toBe(true);
+    expect(run(true, false)).toBe(true);
+    expect(run(true, true)).toBe(false);
   });
 
   it("сбой без ответа: попытка есть, денег нет", () => {
