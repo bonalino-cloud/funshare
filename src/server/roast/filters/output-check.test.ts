@@ -21,11 +21,15 @@ describe("normalizedWords", () => {
 });
 
 describe("темы по степеням (§6, пересмотр 14а)", () => {
-  // Внешность лица, оценочные слова про тело и сексуальность: только well done.
+  // Внешность лица и черт и сексуальность: только well done (слова про тело открыты с 06.10).
   const soft: [string, string][] = [
-    ["Толстяки так не снимают закаты", "topic_appearance"],
+    ["Некрасивый кадр, как и вчера", "topic_appearance"],
+    ["Рожа довольная в каждой сторис", "topic_appearance"],
     ["Твоя лысина блестит в каждом кадре", "topic_appearance"],
-    ["Жирдяй с закатом в каждом кадре", "topic_appearance"],
+    // Слова про тело открыты, но не про лицо (решение 06.10).
+    ["Пухлые губы в каждом селфи", "topic_appearance"],
+    ["Толстый нос ловит закат", "topic_appearance"],
+    ["Пухлые щёки на каждом фото", "topic_appearance"],
     ["Секс по расписанию, закат по расписанию", "topic_sexuality"],
   ];
   it.each(soft)("rare и medium: %s", (text, code) => {
@@ -61,6 +65,13 @@ describe("темы по степеням (§6, пересмотр 14а)", () => 
     "Брат поставил лайк, сестра репост",
     "Здоровье пошло на второй план после полёта",
     "Стройная линия горизонта, стройнее только твой график",
+    // Оценочные слова про тело (решение 06.10): открыты, смысл проверяет модератор.
+    "Толстяки так не снимают закаты",
+    "Жирдяй с закатом в каждом кадре",
+    "Пухлый круассан в кадре чаще, чем ты",
+    "Толстый кот и закат, идеальный вторник",
+    "Толстовка в каждом кадре",
+    "Роман Толстого в кадре, закат за окном",
   ];
   it.each(open)("открыто на всех степенях: %s", (text) => {
     for (const ctx of [rare, medium, wellDone]) expect(checkOutputText(text, ctx), text).toBeNull();
@@ -81,6 +92,7 @@ describe("темы по степеням (§6, пересмотр 14а)", () => 
     ["Дети в кадре чаще, чем кофе", "topic_children"],
     ["Сын в кадре чаще, чем закат", "topic_children"],
     ["Дочка выбирает фильтр", "topic_children"],
+    ["Ожирение не повод пропускать закат", "topic_health"],
     ["Ребёнок обиделся на штатив", "topic_children"],
     ["После развода снимаешь только закаты", "topic_sensitive"],
     ["Развелась с камерой, но вернулась", "topic_sensitive"],
@@ -97,17 +109,19 @@ describe("темы по степеням (§6, пересмотр 14а)", () => 
   });
 
   it("topicHits возвращает все задетые категории", () => {
-    expect(topicHits("Толстый муж заплатил за врача", "medium").sort()).toEqual([
+    expect(topicHits("Лысый муж заплатил за врача", "medium").sort()).toEqual([
       "appearance",
       "health",
     ]);
-    expect(topicHits("Толстый муж заплатил за врача", "well_done")).toEqual(["health"]);
+    expect(topicHits("Лысый муж заплатил за врача", "well_done")).toEqual(["health"]);
+    expect(topicHits("Толстый муж заплатил за врача", "medium")).toEqual(["health"]);
     expect(topicHits("Мама заплатила деньги за диету", "medium")).toEqual([]);
   });
 
   it("регистр, ё и словоформы не обходят список", () => {
     expect(checkOutputText("СЫНОМ тоже не поделился", medium)).toBe("topic_children");
-    expect(checkOutputText("ТОЛСТЫЙ кот", medium)).toBe("topic_appearance");
+    expect(checkOutputText("ЛЫСЫЙ кот", medium)).toBe("topic_appearance");
+    expect(checkOutputText("ТОЛСТЫЙ кот", medium)).toBeNull();
     expect(checkOutputText("РАЗВОДОМ пахнет", medium)).toBe("topic_sensitive");
   });
 });
