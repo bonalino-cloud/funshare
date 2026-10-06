@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Лаборатория вкуса — макет раздела админки</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"
+    />
+    <style>
+      :root {
+        --surface-1: #f7f6f2;
+        --surface-2: #fff;
+        --border: rgba(0, 0, 0, 0.12);
+        --border-accent: #378add;
+        --text-primary: #1f1f1d;
+        --text-secondary: #5f5e5a;
+        --text-success: #3b6d11;
+        --text-accent: #185fa5;
+        --bg-success: #eaf3de;
+        --bg-accent: #e6f1fb;
+        --radius: 8px;
+        --font-voice: Georgia, serif;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        color: var(--text-primary);
+        max-width: 720px;
+        margin: 24px auto;
+        padding: 0 16px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .card {
+        background: var(--surface-2);
+        border: 0.5px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+      }
+      .h {
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      .mut {
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+      .metric {
+        background: var(--surface-1);
+        border-radius: var(--radius);
+        padding: 10px;
+      }
+      button,
+      select {
+        font: inherit;
+        padding: 6px 10px;
+        border: 0.5px solid rgba(0, 0, 0, 0.3);
+        border-radius: var(--radius);
+        background: transparent;
+      }
+      .note {
+        font-size: 12px;
+        color: var(--text-secondary);
+        border-top: 0.5px solid var(--border);
+        padding-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Макет-предложение (2026-10-06), не финальный дизайн. Экраны — зона Сергея, данные — API H9. Цифры выдуманы для примера. -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-size: 18px; font-weight: 500">
+          <i class="ti ti-flask"></i> Лаборатория вкуса
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary)">
+          Песочница · боевые данные не задеты
+        </div>
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 6px;
+          font-size: 12px;
+          text-align: center;
+        "
+      >
+        <div
+          style="
+            padding: 6px;
+            border-radius: var(--radius);
+            background: var(--bg-success);
+            color: var(--text-success);
+          "
+        >
+          1 Материал
+        </div>
+        <div
+          style="
+            padding: 6px;
+            border-radius: var(--radius);
+            background: var(--bg-success);
+            color: var(--text-success);
+          "
+        >
+          2 Прогон
+        </div>
+        <div
+          style="
+            padding: 6px;
+            border-radius: var(--radius);
+            background: var(--bg-accent);
+            color: var(--text-accent);
+          "
+        >
+          3 Оценка
+        </div>
+        <div
+          style="
+            padding: 6px;
+            border-radius: var(--radius);
+            background: var(--surface-1);
+            color: var(--text-secondary);
+          "
+        >
+          4 Отчёт
+        </div>
+        <div
+          style="
+            padding: 6px;
+            border-radius: var(--radius);
+            background: var(--surface-1);
+            color: var(--text-secondary);
+          "
+        >
+          5 Выкатка
+        </div>
+      </div>
+      <div class="card">
+        <div class="h">1 Материал — пакет «осень-мемы»</div>
+        <div class="mut">
+          40 шуток принято · 6 отбраковано (повтор, 18+) · 2 новые методики: «гипербола», «ложный
+          вывод»
+        </div>
+        <div style="font-size: 13px; margin-top: 6px">
+          Собран пакет <code>taste/v2</code> против текущего <code>taste/v1</code>
+        </div>
+      </div>
+      <div class="card">
+        <div class="h">2 Прогон на эталоне</div>
+        <div class="mut">10 профилей × 2 версии · 120 шуток · 3 мин 40 с · 41 ₽</div>
+      </div>
+      <div class="card" style="border: 2px solid var(--border-accent)">
+        <div style="display: flex; justify-content: space-between">
+          <span class="h">3 Слепая оценка</span
+          ><span style="font-size: 12px; color: var(--text-secondary)"
+            >37 из 120 · версия скрыта</span
+          >
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 4px">
+          Профиль №4 · факт: «фото с гантелями, подпись "день 1"»
+        </div>
+        <div
+          style="
+            font-family: var(--font-voice);
+            font-size: 16px;
+            padding: 10px 12px;
+            background: var(--surface-1);
+            border-radius: var(--radius);
+          "
+        >
+          «День первый» — подпись, которую ты пересматриваешь чаще, чем гантели.
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap">
+          <button><i class="ti ti-flame"></i> Огонь</button
+          ><button><i class="ti ti-thumb-up"></i> Норм</button
+          ><button><i class="ti ti-thumb-down"></i> Мимо</button>
+          <select>
+            <option>причина: не смешно</option>
+            <option>обидно</option>
+            <option>нет логики</option>
+            <option>банально</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="h">4 Отчёт — после оценки версии раскрываются</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <div class="metric">
+            <div class="mut">Огонь v1 → v2</div>
+            <div style="font-size: 20px; font-weight: 500">31 → 44%</div>
+          </div>
+          <div class="metric">
+            <div class="mut">«Обидно»</div>
+            <div style="font-size: 20px; font-weight: 500">3 → 2%</div>
+          </div>
+          <div class="metric">
+            <div class="mut">Цена профиля</div>
+            <div style="font-size: 20px; font-weight: 500">4,1 ₽</div>
+          </div>
+          <div class="metric">
+            <div class="mut">Лучшая методика</div>
+            <div style="font-size: 16px; font-weight: 500">гипербола</div>
+          </div>
+        </div>
+        <div style="margin-top: 10px; font-size: 13px; color: var(--text-success)">
+          <i class="ti ti-check"></i> Ворота пройдены: +13 п. п., «обидно» не вырос, цена в норме
+        </div>
+      </div>
+      <div class="card">
+        <div class="h">5 Выкатка на бой</div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+          <span class="mut">Пробная доля</span
+          ><input type="range" min="0" max="100" value="10" step="10" style="flex: 1" /><span
+            style="font-weight: 500"
+            >10%</span
+          ><button>Откатить</button>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 6px">
+          Живое сравнение: выбирают v2 — 58%, шерят — 12% против 9%
+        </div>
+      </div>
+      <div class="note">
+        Макет-предложение от 2026-10-06 к плану <code>plans/humor-lab.md</code>. Цифры условные.
+        Экраны рисует FE (Сергей), данные отдаёт API задачи H9.
+      </div>
+    </div>
+  </body>
+</html>
