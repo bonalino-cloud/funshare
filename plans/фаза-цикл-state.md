@@ -9,10 +9,10 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-prices-verify
-статус_фазы: генерация
-текущий_шаг_карусели: 0
-промт_следующей_фазы: сессия «Продукт» (plans/две-сессии.md). be/p1-prices-verify — сверить цены Apify и Anthropic в src/server/cost/prices.ts с официальными страницами, verified: true, источник и дата в комментарии. Затем блок админки (roast-engine.md §12): contracts/admin-v1 (ревью Сергея) → be/p1-admin-api (вход, промокоды) → be/p1-admin-generations; затем хвосты: Cron очистки generation_traces 30 дней, сторож зависших writing, server-only после пакета от Сергея. Скрейп (1) и проверка профиля (4) — живой прогон, как только Сергей заведёт переменные Vercel. Юмор (H1–H9, слова про тело, eval-set) — НЕ здесь, это сессия «Юмор», plans/humor-state.md
+текущая_фаза: be/p1-podzhog-repeat
+статус_фазы: ждёт_принято
+текущий_шаг_карусели: 9
+промт_следующей_фазы: сессия «Продукт». be/p1-profile-hooks — #102 + #97: проверка профиля без досье, в модель только обложки постов (до 6, ~512 px), аватар и био; цель ~1,5 ¢ и быстрее ~1,5 мин. Параллельно: contracts/pricing-fixture-podzhog — src/contracts/fixtures/pricing.json и quotes.json тариф 1 → 9900, тест contracts.test.ts:48–51 (ревью Сергея). Затем админка после ревью #90; хвосты: Cron очистки generation_traces 30 дней, сторож зависших writing. Скрейп (1) и проверка профиля (4) — живой прогон после #105 (Сергей, Vercel)
 открытые_решения: Сергей: ревью invariants.md п.3 (PR #82); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
 входящие: —
 обкатка_страницы: нет
