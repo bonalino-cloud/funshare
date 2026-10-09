@@ -28,7 +28,7 @@ export type ScrapeResult =
 export type ScrapeDeps = {
   fetchRaw: (username: string) => Promise<unknown>;
   putRaw: (key: string, json: string) => Promise<void>;
-  snapshots: SnapshotRepository;
+  snapshots: Pick<SnapshotRepository, "findFresh" | "insert">;
   now: () => Date;
   /** Счётчик трат проверки: каждое обращение к Apify. Кэш снимка ничего не записывает. */
   meter?: CostMeter;
@@ -92,16 +92,26 @@ function classify(raw: unknown, username: string, fetchedAt: Date): Classified {
   }
 }
 
-function guardrail(snapshot: ProfileSnapshotType): ScrapeErrorCode | null {
+/**
+ * Правила допуска профиля без модели: закрыт → `profile_private`; мало постов или нет текста
+ * (ни био, ни подписей) → `not_enough_data`. Единственное место: их зовут и проверка профиля
+ * (через `scrapeProfile`), и `analyze`. `hasText` — если вызывающий уже посчитал, есть ли текст
+ * после чистки (факты); иначе смотрим на сырые био и подписи снимка.
+ */
+export function profileRules(
+  snapshot: ProfileSnapshotType,
+  hasText?: boolean,
+): "profile_private" | "not_enough_data" | null {
   if (snapshot.isPrivate) return "profile_private";
-  const noText =
-    snapshot.biography.trim() === "" && snapshot.posts.every((p) => p.caption.trim() === "");
-  if (snapshot.posts.length < MIN_POSTS || noText) return "not_enough_data";
+  const text =
+    hasText ??
+    (snapshot.biography.trim() !== "" || snapshot.posts.some((p) => p.caption.trim() !== ""));
+  if (snapshot.posts.length < MIN_POSTS || !text) return "not_enough_data";
   return null;
 }
 
 function finish(snapshot: ProfileSnapshotType, snapshotId: string, cached: boolean): ScrapeResult {
-  const blocked = guardrail(snapshot);
+  const blocked = profileRules(snapshot);
   return blocked ? { ok: false, errorCode: blocked } : { ok: true, snapshot, snapshotId, cached };
 }
 

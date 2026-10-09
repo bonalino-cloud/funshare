@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -136,6 +137,31 @@ export const personas = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("personas_snapshot_id_prompt_version_idx").on(t.snapshotId, t.promptVersion)],
+);
+
+/**
+ * Состояние досье по (снимок, версия промпта): замок «досье уже считается» и запись отказа.
+ * `running` — кто-то считает (фон после «Нашли!» или старт генерации): второй платный вызов не
+ * запускаем. Замок старше `DOSSIER_STALE_MS` считается брошенным (функцию убили) и перехватывается.
+ * `refused` — гардрейл по досье (`minor_detected`, `not_enough_data`): старт генерации отказывает без
+ * нового вызова модели. Готовое досье лежит в `personas`, строка здесь тогда удалена. Каскад
+ * от снимка, как у `personas`.
+ */
+export const dossierRuns = pgTable(
+  "dossier_runs",
+  {
+    snapshotId: text("snapshot_id")
+      .notNull()
+      .references(() => profileSnapshots.id, { onDelete: "cascade" }),
+    promptVersion: text("prompt_version").notNull(),
+    status: text("status").$type<"running" | "refused">().notNull(),
+    errorCode: errorCode("error_code"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.snapshotId, t.promptVersion] }),
+    check("dossier_runs_status", sql`${t.status} IN ('running', 'refused')`),
+  ],
 );
 
 export type ArtifactSubject = Artifact["subject"];

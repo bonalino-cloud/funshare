@@ -9,10 +9,10 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-podzhog-repeat
+текущая_фаза: be/p1-fast-profile-check
 статус_фазы: ждёт_принято
 текущий_шаг_карусели: 9
-промт_следующей_фазы: сессия «Продукт». be/p1-profile-hooks — #102 + #97: проверка профиля без досье, в модель только обложки постов (до 6, ~512 px), аватар и био; цель ~1,5 ¢ и быстрее ~1,5 мин. Параллельно: contracts/pricing-fixture-podzhog — src/contracts/fixtures/pricing.json и quotes.json тариф 1 → 9900, тест contracts.test.ts:48–51 (ревью Сергея). Затем админка после ревью #90; хвосты: Cron очистки generation_traces 30 дней, сторож зависших writing. Скрейп (1) и проверка профиля (4) — живой прогон после #105 (Сергей, Vercel)
+промт_следующей_фазы: сессия «Продукт». Хвосты: be/p1-traces-cleanup — Cron очистки generation_traces старше 30 дней; be/p1-writing-watchdog — сторож зависших writing; лимиты на POST /api/generations (rate limit, дневной потолок трат) — теперь старт может вызвать модель. Админка (be/p1-admin-api) — после ревью #90. Живой прогон скрейпа (1) и проверки профиля (4) — после #105 (Сергей, Vercel). Крючки вместо досье (#102) — сессия «Юмор» (входящие в humor-state.md)
 открытые_решения: Сергей: ревью invariants.md п.3 (PR #82); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
 входящие: —
 обкатка_страницы: нет

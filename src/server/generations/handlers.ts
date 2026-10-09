@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import {
   CandidatesResponse,
+  CheckedProfile,
   GenerationCreated,
   GenerationRequest,
   GenerationStatus,
@@ -8,6 +9,11 @@ import {
   type ErrorCode,
   type Tier,
 } from "@/contracts";
+import {
+  GENERATION_COMPUTE_WINDOW_MS,
+  GENERATION_DOSSIER_WAIT_MS,
+  type EnsureDossier,
+} from "../dossier";
 import { hashValue, isOwnerToken, sameHash } from "../hash";
 import {
   DuplicateOrderError,
@@ -29,6 +35,15 @@ export type GenerationsHandlerDeps = {
   profiles: Pick<ProfileCheckRepository, "get">;
   orders: OrderRepository;
   guard: PromoGuard;
+  /**
+   * Гарантия досье до заказа (не бросает): готово, считается фоном (ждём) или считаем сами.
+   * Отказ гардрейла по досье (`minor_detected` и др.) → заказ не создаётся.
+   */
+  ensureDossier: EnsureDossier;
+  /** Досье показало «младше 16»: убрать аватар из публичного Blob (идемпотентно, не бросает). */
+  onMinor: (check: { igUsername: string; avatarUrl: string | null }) => Promise<void>;
+  /** Сколько ждём чужое досье; по умолчанию `GENERATION_DOSSIER_WAIT_MS`. */
+  dossierWaitMs?: number;
   /** Запуск конвейера (Vercel Workflow, см. `workflow.ts`). */
   startWorkflow: (generationId: string) => Promise<void>;
   newId: () => string;
@@ -37,6 +52,9 @@ export type GenerationsHandlerDeps = {
 
 const STATUS: Partial<Record<ErrorCode, number>> = {
   promo_invalid: 400,
+  minor_detected: 409,
+  not_enough_data: 409,
+  profile_private: 409,
   free_used: 409,
   payment_required: 402,
   rate_limited: 429,
@@ -77,6 +95,12 @@ async function validTrialId(
   return ok ? trialId : null;
 }
 
+/** Ссылка на аватар из jsonb проверки (не доверенный): строка или `null`. */
+function avatarUrlOf(profile: unknown): string | null {
+  const parsed = CheckedProfile.safeParse(profile);
+  return parsed.success ? parsed.data.avatarUrl : null;
+}
+
 /** Освободить заказ (правило 2). Сбой не должен ломать ответ и сам не бросает. */
 async function releaseSafely(deps: GenerationsHandlerDeps, orderId: string): Promise<void> {
   try {
@@ -109,6 +133,28 @@ async function place(
   const freshSince = deps.now().getTime() - RESULT_CACHE_TTL_MS;
   if (!check.checkedAt || check.checkedAt.getTime() < freshSince) {
     return errorResponse("profile_not_found", 410);
+  }
+
+  // Гардрейл «младше 16» и «мало данных» по досье — ДО заказа (инварианты 2 и 11): отказ ничего не
+  // оставляет, проба и код не расходуются. Досье в фоне после «Нашли!» обычно уже готово.
+  // Снимок убрал Cron (`snapshotId` обнулился): досье строить не из чего, проверку надо повторить.
+  if (check.snapshotId === null) return errorResponse("profile_not_found", 410);
+  const dossier = await deps.ensureDossier(
+    { snapshotId: check.snapshotId },
+    deps.dossierWaitMs ?? GENERATION_DOSSIER_WAIT_MS,
+    GENERATION_COMPUTE_WINDOW_MS,
+  );
+  if (!dossier.ok) {
+    if (dossier.errorCode === "minor_detected") {
+      await deps.onMinor({
+        igUsername: check.igUsername,
+        avatarUrl: avatarUrlOf(check.profile),
+      });
+    }
+    if (dossier.errorCode === "profile_not_found") return errorResponse("profile_not_found", 410);
+    // Не успели посчитать за срок или сбой: платного ничего не случилось, можно повторить.
+    if (dossier.errorCode === "internal") return errorResponse("internal", 503);
+    return errorResponse(dossier.errorCode);
   }
 
   const trialGenerationId = await validTrialId(

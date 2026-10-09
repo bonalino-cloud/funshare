@@ -199,12 +199,17 @@ export function makeDeps(
   const orders = makeOrdersRepo(opts.promos);
   const { guard, enter, fail } = makeGuard(opts.guardAllowed ?? true);
   const startWorkflow = vi.fn<GenerationsHandlerDeps["startWorkflow"]>(async () => {});
+  const ensureDossier = vi.fn<GenerationsHandlerDeps["ensureDossier"]>(async () => ({ ok: true }));
+  const onMinor = vi.fn<GenerationsHandlerDeps["onMinor"]>(async () => {});
   let n = 0;
   const deps: GenerationsHandlerDeps = {
     repo: generations.repo,
     profiles: profiles.repo,
     orders: orders.repo,
     guard,
+    ensureDossier,
+    onMinor,
+    dossierWaitMs: 1234,
     startWorkflow,
     newId: () => `gen-${++n}`,
     now: () => now,
@@ -225,7 +230,18 @@ export function makeDeps(
       checkedAt: over.checkedAt ?? now,
     });
 
-  return { deps, generations, profiles, orders, enter, fail, startWorkflow, addCheck };
+  return {
+    deps,
+    generations,
+    profiles,
+    orders,
+    enter,
+    fail,
+    startWorkflow,
+    ensureDossier,
+    onMinor,
+    addCheck,
+  };
 }
 
 export function post(body: unknown, init: { token?: string; ip?: string } = {}) {

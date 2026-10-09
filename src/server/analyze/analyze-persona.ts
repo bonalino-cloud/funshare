@@ -3,7 +3,7 @@ import { PersonaProfile } from "@/contracts";
 import { buildProfileFacts, type ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import { ANALYZE_PROMPT_VERSION as PROMPT_VERSION, buildAnalyzePrompt } from "../prompts/active";
-import { MIN_POSTS } from "../scrape";
+import { profileRules } from "../scrape";
 import { createCoverFetcher, type DownloadedCover, type FetchCoversFn } from "./cover-fetch";
 import { pickCovers } from "./covers";
 import type { CostMeter } from "../cost/meter";
@@ -58,12 +58,6 @@ function formatIssues(error: { issues: readonly { path: PropertyKey[]; message: 
     .slice(0, 600);
 }
 
-function guardrail(snapshot: ProfileSnapshot, bioOrCaptions: boolean): AnalyzeErrorCode | null {
-  if (snapshot.isPrivate) return "profile_private";
-  if (snapshot.posts.length < MIN_POSTS || !bioOrCaptions) return "not_enough_data";
-  return null;
-}
-
 /**
  * Шаг `analyze`, часть LLM: `ProfileSnapshot` → `ProfileFacts` → промпт v1 → досье.
  * Порядок защиты от трат: закрытый и пустой профиль отсекаются до вызова модели; флаги модели
@@ -85,7 +79,7 @@ export async function analyzePersona(
     logFailure("не удалось посчитать факты", error);
     return { ok: false, errorCode: "internal" };
   }
-  const blocked = guardrail(snapshot, facts.biography !== "" || facts.captionsForLlm.length > 0);
+  const blocked = profileRules(snapshot, facts.biography !== "" || facts.captionsForLlm.length > 0);
   if (blocked) return { ok: false, errorCode: blocked };
 
   // Один раз до попыток. Не скачавшиеся обложки пропускаются: `index` у остальных остаётся

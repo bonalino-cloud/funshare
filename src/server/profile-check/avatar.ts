@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { downloadCover, type CoverMediaType, type FetchLike } from "../analyze/cover-fetch";
 import { parseServerEnv } from "../env";
 import { hashValue } from "../hash";
@@ -105,4 +105,36 @@ export function createAvatarCopier(
       clearTimeout(timer);
     }
   };
+}
+
+/** Удаляет копию аватара из публичного Blob по её URL. Бросает при сбое; ничего не делает, если файла нет. */
+export type RemoveAvatar = (url: string) => Promise<void>;
+
+/**
+ * Только наши копии: https, хост публичного Blob, ключ в `avatars/`. URL берётся из jsonb проверки,
+ * но удаление идёт с нашим токеном, поэтому чужой адрес и чужой ключ не пропускаем.
+ */
+export function isOurAvatarUrl(value: string | null): value is string {
+  if (value === null) return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(".public.blob.vercel-storage.com") &&
+      url.pathname.startsWith("/avatars/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function removePublic(url: string): Promise<void> {
+  if (!isOurAvatarUrl(url)) return;
+  const token = parseServerEnv(process.env).BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    const error = new Error("BLOB_READ_WRITE_TOKEN is not set");
+    error.name = "AvatarBlobTokenMissing";
+    throw error;
+  }
+  await del(url, { token });
 }

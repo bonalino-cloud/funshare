@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GenerationCreated, GenerationStatus, type GenerationRequest } from "@/contracts";
+import { GENERATION_COMPUTE_WINDOW_MS } from "../dossier";
 import { RESULT_CACHE_TTL_MS } from "../profile-check/config";
 import { createGeneration, getGeneration } from "./handlers";
 import {
@@ -204,6 +205,84 @@ describe("POST: проверка профиля и владение", () => {
       checkedAt: new Date(NOW.getTime() - RESULT_CACHE_TTL_MS),
     });
     expect((await send(t, body(edge))).res.status).toBe(202);
+  });
+});
+
+describe("POST: досье и гардрейл «младше 16» до заказа", () => {
+  it("досье гарантируется по снимку проверки, ожидание задаётся сервером", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(202);
+    expect(t.ensureDossier).toHaveBeenCalledExactlyOnceWith(
+      { snapshotId: "snap-1" },
+      1234,
+      GENERATION_COMPUTE_WINDOW_MS,
+    );
+  });
+
+  it("minor_detected → 409, ни заказа, ни пробы, ни кода; аватар чистится", async () => {
+    const t = makeDeps({ promos: { FUNTEST: makePromo() } });
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    const { res, json } = await send(t, body(checkId, { tier: 2, promoCode: "funtest" }));
+    expect(res.status).toBe(409);
+    expect(json).toEqual({ errorCode: "minor_detected" });
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(0);
+    expect(t.fail).not.toHaveBeenCalled(); // попытка кода не засчитана
+    expect(t.onMinor).toHaveBeenCalledExactlyOnceWith({
+      igUsername: "anya.travels",
+      avatarUrl: "https://abc123.public.blob.vercel-storage.com/avatars/abc",
+    });
+    expectNothingWritten(t);
+  });
+
+  it("Поджог (проба) при minor_detected: проба не расходуется, заказа нет", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    await send(t, body(checkId));
+    expect(t.orders.repo.redeemAndCreateOrder).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+  });
+
+  it.each(["not_enough_data", "profile_private"] as const)("%s → 409 без заказа", async (code) => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: code });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(409);
+    expect(json).toEqual({ errorCode: code });
+    expect(t.onMinor).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+  });
+
+  it("досье ещё считается и срок вышел (busy) → 503 internal, ничего не создано", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "internal", busy: true });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(503);
+    expect(json).toEqual({ errorCode: "internal" });
+    expectNothingWritten(t);
+  });
+
+  it("снимка нет (Cron убрал) → 410 profile_not_found", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "profile_not_found" });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(410);
+    expect(json).toEqual({ errorCode: "profile_not_found" });
+    expectNothingWritten(t);
+  });
+
+  it("чужая проверка: досье не трогаем вовсе", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(OTHER_TOKEN);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(404);
+    expect(t.ensureDossier).not.toHaveBeenCalled();
   });
 });
 
