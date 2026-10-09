@@ -34,6 +34,18 @@ describe("pollGeneration", () => {
     },
   );
 
+  it("после отправки выбора не останавливается на awaiting_selection: сервер меняет статус позже 202", async () => {
+    const getStatus = sequence([
+      status("awaiting_selection"),
+      status("awaiting_selection"),
+      status("drawing"),
+      status("ready"),
+    ]);
+    const result = await pollGeneration(getStatus, { ...fast, selectionSent: true });
+    expect(result.status).toBe("ready");
+    expect(getStatus).toHaveBeenCalledTimes(4);
+  });
+
   it("не останавливается на queued, writing и drawing", async () => {
     const getStatus = sequence([
       status("queued"),
