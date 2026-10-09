@@ -8,8 +8,8 @@
   },
   "freeTrial": {
     "tier": 1,
-    "listAmount": 0,
-    "discountAmount": 0,
+    "listAmount": 9900,
+    "discountAmount": 9900,
     "finalAmount": 0,
     "currency": "RUB",
     "freeTrial": true
