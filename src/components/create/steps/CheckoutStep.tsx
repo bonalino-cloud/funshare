@@ -6,14 +6,15 @@ import type { Quote } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
 import { Spinner } from "@/components/ui/Spinner";
-import { api, toErrorCode } from "@/lib/client/api";
+import { ApiError, api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { rememberGeneration } from "@/lib/client/history";
 import { formatRub } from "@/lib/client/money";
 import { Blaze } from "../Blaze";
-import { ERROR_TEXT, errorLine } from "../errors";
+import { ERROR_TEXT, errorLine, startErrorLine } from "../errors";
 import { IconSquareRoundedCheck, IconX } from "../icons";
 import { LEVEL_NAME, TIER_NAME } from "../labels";
+import { QuietLink } from "../QuietLink";
 import { StepTitle } from "../StepTitle";
 import type { CreateStep } from "../steps";
 
@@ -66,6 +67,8 @@ export function CheckoutStep({
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Проверка профиля старше 24 ч: запуск невозможен, пока её не повторить
+  const [checkStale, setCheckStale] = useState(false);
 
   const { tier, level, profile, profileCheckId } = draft;
 
@@ -117,6 +120,7 @@ export function CheckoutStep({
     if (!profileCheckId || tier === undefined || level === undefined) return;
     setBusy(true);
     setError(null);
+    setCheckStale(false);
     try {
       const { id } = await api.createGeneration({
         profileCheckId,
@@ -141,9 +145,12 @@ export function CheckoutStep({
       }
       router.push(`/g/${id}`);
     } catch (e) {
-      const code = toErrorCode(e);
-      setError(errorLine(code));
-      if (code === "payment_required" || code === "promo_invalid") setPromoOpen(true);
+      setError(startErrorLine(e));
+      if (e instanceof ApiError) {
+        setCheckStale(e.status === 410);
+        if (e.errorCode === "payment_required" || e.errorCode === "promo_invalid")
+          setPromoOpen(true);
+      }
       setBusy(false);
     }
   }
@@ -261,6 +268,11 @@ export function CheckoutStep({
 
       <div className="mt-auto flex flex-col gap-3 pt-4">
         {error && <p className="border-l-2 border-red pl-3 type-body text-paper">{error}</p>}
+        {checkStale && (
+          <QuietLink onClick={() => patchDraft({ profileCheckId: undefined, profile: undefined })}>
+            Проверить профиль заново
+          </QuietLink>
+        )}
         <Button
           type="button"
           variant="inverse"

@@ -39,7 +39,7 @@ src/contracts/
 | `POST` | `/api/generations` | → `GenerationRequest { profileCheckId, mode, kind, tier, level, ageConfirmed?, extraFacts?, promoCode? }`; ← `{ id }`. Итог > 0 без билинга → `payment_required` |
 | `GET` | `/api/generations/:id` | ← `GenerationStatus`: `{ id, status, errorCode?, artifactSlug?, hint?, updatedAt }` |
 | `GET` | `/api/generations/:id/candidates` | ← `CandidatesResponse { generationId, selectCount, candidates[] }`, только при `awaiting_selection` и только владельцу |
-| `POST` | `/api/generations/:id/selection` | → `SelectionRequest { punchIds }` ровно `selectCount` штук; ← `202`. Порядок = порядок в артефакте |
+| `POST` | `/api/generations/:id/selection` | → `SelectionRequest { punchIds }` от 1 до `selectCount` штук; ← `202`. Порядок = порядок в артефакте |
 | `GET` | `/api/artifacts/:slug` | ← `Artifact` (публичные данные, без сырых данных профиля) |
 | `DELETE` | `/api/artifacts/:slug` | только с `ownerToken` владельца; ← `204` |
 

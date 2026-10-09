@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
 import {
+  CandidatesResponse,
   GenerationCreated,
   GenerationRequest,
   GenerationStatus,
+  SelectionRequest,
   type ErrorCode,
   type Tier,
 } from "@/contracts";
@@ -14,7 +16,7 @@ import {
   releaseOrder,
   type OrderRepository,
 } from "../orders";
-import { TierUnavailableError } from "../pricing";
+import { TIERS, TierUnavailableError } from "../pricing";
 import { OWNER_COOKIE, RESULT_CACHE_TTL_MS } from "../profile-check/config";
 import { clientIp } from "../profile-check/handlers";
 import type { ProfileCheckRepository } from "../profile-check/repository";
@@ -230,6 +232,21 @@ export async function createGeneration(
 }
 
 /**
+ * Владелец по cookie: хэш токена или готовый ответ (404 без cookie, 503 без соли хэша). Чужой,
+ * несуществующий и «без cookie» неотличимы.
+ */
+function ownerHashOf(request: NextRequest): { ownerTokenHash: string } | Response {
+  const cookie = request.cookies.get(OWNER_COOKIE)?.value;
+  if (!isOwnerToken(cookie)) return notFound();
+  try {
+    return { ownerTokenHash: hashValue("owner", cookie) };
+  } catch (error) {
+    console.error(`[generations] соль хэша недоступна: ${errorName(error)}`);
+    return errorResponse("internal", 503);
+  }
+}
+
+/**
  * GET /api/generations/:id — только владелец. Чужой, несуществующий и «без cookie» id — одинаковый
  * 404. Ответ строго через `GenerationStatus`: `errorCode` только при failed, `artifactSlug` только
  * при ready.
@@ -239,20 +256,12 @@ export async function getGeneration(
   id: string,
   deps: Pick<GenerationsHandlerDeps, "repo">,
 ): Promise<Response> {
-  const cookie = request.cookies.get(OWNER_COOKIE)?.value;
-  if (!isOwnerToken(cookie)) return notFound();
-
-  let ownerTokenHash: string;
-  try {
-    ownerTokenHash = hashValue("owner", cookie);
-  } catch (error) {
-    console.error(`[generations] соль хэша недоступна: ${errorName(error)}`);
-    return errorResponse("internal", 503);
-  }
+  const owner = ownerHashOf(request);
+  if (owner instanceof Response) return owner;
 
   try {
     const row = await deps.repo.get(id);
-    if (!row || !sameHash(row.ownerTokenHash, ownerTokenHash)) return notFound();
+    if (!row || !sameHash(row.ownerTokenHash, owner.ownerTokenHash)) return notFound();
 
     const candidate = {
       id: row.id,
@@ -269,6 +278,133 @@ export async function getGeneration(
     return Response.json(status.data, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     console.error(`[generations] GET не выполнен: ${errorName(error)}`);
+    return errorResponse("internal");
+  }
+}
+
+export type SelectionHandlerDeps = {
+  repo: GenerationRepository;
+  /** Разбудить workflow (хук выбора). Бросает, если не вышло. */
+  resumeSelection: (generationId: string) => Promise<void>;
+  now: () => Date;
+};
+
+const sameOrder = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((id, i) => id === b[i]);
+
+/**
+ * GET /api/generations/:id/candidates — только владелец и только при `awaiting_selection`.
+ * Чужой/несуществующий id — 404; другой статус — 409 (в docs не описан: выбираем 409 «состояние не
+ * то»). Список проходит `CandidatesResponse` до отправки; наружу только id, emoji, text, fromTrial.
+ */
+export async function getCandidates(
+  request: NextRequest,
+  id: string,
+  deps: Pick<SelectionHandlerDeps, "repo">,
+): Promise<Response> {
+  const owner = ownerHashOf(request);
+  if (owner instanceof Response) return owner;
+
+  try {
+    const row = await deps.repo.get(id);
+    if (!row || !sameHash(row.ownerTokenHash, owner.ownerTokenHash)) return notFound();
+    if (row.status !== "awaiting_selection") return errorResponse("internal", 409);
+    if (row.tier === null) return errorResponse("internal");
+
+    const candidates = await deps.repo.listCandidates(id);
+    const response = CandidatesResponse.safeParse({
+      generationId: row.id,
+      selectCount: TIERS[row.tier as Tier].selectCount,
+      candidates: candidates.map((c) => ({
+        id: c.punchId,
+        emoji: c.emoji,
+        text: c.text,
+        ...(c.fromTrial ? { fromTrial: true } : {}),
+      })),
+    });
+    if (!response.success) {
+      console.error("[generations] кандидаты не прошли контракт ответа");
+      return errorResponse("internal");
+    }
+    return Response.json(response.data, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    console.error(`[generations] GET candidates не выполнен: ${errorName(error)}`);
+    return errorResponse("internal");
+  }
+}
+
+const accepted = () =>
+  new Response(null, { status: 202, headers: { "cache-control": "no-store" } });
+
+/**
+ * POST /api/generations/:id/selection — выбор шуток, только владелец.
+ *
+ * Тело — `SelectionRequest` (1–20 id без повторов); дальше сервер сам: все id из кандидатов ЭТОЙ
+ * генерации и не больше `selectCount` тарифа, иначе 400. Порядок id = порядок в артефакте.
+ * Принять выбор можно один раз (условный UPDATE в БД, гонка двух POST — выиграет один), затем
+ * будится workflow, 202. Идемпотентность: тот же выбор повторно — 202 (если workflow ещё ждёт,
+ * будим снова: прошлое пробуждение могло не дойти); другой выбор после принятого — 409; статус не
+ * из {awaiting_selection, drawing, ready} — 409. Сбой пробуждения — 503, повтор безопасен.
+ */
+export async function postSelection(
+  request: NextRequest,
+  id: string,
+  deps: SelectionHandlerDeps,
+): Promise<Response> {
+  const owner = ownerHashOf(request);
+  if (owner instanceof Response) return owner;
+
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return errorResponse("internal", 400);
+  }
+  const parsed = SelectionRequest.safeParse(json);
+  if (!parsed.success) return errorResponse("internal", 400);
+  const { punchIds } = parsed.data;
+
+  try {
+    const row = await deps.repo.get(id);
+    if (!row || !sameHash(row.ownerTokenHash, owner.ownerTokenHash)) return notFound();
+    if (row.tier === null) return errorResponse("internal");
+    if (!["awaiting_selection", "drawing", "ready"].includes(row.status)) {
+      return errorResponse("internal", 409);
+    }
+
+    const known = new Set((await deps.repo.listCandidates(id)).map((c) => c.punchId));
+    if (
+      punchIds.length > TIERS[row.tier as Tier].selectCount ||
+      !punchIds.every((p) => known.has(p))
+    ) {
+      return errorResponse("internal", 400);
+    }
+
+    const taken = await deps.repo.submitSelection({
+      generationId: id,
+      punchIds,
+      max: TIERS[row.tier as Tier].selectCount,
+      now: deps.now(),
+    });
+    if (!taken) {
+      // Не приняли: выбор уже сделан (повтор или гонка) либо статус успел смениться.
+      const existing = await deps.repo.listSelection(id);
+      if (!sameOrder(existing, punchIds)) return errorResponse("internal", 409);
+      // Тот же выбор. Пока workflow ждёт, будим ещё раз; дальше будить некого.
+      const now = await deps.repo.get(id);
+      if (now?.status !== "awaiting_selection") return accepted();
+    }
+
+    try {
+      await deps.resumeSelection(id);
+    } catch (error) {
+      // Выбор в БД уже есть: повтор того же запроса разбудит workflow снова.
+      console.error(`[generations] workflow не разбужен: ${errorName(error)}`);
+      return errorResponse("internal", 503);
+    }
+    return accepted();
+  } catch (error) {
+    console.error(`[generations] POST selection не выполнен: ${errorName(error)}`);
     return errorResponse("internal");
   }
 }

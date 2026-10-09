@@ -1,6 +1,8 @@
 import type { GenerationMode, Level, PersonaProfile, Tier } from "@/contracts";
 import type { ProfileFacts } from "../../facts";
+import type { FilterReport } from "../filters";
 import type { JokeLabel } from "../jokes/card";
+import type { WriteTrace } from "./trace";
 
 // Типы шага `write` (roast-engine §5.2–§5.5). Чистые типы: без БД, env и LLM.
 
@@ -50,6 +52,8 @@ export type PunchTrace = {
   jokeCardId: string | null;
   scores: JudgeScores | null;
   totalScore: number | null;
+  /** Пакет вкуса (`taste/vN`), по которому написана шутка; `promptVersion` — промпт внутри него. */
+  tastePack: string;
   promptVersion: string;
   writerModel: string;
   judgeModel: string;
@@ -75,15 +79,24 @@ export type WriteInput = {
   mode: GenerationMode;
   level: Level;
   tier: Tier;
+  /** Имя пакета вкуса; нет — текущий (`CURRENT_TASTE_PACK`). Неизвестное имя: ошибка до LLM. */
+  tastePack?: string;
   carried?: CarriedPunch[];
 };
 
 export type WriteStats = {
   rounds: number;
   written: number;
+  /** Вычеркнуто слоем 4 (форма, язык, запретные темы, мат, штампы, дубли, утечка промпта). */
   droppedInvalid: number;
   droppedByJudge: number;
   unscored: number;
+  /** Вычеркнуто модератором (слой 5). */
+  droppedByModerator: number;
+  /** Модератор не вернул вердикт: показывать непроверенное нельзя, кандидат отпал. */
+  unmoderated: number;
+  /** Разбивка по слоям и кодам причин (в `generation_traces`, задача 13). */
+  filters: FilterReport;
 };
 
 /** Причина провала шага: наружу (в логи) — только код. */
@@ -99,6 +112,9 @@ export type WriteFailureReason =
   | "invalid_output";
 
 export class WriteFailedError extends Error {
+  /** Трасса провалившегося запуска для `generation_traces`: ставит `writeCandidates`. */
+  trace: WriteTrace | null = null;
+
   constructor(readonly reason: WriteFailureReason) {
     super(`write failed: ${reason}`);
     this.name = "WriteFailedError";

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PersonaProfile } from "@/contracts";
 import { makePost } from "../facts/fixtures";
-import { PROMPT_VERSION } from "../prompts/analyze/v1";
+import { ANALYZE_PROMPT_VERSION as PROMPT_VERSION } from "../prompts/active";
 import { analyzePersona, analyzeStep, MAX_ATTEMPTS } from "./analyze-persona";
 import { pickCovers } from "./covers";
 import { forbiddenTopics } from "./forbidden";

@@ -1,4 +1,4 @@
-export { analyzePersona, analyzeStep, MAX_ATTEMPTS } from "./analyze-persona";
+export { analyzePersona, analyzeStep, defaultAnalyzeDeps, MAX_ATTEMPTS } from "./analyze-persona";
 export type {
   AnalyzeDeps,
   AnalyzeErrorCode,
@@ -8,4 +8,4 @@ export type {
 } from "./analyze-persona";
 export { forbiddenTopics } from "./forbidden";
 export { ANALYZE_MODEL } from "./llm";
-export { PROMPT_VERSION } from "../prompts/analyze/v1";
+export { ANALYZE_PROMPT_VERSION as PROMPT_VERSION } from "../prompts/active";

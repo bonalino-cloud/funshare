@@ -20,7 +20,7 @@ export function makePersona(over: Partial<PersonaProfile> = {}, observations = 1
     habits: ["закат в каждой подписи"],
     aesthetics: "тёплые тона",
     humorAngles: ["закаты"],
-    avoidTopics: ["деньги"],
+    avoidTopics: ["болезни"],
     look: null,
     observations: Array.from({ length: observations }, (_, i) => ({
       id: `o${i + 1}`,
@@ -87,6 +87,7 @@ export const makeTrace = (over: Partial<PunchTrace> = {}): PunchTrace => ({
   jokeCardId: null,
   scores: null,
   totalScore: null,
+  tastePack: "taste/v1",
   promptVersion: "roast/v1",
   writerModel: "w",
   judgeModel: "j",
@@ -138,13 +139,35 @@ export function fakeJudge(
   });
 }
 
+/**
+ * Модератор-заглушка: всем «можно» (или по `perId`: `id`, текст → частичные поля вердикта).
+ */
+export function fakeModerator(
+  perId: (id: string, text: string) => Partial<Record<string, boolean>> = () => ({}),
+) {
+  return vi.fn<GenerateFn>(async (p: PromptText) => {
+    const rows = [...p.user.matchAll(/^\[(m\d+)\] (.*)$/gm)];
+    return {
+      verdicts: rows.map((m) => ({
+        id: m[1]!,
+        aboutBehavior: true,
+        hitsForbiddenTopic: false,
+        friendSafe: true,
+        selfContained: true,
+        ...perId(m[1]!, m[2]!),
+      })),
+    };
+  });
+}
+
 export function makeWriteDeps(over: Partial<WriteDeps> = {}): WriteDeps {
   let n = 0;
   return {
     writer: fakeWriter(),
     judge: fakeJudge(),
+    moderator: fakeModerator(),
     loadBank: async () => makeBank(),
-    models: { writer: "test-writer", judge: "test-judge" },
+    models: { writer: "test-writer", judge: "test-judge", moderator: "test-moderator" },
     newId: () => `p_${String(++n).padStart(4, "0")}`,
     ...over,
   };

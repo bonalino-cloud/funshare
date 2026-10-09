@@ -1,5 +1,6 @@
-import { start } from "workflow/api";
+import { resumeHook, start } from "workflow/api";
 import { generationWorkflow } from "@/workflows/generation";
+import { selectionHookToken, type SelectionSignal } from "./selection-hook";
 
 /**
  * Запуск конвейера генерации (Vercel Workflow). Контракт: вызывается один раз после записи строки
@@ -8,4 +9,13 @@ import { generationWorkflow } from "@/workflows/generation";
  */
 export async function startWorkflow(generationId: string): Promise<void> {
   await start(generationWorkflow, [generationId]);
+}
+
+/**
+ * Разбудить workflow после принятого выбора. Зовётся ТОЛЬКО из `POST …/selection` после проверки
+ * владельца: `resumeHook` сам не проверяет, кто зовёт. Бросает, если хука нет (workflow завершён)
+ * или запись не удалась; вызывающий отвечает 503, повтор того же выбора разбудит ещё раз.
+ */
+export async function resumeSelection(generationId: string): Promise<void> {
+  await resumeHook<SelectionSignal>(selectionHookToken(generationId), { accepted: true });
 }

@@ -4,7 +4,14 @@ import type { GenerationMode, Level, Tier } from "@/contracts";
 import { db, schema } from "../../db";
 import type { PunchTrace, WrittenCandidate } from "./types";
 
-const { generations, profileChecks, profileSnapshots, personas, punchCandidates } = schema;
+const {
+  generations,
+  profileChecks,
+  profileSnapshots,
+  personas,
+  punchCandidates,
+  generationTraces,
+} = schema;
 
 /** Вход шага `write` из БД. `snapshot` и `persona` НЕ доверенные (jsonb): вызывающий парсит. */
 export type WriteInputRow = {
@@ -25,7 +32,7 @@ export type WriteRepository = {
   hasCandidates(generationId: string): Promise<boolean>;
   /** Вход шага; `null`, если строки, проверки профиля, снимка (его чистит Cron) или досье нет. */
   loadInput(generationId: string): Promise<WriteInputRow | null>;
-  /** Выбранные шутки Поджога (`selected = true`) по порядку. */
+  /** Выбранные шутки Поджога (`selected = true`) в порядке выбора. */
   listSelected(generationId: string): Promise<TrialPunchRow[]>;
   /**
    * Все кандидаты одной SQL-командой (атомарно). Повтор не дублирует: конфликт
@@ -36,6 +43,8 @@ export type WriteRepository = {
     candidates: readonly WrittenCandidate[],
     promptVersion: string,
   ): Promise<void>;
+  /** Приватная трасса шага (`generation_traces`); повтор перезаписывает строку шага. */
+  saveTrace(generationId: string, step: string, data: Record<string, unknown>): Promise<void>;
 };
 
 export function createWriteRepository(): WriteRepository {
@@ -92,18 +101,21 @@ export function createWriteRepository(): WriteRepository {
     },
 
     async listSelected(generationId) {
-      return db()
-        .select({
-          punchId: punchCandidates.punchId,
-          emoji: punchCandidates.emoji,
-          text: punchCandidates.text,
-          trace: punchCandidates.trace,
-        })
-        .from(punchCandidates)
-        .where(
-          and(eq(punchCandidates.generationId, generationId), eq(punchCandidates.selected, true)),
-        )
-        .orderBy(punchCandidates.position);
+      return (
+        db()
+          .select({
+            punchId: punchCandidates.punchId,
+            emoji: punchCandidates.emoji,
+            text: punchCandidates.text,
+            trace: punchCandidates.trace,
+          })
+          .from(punchCandidates)
+          .where(
+            and(eq(punchCandidates.generationId, generationId), eq(punchCandidates.selected, true)),
+          )
+          // Порядок выбора человека (`selectionPosition`), а не порядок кандидатов.
+          .orderBy(punchCandidates.selectionPosition)
+      );
     },
 
     async saveCandidates(generationId, candidates, promptVersion) {
@@ -125,6 +137,16 @@ export function createWriteRepository(): WriteRepository {
         )
         .onConflictDoNothing({
           target: [punchCandidates.generationId, punchCandidates.punchId],
+        });
+    },
+
+    async saveTrace(generationId, step, data) {
+      await db()
+        .insert(generationTraces)
+        .values({ id: randomUUID(), generationId, step, data })
+        .onConflictDoUpdate({
+          target: [generationTraces.generationId, generationTraces.step],
+          set: { data, createdAt: new Date() },
         });
     },
   };

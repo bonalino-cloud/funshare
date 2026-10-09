@@ -1,5 +1,6 @@
 import type { ErrorCode, ProfileSnapshot as ProfileSnapshotType } from "@/contracts";
 import { ProfileSnapshot } from "@/contracts";
+import type { CostMeter } from "../cost/meter";
 import { createApifyFetcher, ScrapeTransportError } from "./apify";
 import { putRawBlob, rawBlobKey } from "./blob";
 import { mapProfile } from "./map";
@@ -29,10 +30,12 @@ export type ScrapeDeps = {
   putRaw: (key: string, json: string) => Promise<void>;
   snapshots: SnapshotRepository;
   now: () => Date;
+  /** Счётчик трат проверки: каждое обращение к Apify. Кэш снимка ничего не записывает. */
+  meter?: CostMeter;
 };
 
 /** Реальные реализации создаются лениво: сборка и тесты не требуют токенов и БД. */
-function defaultDeps(): ScrapeDeps {
+export function defaultScrapeDeps(): ScrapeDeps {
   return {
     fetchRaw: createApifyFetcher(),
     putRaw: putRawBlob,
@@ -107,12 +110,13 @@ function finish(snapshot: ProfileSnapshotType, snapshotId: string, cached: boole
  * Идемпотентен: повтор в пределах 24 ч берёт кэш и не вызывает Apify.
  * Порядок записи: Blob, затем БД (сбой Blob — в БД ничего не пишем).
  *
- * TODO(cost-log): перед `fetchRaw` проверить дневной потолок трат на Apify
- * (roast-engine.md §8); после вызова записать стоимость. Лимиты на проверки — в `profile-check`.
+ * Траты: каждое обращение к Apify попадает в `deps.meter` (оценка по числу результатов, цена в
+ * `cost/prices.ts`). TODO(cost-cap): перед `fetchRaw` проверить дневной потолок трат на Apify
+ * (roast-engine.md §8, задача `be/p3-cost-cap`).
  */
 export async function scrapeProfile(
   igUsername: string,
-  deps: ScrapeDeps = defaultDeps(),
+  deps: ScrapeDeps = defaultScrapeDeps(),
 ): Promise<ScrapeResult> {
   // Ник идёт в URL актора и в Blob-ключ: проверяем до любого внешнего вызова.
   const username = normalizeUsername(igUsername);
@@ -135,10 +139,13 @@ export async function scrapeProfile(
       try {
         raw = await deps.fetchRaw(username);
       } catch (error) {
+        // Запрос ушёл, ответа нет: платного результата не считаем, попытку фиксируем.
+        deps.meter?.recordApify({ results: 0 });
         logFailure(`запрос к Apify, попытка ${attempt}`, error);
         if (error instanceof ScrapeTransportError && !error.retryable) break;
         continue;
       }
+      deps.meter?.recordApify({ results: Array.isArray(raw) ? raw.length : 0 });
       fetchedAt = deps.now();
       const classified = classify(raw, username, fetchedAt);
       if (classified.kind === "invalid") {
