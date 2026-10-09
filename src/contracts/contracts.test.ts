@@ -45,10 +45,10 @@ describe("фикстуры проходят схемы", () => {
     ]);
   });
 
-  it("pricing.json: Поджог 0 ₽ без картинок, Кострище 99 ₽ до 6 картинок, Пекло недоступно", () => {
+  it("pricing.json: Поджог 99 ₽ (первый бесплатно) без картинок, Кострище 99 ₽ до 6 картинок, Пекло недоступно", () => {
     const p = Pricing.parse(pricing);
     expect(p.tiers.map((t) => t.tier)).toEqual([1, 2, 3]);
-    expect(p.tiers.map((t) => t.listAmount)).toEqual([0, 9900, 0]);
+    expect(p.tiers.map((t) => t.listAmount)).toEqual([9900, 9900, 0]);
     expect(p.tiers.map((t) => t.available)).toEqual([true, true, false]);
     expect(p.tiers[0]?.imageCount).toBe(0);
     expect(p.tiers[1]?.imageCount).toBe(6);
@@ -58,6 +58,16 @@ describe("фикстуры проходят схемы", () => {
   it("quotes.json: все варианты сходятся по сумме", () => {
     const q = Object.values(quotes).map((x) => Quote.parse(x));
     expect(q.map((x) => x.finalAmount)).toEqual([9900, 0, 4950, 0]);
+  });
+
+  it("quotes.json: проба Поджога — цена тарифа целиком скидкой, итог 0", () => {
+    const trial = Quote.parse(quotes.freeTrial);
+    const tier1 = Pricing.parse(pricing).tiers[0];
+    expect(trial.tier).toBe(1);
+    expect(trial.listAmount).toBe(tier1?.listAmount);
+    expect(trial.discountAmount).toBe(trial.listAmount);
+    expect(trial.freeTrial).toBe(true);
+    expect(trial.promo).toBeUndefined();
   });
 
   it("generation-request.json", () => {
