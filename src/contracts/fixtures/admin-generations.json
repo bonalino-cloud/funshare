@@ -1,0 +1,151 @@
+{
+  "listQuery": {
+    "status": "ready",
+    "tier": "2",
+    "mode": "friend",
+    "promo": "FUN7K39XPA",
+    "from": "2026-10-01",
+    "to": "2026-10-06",
+    "search": "anya",
+    "sort": "filtered_desc",
+    "needsReview": "true",
+    "limit": "20"
+  },
+  "list": {
+    "items": [
+      {
+        "id": "gen_mock_01",
+        "createdAt": "2026-09-30T12:00:00.000Z",
+        "tier": 2,
+        "mode": "friend",
+        "level": "medium",
+        "igUsername": "anya.travels",
+        "status": "ready",
+        "errorCode": null,
+        "artifactSlug": "rOastAnyA1",
+        "finalAmount": 0,
+        "promoCode": "FUN7K39XPA",
+        "durationMs": 165000,
+        "costMicroUsd": 182400,
+        "filteredCount": 9,
+        "needsReview": true,
+        "hidden": false,
+        "markedBad": false
+      },
+      {
+        "id": "gen_mock_02",
+        "createdAt": "2026-09-30T12:01:00.000Z",
+        "tier": 1,
+        "mode": "self",
+        "level": "rare",
+        "igUsername": "ivan_test",
+        "status": "failed",
+        "errorCode": "internal",
+        "artifactSlug": null,
+        "finalAmount": null,
+        "promoCode": null,
+        "durationMs": 42000,
+        "costMicroUsd": 31000,
+        "filteredCount": 0,
+        "needsReview": false,
+        "hidden": false,
+        "markedBad": false
+      }
+    ],
+    "nextCursor": "c_2026-09-30T12:01:00.000Z_gen_mock_02"
+  },
+  "card": {
+    "id": "gen_mock_01",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "updatedAt": "2026-09-30T12:02:45.000Z",
+    "tier": 2,
+    "mode": "friend",
+    "level": "medium",
+    "igUsername": "anya.travels",
+    "status": "ready",
+    "errorCode": null,
+    "artifactSlug": "rOastAnyA1",
+    "finalAmount": 0,
+    "promoCode": "FUN7K39XPA",
+    "durationMs": 165000,
+    "costMicroUsd": 182400,
+    "filteredCount": 9,
+    "needsReview": true,
+    "hidden": false,
+    "markedBad": false,
+    "artifact": null,
+    "persona": null,
+    "punches": [
+      {
+        "punchId": "p04",
+        "emoji": "✈️",
+        "text": "40 сторис из аэропорта и ноль из дома. Дом обиделся",
+        "fromTrial": false,
+        "selected": true,
+        "selectionPosition": 1,
+        "rejectedBy": null,
+        "judgeScore": 8.5,
+        "reason": null
+      },
+      {
+        "punchId": "p11",
+        "emoji": "🔥",
+        "text": "Шутка, вырезанная фильтром за штамп",
+        "fromTrial": false,
+        "selected": false,
+        "selectionPosition": null,
+        "rejectedBy": "filter",
+        "judgeScore": null,
+        "reason": "cliche"
+      },
+      {
+        "punchId": "p12",
+        "emoji": "💬",
+        "text": "Шутка, не прошедшая судью",
+        "fromTrial": false,
+        "selected": false,
+        "selectionPosition": null,
+        "rejectedBy": "judge",
+        "judgeScore": 4.5,
+        "reason": "low_score"
+      }
+    ],
+    "traces": [
+      {
+        "step": "write",
+        "data": { "promptVersion": "v2", "rounds": 2, "anything": { "free": "form" } },
+        "createdAt": "2026-09-30T12:01:30.000Z"
+      }
+    ],
+    "cost": {
+      "costMicroUsd": 182400,
+      "steps": [
+        { "step": "write", "runs": 1, "costMicroUsd": 150400 },
+        { "step": "draw", "runs": 1, "costMicroUsd": 32000 }
+      ],
+      "estimated": false
+    },
+    "stepTimings": {
+      "write": {
+        "startedAt": "2026-09-30T12:00:05.000Z",
+        "finishedAt": "2026-09-30T12:01:30.000Z"
+      },
+      "draw": { "startedAt": "2026-09-30T12:01:45.000Z" }
+    },
+    "order": {
+      "tier": 2,
+      "listAmount": 9900,
+      "discountAmount": 9900,
+      "finalAmount": 0,
+      "status": "free",
+      "reason": "promo_free",
+      "promoCode": "FUN7K39XPA"
+    }
+  },
+  "actions": [
+    { "action": "hide" },
+    { "action": "delete" },
+    { "action": "mark_bad", "note": "штампы про самолёты" },
+    { "action": "rerun", "confirm": true }
+  ]
+}
