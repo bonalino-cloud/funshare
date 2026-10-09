@@ -9,11 +9,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p3-rate-limit
+текущая_фаза: be/p3-retention-cron
 статус_фазы: ждёт_принято
 текущий_шаг_карусели: 9
-промт_следующей_фазы: be/p1-traces-cleanup — Cron очистки generation_traces старше 30 дней (Vercel Cron + маршрут с CRON_SECRET, удаление пачками, лог только числа). Дальше: be/p1-writing-watchdog — сторож зависших writing; be/p3-cost-guard — дневной потолок трат. Админка (be/p1-admin-api) — после ревью #90. Живой прогон скрейпа (1) и проверки профиля (4) — после #105 (Сергей, Vercel). Крючки вместо досье (#102) — сессия «Юмор»
-открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention
+промт_следующей_фазы: be/p1-writing-watchdog — сторож зависших генераций в writing/awaiting_selection (часть p1.15): по Cron находить строки, застрявшие дольше порога, переводить в failed/internal и освобождать заказ (releaseOrder), идемпотентно. Дальше: be/p3-cost-guard. Админка (be/p1-admin-api) — после ревью #90. Живые прогоны — после #105
+открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention; Сергей: CRON_SECRET в Vercel (#112), показать vercel.json; eslint globalIgnores .claude/worktrees/**
 входящие: —
 обкатка_страницы: нет
 обкатка_чеклист: —
