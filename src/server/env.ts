@@ -17,6 +17,10 @@ const serverEnvSchema = z.object({
   KV_REST_API_TOKEN: z.string().min(1).optional(),
   // Секрет для хэшей IP и ownerToken (инвариант 6). Без него хэш работает с запасной солью.
   HASH_SALT: z.string().min(16).optional(),
+  // Секрет Vercel Cron: заголовок `Authorization: Bearer <секрет>` на /api/cron/*. Без него маршруты Cron
+  // отвечают 401. Длину (от 16) проверяет маршрут Cron, а не схема: короткий секрет не должен ронять
+  // разбор env у всего бэкенда.
+  CRON_SECRET: z.string().optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 
