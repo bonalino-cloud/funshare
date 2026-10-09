@@ -124,11 +124,13 @@ describe("POST: разбор тела", () => {
     expectNothingWritten(t);
   });
 
-  it("недоступный тариф (Пекло) → 400 без заказа", async () => {
+  it("недоступный тариф (Пекло) → 400 без заказа, без лимита и досье", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     const { res } = await send(t, body(checkId, { tier: 3 }));
     expect(res.status).toBe(400);
+    expect(t.limiterCheck).not.toHaveBeenCalled();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
     expectNothingWritten(t);
   });
 });
@@ -283,6 +285,54 @@ describe("POST: досье и гардрейл «младше 16» до зака
     const { res } = await send(t, body(checkId));
     expect(res.status).toBe(404);
     expect(t.ensureDossier).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST: лимит стартов", () => {
+  it("исчерпан → 429 rate_limited до досье, промокода и заказа; в лог без ника и IP", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const t = makeDeps({ promos: { FUNTEST: makePromo() }, limiterAllowed: false });
+    const checkId = await t.addCheck(TOKEN);
+    const { res, json } = await send(t, body(checkId, { tier: 2, promoCode: "funtest" }));
+    expect(res.status).toBe(429);
+    expect(json).toEqual({ errorCode: "rate_limited" });
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    expect(t.enter).not.toHaveBeenCalled();
+    expect(t.orders.repo.findPromo).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+    const logged = warn.mock.calls.flat().join(" ");
+    expect(logged).not.toContain("anya.travels");
+    warn.mockRestore();
+  });
+
+  it("считает по хэшам устройства и IP", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    await send(t, body(checkId));
+    expect(t.limiterCheck).toHaveBeenCalledOnce();
+    const arg = t.limiterCheck.mock.calls[0]?.[0];
+    expect(arg?.ownerHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(arg?.ipHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("чужая проверка и битое тело лимит не тратят", async () => {
+    const t = makeDeps();
+    const other = await t.addCheck(OTHER_TOKEN);
+    await send(t, body(other));
+    await send(t, { nonsense: true });
+    expect(t.limiterCheck).not.toHaveBeenCalled();
+  });
+
+  it("лимитер недоступен → 503, досье не считаем, ничего не пишем", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    const unavailable = new Error("redis");
+    unavailable.name = "RateLimitUnavailableError";
+    t.limiterCheck.mockRejectedValueOnce(unavailable);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(503);
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    expectNothingWritten(t);
   });
 });
 

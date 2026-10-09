@@ -7,6 +7,7 @@ import {
   makeRepo as makeProfileRepo,
   ownerHash,
 } from "../profile-check/test-helpers";
+import type { RateLimiter } from "../ratelimit";
 import type { NewProfileCheck } from "../profile-check/repository";
 import type { StepTimings } from "../db/schema";
 import type { GenerationsHandlerDeps } from "./handlers";
@@ -190,6 +191,7 @@ export function makeDeps(
   opts: {
     promos?: Parameters<typeof makeOrdersRepo>[0];
     guardAllowed?: boolean;
+    limiterAllowed?: boolean;
     check?: Partial<NewProfileCheck> & { checkedAt?: Date };
   } = {},
   now = new Date("2026-10-03T12:00:00.000Z"),
@@ -198,6 +200,7 @@ export function makeDeps(
   const profiles = makeProfileRepo();
   const orders = makeOrdersRepo(opts.promos);
   const { guard, enter, fail } = makeGuard(opts.guardAllowed ?? true);
+  const limiterCheck = vi.fn<RateLimiter["check"]>(async () => opts.limiterAllowed ?? true);
   const startWorkflow = vi.fn<GenerationsHandlerDeps["startWorkflow"]>(async () => {});
   const ensureDossier = vi.fn<GenerationsHandlerDeps["ensureDossier"]>(async () => ({ ok: true }));
   const onMinor = vi.fn<GenerationsHandlerDeps["onMinor"]>(async () => {});
@@ -207,6 +210,7 @@ export function makeDeps(
     profiles: profiles.repo,
     orders: orders.repo,
     guard,
+    limiter: { check: limiterCheck },
     ensureDossier,
     onMinor,
     dossierWaitMs: 1234,
@@ -237,6 +241,7 @@ export function makeDeps(
     orders,
     enter,
     fail,
+    limiterCheck,
     startWorkflow,
     ensureDossier,
     onMinor,
