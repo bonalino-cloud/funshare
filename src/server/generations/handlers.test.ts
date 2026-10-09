@@ -228,12 +228,36 @@ describe("POST: заказ", () => {
     expectNothingWritten(t);
   });
 
-  it("код на Поджоге → promo_invalid", async () => {
+  it("код на Поджоге с доступной пробой: проба важнее, код не списывается", async () => {
     const t = makeDeps({ promos: { FUNTEST: makePromo({ tiers: [1, 2] }) } });
     const checkId = await t.addCheck(TOKEN);
     const { res } = await send(t, body(checkId, { tier: 1, promoCode: "funtest" }));
-    expect(res.status).toBe(400);
-    expectNothingWritten(t);
+    expect(res.status).toBe(202);
+    expect(t.orders.orders).toHaveLength(1);
+    expect(t.orders.orders[0]).toMatchObject({ reason: "first_free" });
+    expect(t.orders.redemptions).toHaveLength(0);
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(0);
+  });
+
+  it("повторный Поджог без кода → 402 payment_required, ничего не записано", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    expect((await send(t, body(checkId))).res.status).toBe(202);
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(402);
+    expect(json).toEqual({ errorCode: "payment_required" });
+    expect(t.generations.rows.size).toBe(1);
+    expect(t.orders.orders).toHaveLength(1);
+  });
+
+  it("повторный Поджог по коду на 100 %: стартует, код списан", async () => {
+    const t = makeDeps({ promos: { FUNTEST: makePromo({ tiers: [1, 2] }) } });
+    const checkId = await t.addCheck(TOKEN);
+    expect((await send(t, body(checkId))).res.status).toBe(202);
+    const { res } = await send(t, body(checkId, { tier: 1, promoCode: "funtest" }));
+    expect(res.status).toBe(202);
+    expect(t.orders.orders.map((o) => o.reason)).toEqual(["first_free", "promo_free"]);
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(1);
   });
 
   it("пауза на перебор → 429 rate_limited до всякой проверки кода", async () => {
@@ -257,23 +281,23 @@ describe("POST: заказ", () => {
     expectNothingWritten(t);
   });
 
-  it("вторая проба Поджога на этом устройстве → 409 free_used, строк не прибавилось", async () => {
+  it("вторая проба Поджога на этом устройстве → 402 payment_required, строк не прибавилось", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     expect((await send(t, body(checkId))).res.status).toBe(202);
     const { res, json } = await send(t, body(checkId));
-    expect(res.status).toBe(409);
-    expect(json).toEqual({ errorCode: "free_used" });
+    expect(res.status).toBe(402);
+    expect(json).toEqual({ errorCode: "payment_required" });
     expect(t.generations.rows.size).toBe(1);
     expect(t.orders.orders).toHaveLength(1);
     expect(t.startWorkflow).toHaveBeenCalledTimes(1);
   });
 
-  it("двойной клик: два параллельных POST дают одну генерацию, второй free_used", async () => {
+  it("двойной клик: два параллельных POST дают одну генерацию, второй payment_required", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     const [a, b] = await Promise.all([send(t, body(checkId)), send(t, body(checkId))]);
-    expect([a.res.status, b.res.status].sort()).toEqual([202, 409]);
+    expect([a.res.status, b.res.status].sort()).toEqual([202, 402]);
     expect(t.generations.rows.size).toBe(1);
     expect(t.startWorkflow).toHaveBeenCalledTimes(1);
   });

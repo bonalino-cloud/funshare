@@ -3,6 +3,7 @@ import { FREE_TRIAL_PER_IP } from "../pricing";
 import { TierUnavailableError } from "../pricing";
 import { checkPromo, createOrder, isFreeTrialAvailable, quoteFor, releaseOrder } from "./service";
 import { makePromo, makeRepo, NOW, person } from "./test-helpers";
+import { DuplicateOrderError } from "./repository";
 
 const ctx = { ...person, tier: 2 as const, now: NOW };
 const order = (over: Record<string, unknown> = {}) => ({
@@ -42,9 +43,9 @@ describe("checkPromo: любая причина отказа одинакова 
     expect(repo.findPromo).not.toHaveBeenCalled();
   });
 
-  it("код на тарифе с ценой 0 не принимается", async () => {
-    const { repo } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
-    expect(await checkPromo(repo, "free-100", { ...ctx, tier: 1 })).toEqual({ ok: false });
+  it("код на тарифе с ценой 0 (Пекло) не принимается", async () => {
+    const { repo } = makeRepo({ FREE100: makePromo({ tiers: [1, 2, 3] }) });
+    expect(await checkPromo(repo, "free-100", { ...ctx, tier: 3 })).toEqual({ ok: false });
   });
 
   it("годный код: нормализация регистра, дефисов, пробелов", async () => {
@@ -136,21 +137,39 @@ describe("quoteFor: ничего не тратит", () => {
     expect(orders).toHaveLength(0);
   });
 
-  it("Поджог после использованной пробы -> free_used", async () => {
+  it("Поджог после использованной пробы -> 99 ₽ без кода", async () => {
     const { repo } = makeRepo();
     await createOrder(repo, order({ tier: 1, promoCode: undefined }));
-    expect(await quoteFor(repo, { tier: 1 }, person, NOW)).toEqual({
-      ok: false,
-      errorCode: "free_used",
+    const result = await quoteFor(repo, { tier: 1 }, person, NOW);
+    expect(result).toMatchObject({ ok: true, quote: { finalAmount: 9900, discountAmount: 0 } });
+    expect(result.ok && result.quote.freeTrial).toBeUndefined();
+  });
+
+  it("Поджог после пробы + код на 50 %: скидка по коду, как у Кострища", async () => {
+    const { repo } = makeRepo({ HALF: makePromo({ tiers: [1, 2], percentOff: 50 }) });
+    await createOrder(repo, order({ tier: 1, promoCode: undefined }));
+    expect(await quoteFor(repo, { tier: 1, promoCode: "half" }, person, NOW)).toMatchObject({
+      ok: true,
+      quote: { finalAmount: 4950, promo: { percentOff: 50 } },
     });
   });
 
-  it("Поджог с кодом -> promo_invalid", async () => {
-    const { repo } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
-    expect(await quoteFor(repo, { tier: 1, promoCode: "free100" }, person, NOW)).toEqual({
+  it("Поджог после пробы + неверный код -> promo_invalid", async () => {
+    const { repo } = makeRepo();
+    await createOrder(repo, order({ tier: 1, promoCode: undefined }));
+    expect(await quoteFor(repo, { tier: 1, promoCode: "nope" }, person, NOW)).toEqual({
       ok: false,
       errorCode: "promo_invalid",
     });
+  });
+
+  it("Поджог с доступной пробой и кодом: проба важнее, код не проверяется и не тратится", async () => {
+    const { repo, codes } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
+    const result = await quoteFor(repo, { tier: 1, promoCode: "free100" }, person, NOW);
+    expect(result).toMatchObject({ ok: true, quote: { finalAmount: 0, freeTrial: true } });
+    expect(result.ok && result.quote.promo).toBeUndefined();
+    expect(repo.findPromo).not.toHaveBeenCalled();
+    expect(codes.get("FREE100")?.redeemed).toBe(0);
   });
 
   it("Пекло недоступно: TierUnavailableError до обращения к БД", async () => {
@@ -272,12 +291,46 @@ describe("бесплатная проба Поджога (правило 3)", ()
     expect(orders[0]).toMatchObject({ status: "free", reason: "first_free" });
   });
 
-  it("повторная проба того же устройства -> free_used", async () => {
-    const { repo } = makeRepo();
+  it("повторный Поджог того же устройства без кода -> payment_required, не бесплатно", async () => {
+    const { repo, orders } = makeRepo();
     await createOrder(repo, trial());
     expect(await createOrder(repo, trial({ generationId: "gen-2" }))).toEqual({
       ok: false,
-      errorCode: "free_used",
+      errorCode: "payment_required",
+    });
+    expect(orders).toHaveLength(1);
+  });
+
+  it("повторный Поджог по коду на 100 %: заказ promo_free, код списан", async () => {
+    const { repo, codes, orders } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
+    await createOrder(repo, trial());
+    const result = await createOrder(repo, trial({ generationId: "gen-2", promoCode: "free100" }));
+    expect(result).toMatchObject({
+      ok: true,
+      order: { reason: "promo_free", quote: { listAmount: 9900, finalAmount: 0 } },
+    });
+    expect(orders.map((o) => o.reason)).toEqual(["first_free", "promo_free"]);
+    expect(codes.get("FREE100")?.redeemed).toBe(1);
+  });
+
+  it("повторный Поджог по коду на 50 % -> payment_required, код не списан", async () => {
+    const { repo, codes } = makeRepo({ HALF: makePromo({ tiers: [1, 2], percentOff: 50 }) });
+    await createOrder(repo, trial());
+    expect(await createOrder(repo, trial({ generationId: "gen-2", promoCode: "half" }))).toEqual({
+      ok: false,
+      errorCode: "payment_required",
+    });
+    expect(codes.get("HALF")?.redeemed).toBe(0);
+  });
+
+  it("проба расходуется между quote и заказом: заказ идёт платным путём, а не второй раз бесплатно", async () => {
+    const { repo } = makeRepo();
+    const q = await quoteFor(repo, { tier: 1 }, person, NOW);
+    expect(q).toMatchObject({ ok: true, quote: { freeTrial: true } });
+    await createOrder(repo, trial({ generationId: "other-tab" }));
+    expect(await createOrder(repo, trial())).toEqual({
+      ok: false,
+      errorCode: "payment_required",
     });
   });
 
@@ -288,10 +341,11 @@ describe("бесплатная проба Поджога (правило 3)", ()
       createOrder(repo, trial({ generationId: "gen-b" })),
     ]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => !r.ok)).toEqual([{ ok: false, errorCode: "payment_required" }]);
     expect(orders).toHaveLength(1);
   });
 
-  it("новое устройство с того же IP: до потолка проб на IP проходит, потом free_used", async () => {
+  it("новое устройство с того же IP: до потолка проб на IP проходит, потом платный путь", async () => {
     const { repo } = makeRepo();
     for (let i = 0; i < FREE_TRIAL_PER_IP; i++) {
       const r = await createOrder(repo, trial({ generationId: `g${i}`, ownerTokenHash: `o${i}` }));
@@ -299,17 +353,30 @@ describe("бесплатная проба Поджога (правило 3)", ()
     }
     expect(await createOrder(repo, trial({ generationId: "gx", ownerTokenHash: "ox" }))).toEqual({
       ok: false,
-      errorCode: "free_used",
+      errorCode: "payment_required",
     });
   });
 
-  it("код на Поджоге не принимается и не списывается", async () => {
-    const { repo, codes } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
-    expect(await createOrder(repo, trial({ promoCode: "free100" }))).toEqual({
-      ok: false,
-      errorCode: "promo_invalid",
+  it("проба + код одновременно: проба важнее, код не списан, использования нет", async () => {
+    const { repo, codes, redemptions, orders } = makeRepo({
+      FREE100: makePromo({ tiers: [1, 2], maxRedemptions: 1 }),
     });
+    const result = await createOrder(repo, trial({ promoCode: "free100" }));
+    expect(result).toMatchObject({ ok: true, order: { reason: "first_free" } });
+    expect(orders[0]).toMatchObject({ reason: "first_free" });
     expect(codes.get("FREE100")?.redeemed).toBe(0);
+    expect(redemptions).toHaveLength(0);
+    expect(repo.redeemAndCreateOrder).not.toHaveBeenCalled();
+  });
+
+  it("повтор того же generationId по коду: бросает, код списан один раз", async () => {
+    const { repo, codes } = makeRepo({ FREE100: makePromo({ tiers: [1, 2] }) });
+    await createOrder(repo, trial());
+    await createOrder(repo, trial({ generationId: "gen-2", promoCode: "free100" }));
+    await expect(
+      createOrder(repo, trial({ generationId: "gen-2", promoCode: "free100" })),
+    ).rejects.toThrow(DuplicateOrderError);
+    expect(codes.get("FREE100")?.redeemed).toBe(1);
   });
 
   it("isFreeTrialAvailable отражает использованную пробу и не зависит от cookie-less IP-лимита", async () => {

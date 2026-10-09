@@ -1,10 +1,10 @@
 import type { ErrorCode, Quote, Tier } from "@/contracts";
-import { FREE_TRIAL_PER_DEVICE, FREE_TRIAL_PER_IP, quote, TIERS } from "../pricing";
+import { FREE_TRIAL_PER_DEVICE, FREE_TRIAL_PER_IP, hasFreeTrial, quote, TIERS } from "../pricing";
 import { normalizePromoCode } from "./normalize";
 import type { OrderRepository, Person, PromoRow, Usage } from "./repository";
 
 /** Причина отказа наружу. Для кода она одна на все случаи (правило 6): причину не выдаём. */
-export type OrderFailure = Extract<ErrorCode, "promo_invalid" | "free_used" | "payment_required">;
+export type OrderFailure = Extract<ErrorCode, "promo_invalid" | "payment_required">;
 
 export type CheckedPromo = { id: string; code: string; percentOff: number };
 
@@ -42,7 +42,7 @@ export function evaluatePromo(
 
 /**
  * Проверка кода без трат (для /api/quotes и как первый шаг `createOrder`).
- * Тариф с ценой 0 (Поджог): код не применяется, ответ тот же `promo_invalid`.
+ * Тариф с ценой 0 (Пекло): код не применяется, ответ тот же `promo_invalid`.
  */
 export async function checkPromo(
   repo: OrderRepository,
@@ -74,7 +74,8 @@ export type QuoteResult = { ok: true; quote: Quote } | { ok: false; errorCode: O
 /**
  * POST /api/quotes: считает и проверяет, ничего не тратит и не пишет. Тариф вне `TIERS`/недоступный —
  * `TierUnavailableError` из `quote` (пробрасываем: это ошибка клиента, а не человека).
- * Поджог без пробы — `free_used`.
+ * Поджог с доступной пробой — бесплатно, код игнорируется (проба важнее, код не тратится). Проба
+ * использована — обычная цена и обычный путь с кодом, как у Кострища.
  */
 export async function quoteFor(
   repo: OrderRepository,
@@ -82,17 +83,13 @@ export async function quoteFor(
   person: Person,
   now: Date,
 ): Promise<QuoteResult> {
-  const info = TIERS[input.tier];
-  if (info.available && info.listAmount === 0) {
-    if (input.promoCode !== undefined) return { ok: false, errorCode: "promo_invalid" };
-    if (!(await isFreeTrialAvailable(repo, person))) return { ok: false, errorCode: "free_used" };
+  quote(input.tier, null, false); // недоступный тариф: ошибка до любого обращения к БД
+  if (hasFreeTrial(input.tier) && (await isFreeTrialAvailable(repo, person))) {
     return { ok: true, quote: quote(input.tier, null, true) };
   }
 
   if (input.promoCode === undefined) return { ok: true, quote: quote(input.tier, null, false) };
 
-  // Сначала цена: недоступный тариф не должен уходить в БД искать код.
-  quote(input.tier, null, false);
   const checked = await checkPromo(repo, input.promoCode, { ...person, tier: input.tier, now });
   if (!checked.ok) return { ok: false, errorCode: "promo_invalid" };
   return {
@@ -127,7 +124,8 @@ export type CreateOrderResult =
   | { ok: false; errorCode: OrderFailure };
 
 /**
- * Заказ перед генерацией (roast-engine §9.3). Цену считает сервер. Итог 0 → заказ `free` и (при коде)
+ * Заказ перед генерацией (roast-engine §9.3). Цену считает сервер. Проба Поджога (если есть) идёт
+ * первой и код не списывает. Иначе итог 0 → заказ `free` и (при коде)
  * атомарное списание; итог больше 0 → `payment_required` БЕЗ заказа и БЕЗ списания кода (билинга нет,
  * сжигать использование за заказ, который не стартует, нельзя). Повтор на ту же `generationId` бросает
  * `DuplicateOrderError`, не списывая код второй раз.
@@ -141,9 +139,9 @@ export async function createOrder(
   quote(tier, null, false); // недоступный тариф: TierUnavailableError до любого обращения к БД
   const amounts = { generationId: input.generationId, tier, listAmount: info.listAmount };
 
-  // Бесплатный тариф: одна проба на человека. Код на нём не применяется.
-  if (info.listAmount === 0) {
-    if (input.promoCode !== undefined) return { ok: false, errorCode: "promo_invalid" };
+  // Тариф с пробой: пробуем взять её первой, код при этом не трогаем. Не вышло (уже использована,
+  // в том числе между quote и заказом) — идём обычным платным путём, не бесплатно второй раз.
+  if (hasFreeTrial(tier)) {
     const q = quote(tier, null, true);
     const orderId = await repo.createTrialOrder({
       ...amounts,
@@ -154,12 +152,12 @@ export async function createOrder(
       now,
       maxPerIp: FREE_TRIAL_PER_IP,
     });
-    return orderId
-      ? {
-          ok: true,
-          order: { id: orderId, generationId: input.generationId, quote: q, reason: "first_free" },
-        }
-      : { ok: false, errorCode: "free_used" };
+    if (orderId) {
+      return {
+        ok: true,
+        order: { id: orderId, generationId: input.generationId, quote: q, reason: "first_free" },
+      };
+    }
   }
 
   if (input.promoCode === undefined) return { ok: false, errorCode: "payment_required" };

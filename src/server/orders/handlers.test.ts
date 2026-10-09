@@ -32,7 +32,7 @@ describe("GET /api/pricing", () => {
     const body = Pricing.parse(await res.json());
     expect(body.freeTrialAvailable).toBe(true);
     expect(body.tiers.map((x) => [x.tier, x.listAmount, x.available])).toEqual([
-      [1, 0, true],
+      [1, 9900, true],
       [2, 9900, true],
       [3, 0, false],
     ]);
@@ -55,7 +55,9 @@ describe("GET /api/pricing", () => {
       request("GET", "/api/pricing", undefined, { token: TOKEN, ip: "9.9.9.9" }),
       t.deps,
     );
-    expect(Pricing.parse(await mine.json()).freeTrialAvailable).toBe(false);
+    const minePricing = Pricing.parse(await mine.json());
+    expect(minePricing.freeTrialAvailable).toBe(false);
+    expect(minePricing.tiers[0]).toMatchObject({ tier: 1, listAmount: 9900 });
     const other = await getPricing(
       request("GET", "/api/pricing", undefined, { token: OTHER_TOKEN, ip: "9.9.9.9" }),
       t.deps,
@@ -152,7 +154,7 @@ describe("POST /api/quotes", () => {
     expect(await res.json()).toEqual({ errorCode: "internal" });
   });
 
-  it("Поджог после использованной пробы -> 409 free_used", async () => {
+  it("Поджог после использованной пробы -> обычная цена 99 ₽, не ошибка", async () => {
     const t = setup();
     await t.repo.createTrialOrder({
       generationId: "g",
@@ -166,8 +168,10 @@ describe("POST /api/quotes", () => {
       maxPerIp: 3,
     });
     const res = await quote(t, { tier: 1 }, { token: TOKEN });
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ errorCode: "free_used" });
+    expect(res.status).toBe(200);
+    const body = Quote.parse(await res.json());
+    expect(body).toMatchObject({ listAmount: 9900, discountAmount: 0, finalAmount: 9900 });
+    expect(body.freeTrial).toBeUndefined();
   });
 
   it.each([

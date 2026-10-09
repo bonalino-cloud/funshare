@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { vi } from "vitest";
 import type { PromoGuard } from "../ratelimit/promo";
-import type { OrderRepository, PromoRow, RedeemInput, TrialInput } from "./repository";
+import {
+  DuplicateOrderError,
+  type OrderRepository,
+  type PromoRow,
+  type RedeemInput,
+  type TrialInput,
+} from "./repository";
 
 export const NOW = new Date("2026-10-03T12:00:00.000Z");
 export const TOKEN = "A".repeat(43);
@@ -76,7 +82,7 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       const row = codes.get(i.promoCode);
       if (!row || !row.active || row.redeemed >= row.maxRedemptions) return null;
       if (row.percentOff !== i.percentOff || !row.tiers.includes(i.tier)) return null;
-      if (orders.some((o) => o.generationId === i.generationId)) throw new Error("duplicate");
+      if (orders.some((o) => o.generationId === i.generationId)) throw new DuplicateOrderError();
       row.redeemed += 1;
       const id = `order-${++n}`;
       orders.push({
@@ -100,6 +106,7 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       const trials = orders.filter((o) => o.reason === "first_free" && o.status !== "voided");
       if (trials.some((o) => o.owner === i.ownerTokenHash)) return null;
       if (trials.filter((o) => o.ip === i.ipHash).length >= i.maxPerIp) return null;
+      if (orders.some((o) => o.generationId === i.generationId)) throw new DuplicateOrderError();
       const id = `order-${++n}`;
       orders.push({
         id,
