@@ -9,11 +9,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-fast-profile-check
+текущая_фаза: be/p3-rate-limit
 статус_фазы: ждёт_принято
 текущий_шаг_карусели: 9
-промт_следующей_фазы: сессия «Продукт». Хвосты: be/p1-traces-cleanup — Cron очистки generation_traces старше 30 дней; be/p1-writing-watchdog — сторож зависших writing; лимиты на POST /api/generations (rate limit, дневной потолок трат) — теперь старт может вызвать модель. Админка (be/p1-admin-api) — после ревью #90. Живой прогон скрейпа (1) и проверки профиля (4) — после #105 (Сергей, Vercel). Крючки вместо досье (#102) — сессия «Юмор» (входящие в humor-state.md)
-открытые_решения: Сергей: ревью invariants.md п.3 (PR #82); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
+промт_следующей_фазы: be/p1-traces-cleanup — Cron очистки generation_traces старше 30 дней (Vercel Cron + маршрут с CRON_SECRET, удаление пачками, лог только числа). Дальше: be/p1-writing-watchdog — сторож зависших writing; be/p3-cost-guard — дневной потолок трат. Админка (be/p1-admin-api) — после ревью #90. Живой прогон скрейпа (1) и проверки профиля (4) — после #105 (Сергей, Vercel). Крючки вместо досье (#102) — сессия «Юмор»
+открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention
 входящие: —
 обкатка_страницы: нет
 обкатка_чеклист: —

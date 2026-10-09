@@ -26,6 +26,7 @@ import { TIERS, TierUnavailableError } from "../pricing";
 import { OWNER_COOKIE, RESULT_CACHE_TTL_MS } from "../profile-check/config";
 import { clientIp } from "../profile-check/handlers";
 import type { ProfileCheckRepository } from "../profile-check/repository";
+import type { RateLimiter } from "../ratelimit";
 import type { PromoGuard } from "../ratelimit/promo";
 import type { GenerationRepository } from "./repository";
 
@@ -35,6 +36,8 @@ export type GenerationsHandlerDeps = {
   profiles: Pick<ProfileCheckRepository, "get">;
   orders: OrderRepository;
   guard: PromoGuard;
+  /** Лимит стартов по IP и устройству (`GENERATION_LIMITS`). Недоступен → бросает, ответ 503. */
+  limiter: RateLimiter;
   /**
    * Гарантия досье до заказа (не бросает): готово, считается фоном (ждём) или считаем сами.
    * Отказ гардрейла по досье (`minor_detected` и др.) → заказ не создаётся.
@@ -139,6 +142,15 @@ async function place(
   // оставляет, проба и код не расходуются. Досье в фоне после «Нашли!» обычно уже готово.
   // Снимок убрал Cron (`snapshotId` обнулился): досье строить не из чего, проверку надо повторить.
   if (check.snapshotId === null) return errorResponse("profile_not_found", 410);
+  // Недоступный тариф (Пекло) отклоняется и так (`quote` → 400): не тратим на него ни лимит, ни досье.
+  if (!TIERS[body.tier].available) throw new TierUnavailableError(body.tier);
+
+  // Лимит стартов: после дешёвых проверок владения (чужие и битые запросы лимит не тратят), но ДО
+  // досье, промокода и заказа. Досье — платный вызов модели; повтор после сбоя тоже считается.
+  if (!(await deps.limiter.check({ ipHash: who.ipHash, ownerHash: who.ownerTokenHash }))) {
+    console.warn("[generations] лимит стартов исчерпан");
+    return errorResponse("rate_limited");
+  }
   const dossier = await deps.ensureDossier(
     { snapshotId: check.snapshotId },
     deps.dossierWaitMs ?? GENERATION_DOSSIER_WAIT_MS,

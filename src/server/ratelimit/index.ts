@@ -12,7 +12,29 @@ export const LIMITS = {
   ipPerHour: { requests: 5, window: "1 h" },
   ipPerDay: { requests: 30, window: "1 d" },
   ownerPerHour: { requests: 5, window: "1 h" },
-} as const;
+} as const satisfies LimitSet;
+
+/** Окна лимита одного набора: сколько запросов за какое время, отдельно по IP и по устройству. */
+export type LimitWindow = { requests: number; window: string };
+export type LimitSet = {
+  ipPerHour: LimitWindow;
+  ipPerDay: LimitWindow;
+  ownerPerHour: LimitWindow;
+};
+
+/**
+ * Лимиты старта генерации (`POST /api/generations`, roast-engine §8 «Деньги»). Старт может сам
+ * посчитать досье (платный вызов модели), поэтому у него свой набор и свой префикс ключей Redis:
+ * счётчик не делится с проверками профиля. Стартовые числа, меняются здесь:
+ * - устройство: 6 стартов в час (человек делает 1–3 генерации; запас на повторы и 503 «досье не готово»);
+ * - IP: 10 в час и 40 в сутки (общий NAT/офис — несколько человек; сутки режут долгий перебор).
+ * Считается каждый старт, дошедший до расчёта досье, в том числе повтор после сбоя.
+ */
+export const GENERATION_LIMITS = {
+  ipPerHour: { requests: 10, window: "1 h" },
+  ipPerDay: { requests: 40, window: "1 d" },
+  ownerPerHour: { requests: 6, window: "1 h" },
+} as const satisfies LimitSet;
 
 /** Сколько ждём Redis. Дольше — считаем лимитер недоступным (а не пропускаем запрос). */
 export const REDIS_TIMEOUT_MS = 3000;
@@ -68,10 +90,8 @@ export function composeLimiter(
   };
 }
 
-let warnedNoRedis = false;
-
 /**
- * Лимитер для проверок. Без Redis в env:
+ * Лимитер набора окон (по умолчанию — проверки профиля). Без Redis в env:
  * - dev/test: пускаем всех и один раз пишем предупреждение — локально Redis не нужен;
  * - production: не открываем дыру — каждая проверка падает `RateLimitUnavailableError`
  *   (вызывающий отвечает 503), потому что без лимита любой может сжечь бюджет Apify и LLM.
@@ -79,10 +99,15 @@ let warnedNoRedis = false;
 export function createRateLimiter(
   source: Record<string, string | undefined> = process.env,
   production = process.env.NODE_ENV === "production",
+  { limits, prefix }: { limits: LimitSet; prefix: string } = {
+    limits: LIMITS,
+    prefix: "profile-check",
+  },
 ): RateLimiter {
   const credentials = redisCredentials(parseServerEnv(source));
 
   if (!credentials) {
+    let warnedNoRedis = false;
     if (production) {
       return {
         async check() {
@@ -103,10 +128,10 @@ export function createRateLimiter(
   }
 
   const redis = new Redis({ url: credentials.url, token: credentials.token });
-  const window = (name: string, { requests, window }: { requests: number; window: string }) =>
+  const window = (name: string, { requests, window }: LimitWindow) =>
     new Ratelimit({
       redis,
-      prefix: `rl:profile-check:${name}`,
+      prefix: `rl:${prefix}:${name}`,
       limiter: Ratelimit.slidingWindow(
         requests,
         window as Parameters<typeof Ratelimit.slidingWindow>[1],
@@ -117,7 +142,18 @@ export function createRateLimiter(
     });
 
   return composeLimiter({
-    ip: [window("ip-hour", LIMITS.ipPerHour), window("ip-day", LIMITS.ipPerDay)],
-    owner: [window("owner-hour", LIMITS.ownerPerHour)],
+    ip: [window("ip-hour", limits.ipPerHour), window("ip-day", limits.ipPerDay)],
+    owner: [window("owner-hour", limits.ownerPerHour)],
+  });
+}
+
+/** Лимитер старта генерации: отдельные окна и префикс `rl:generation:*`. */
+export function createGenerationLimiter(
+  source: Record<string, string | undefined> = process.env,
+  production = process.env.NODE_ENV === "production",
+): RateLimiter {
+  return createRateLimiter(source, production, {
+    limits: GENERATION_LIMITS,
+    prefix: "generation",
   });
 }

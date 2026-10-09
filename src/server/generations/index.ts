@@ -3,6 +3,7 @@ import { createOrderRepository } from "../orders";
 import { removePublic } from "../profile-check/avatar";
 import { discardMinorAvatar } from "../profile-check/minor";
 import { createProfileCheckRepository } from "../profile-check/repository";
+import { createGenerationLimiter, type RateLimiter } from "../ratelimit";
 import { createPromoGuard, type PromoGuard } from "../ratelimit/promo";
 import type { GenerationsHandlerDeps, SelectionHandlerDeps } from "./handlers";
 import { createGenerationRepository, newGenerationId } from "./repository";
@@ -12,16 +13,19 @@ export { createGeneration, getCandidates, getGeneration, postSelection } from ".
 
 // Лимитер живёт между вызовами одного инстанса.
 let guard: PromoGuard | undefined;
+let limiter: RateLimiter | undefined;
 
 /** Боевые зависимости. Лениво на каждый вызов: сборка и тесты не требуют ключей и БД. */
 export function defaultDeps(): GenerationsHandlerDeps {
   guard ??= createPromoGuard();
+  limiter ??= createGenerationLimiter();
   const profiles = createProfileCheckRepository();
   return {
     repo: createGenerationRepository(),
     profiles,
     orders: createOrderRepository(),
     guard,
+    limiter,
     ensureDossier: defaultEnsureDossier(),
     onMinor: ({ igUsername, avatarUrl }) =>
       discardMinorAvatar({ removeAvatar: removePublic, repo: profiles }, igUsername, avatarUrl),
