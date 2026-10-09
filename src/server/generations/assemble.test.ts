@@ -66,7 +66,7 @@ describe("runAssemble", () => {
     expect(saved?.subject).toEqual({
       username: "anya.travels",
       displayName: "Аня Морозова",
-      avatarUrl: "https://blob.example.com/avatars/abc",
+      avatarUrl: "https://abc123.public.blob.vercel-storage.com/avatars/abc",
     });
   });
 

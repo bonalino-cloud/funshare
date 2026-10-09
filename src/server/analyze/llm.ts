@@ -8,7 +8,8 @@ import { LlmDossier } from "./schema";
 
 /** Модель досье (architecture/stack.md). Пишется в `personas.model`. */
 export const ANALYZE_MODEL = "claude-sonnet-5";
-const TIMEOUT_MS = 90_000;
+/** Таймаут одной попытки (вместе с ретраем SDK): от него считается худший случай досье. */
+export const ANALYZE_TIMEOUT_MS = 90_000;
 // Полное досье по верхним лимитам контракта на кириллице — до ~7k токенов; обрезанный JSON
 // = NoObjectGeneratedError и три одинаковых провала подряд.
 const MAX_OUTPUT_TOKENS = 8_192;
@@ -56,7 +57,7 @@ export function createAnthropicGenerate(meter?: CostMeter): GenerateFn {
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         // Ретраи на уровне SDK (сеть, 5xx) ограничены одним: свой бюджет попыток ведёт шаг.
         maxRetries: 1,
-        abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+        abortSignal: AbortSignal.timeout(ANALYZE_TIMEOUT_MS),
       });
       usage = result.totalUsage;
       // Геттер бросает NoOutputGeneratedError, если вывода нет: учёт после него, иначе вызов

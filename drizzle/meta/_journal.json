@@ -85,6 +85,13 @@
       "when": 1791237404082,
       "tag": "0011_cost_log",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791544801616,
+      "tag": "0012_dossier_runs",
+      "breakpoints": true
     }
   ]
 }

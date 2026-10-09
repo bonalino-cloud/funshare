@@ -8,7 +8,6 @@ import {
   makeHandlerDeps,
   NOW,
   OUR_AVATAR_URL,
-  okAnalyze as okAnalyzeResult,
   okScrape as okScrapeResult,
 } from "./test-helpers";
 
@@ -35,38 +34,27 @@ async function setup() {
 
 describe("runProfileCheck", () => {
   describe("учёт стоимости", () => {
-    /** Шаги, которые, как настоящие, пишут траты в общий счётчик проверки. */
+    /** Скрейп, как настоящий, пишет траты Apify в счётчик проверки. */
     async function metered() {
       const t = await setup();
       t.scrape.mockImplementation(async (_u, meter) => {
         meter.recordApify({ results: 1 });
         return okScrapeResult();
       });
-      t.analyze.mockImplementation(async (_i, meter) => {
-        meter.recordLlm({
-          role: "analyze",
-          model: "claude-sonnet-5",
-          usage: { inputTokens: 20_000, outputTokens: 3_000 },
-          ok: true,
-        });
-        return okAnalyzeResult();
-      });
       return t;
     }
 
-    it("успех: траты Apify и анализа уходят в complete и проходят схему", async () => {
+    it("успех: в проверке только траты Apify (модели нет), они проходят схему", async () => {
       const t = await metered();
       await runProfileCheck(t.id, "anya.travels", t.pipeline);
       const cost = t.repo.complete.mock.calls[0]?.[1].cost;
       const parsed = CostRun.parse(cost);
       expect(parsed.apify).toMatchObject({ attempts: 1, results: 1, source: "estimate" });
-      expect(parsed.llm).toHaveLength(1);
-      expect(parsed.estimated).toBe(false);
-      // 20k вход * $2/M + 3k выход * $10/M = $0.07 + Apify $0.0026
-      expect(parsed.microUsd).toBe(70_000 + 2_600);
+      expect(parsed.llm).toEqual([]);
+      expect(parsed.microUsd).toBe(2_600); // $0.0026: ≈ 0,26 ¢
     });
 
-    it("отказ тоже пишет траты: scrape заплатил, analyze не запускался", async () => {
+    it("отказ тоже пишет траты: scrape заплатил, досье не запускалось", async () => {
       const t = await metered();
       t.scrape.mockImplementation(async (_u, meter) => {
         meter.recordApify({ results: 1 });
@@ -76,6 +64,7 @@ describe("runProfileCheck", () => {
       const cost = t.repo.fail.mock.calls[0]?.[3];
       expect(cost?.apify?.results).toBe(1);
       expect(cost?.llm).toEqual([]);
+      expect(t.ensureDossier).not.toHaveBeenCalled();
     });
 
     it("в лог одна строка с числами, без ника и текстов", async () => {
@@ -103,10 +92,16 @@ describe("runProfileCheck", () => {
     });
   });
 
-  it("hint идёт по шагам человеческими словами", async () => {
+  it("hint человеческими словами; проверка закрывается ok до досье", async () => {
     const t = await setup();
+    let statusWhenDossierStarted: string | undefined;
+    t.ensureDossier.mockImplementation(async () => {
+      statusWhenDossierStarted = t.rows.get(t.id)?.status;
+      return { ok: true };
+    });
     await runProfileCheck(t.id, "anya.travels", t.pipeline);
-    expect(t.repo.setHint.mock.calls.map((c) => c[1])).toEqual([HINTS.scrape, HINTS.analyze]);
+    expect(statusWhenDossierStarted).toBe("ok"); // «Нашли!» не ждёт модель
+    expect(t.repo.setHint.mock.calls.map((c) => c[1])).toEqual([HINTS.scrape]);
     for (const hint of Object.values(HINTS)) {
       expect(hint.length).toBeLessThanOrEqual(80);
       expect(hint).not.toMatch(/[a-z_]{4,}/); // без кодов вроде not_enough_data
@@ -152,11 +147,91 @@ describe("runProfileCheck", () => {
     expect(logged).not.toContain("anya.travels");
   });
 
-  it("аватар не копируется, если analyze отказал (закрытый, младше 16)", async () => {
+  it("аватар не копируется, если правила отказали (закрытый профиль)", async () => {
     const t = await setup();
-    t.analyze.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    t.scrape.mockResolvedValue({ ok: false, errorCode: "profile_private" });
     await runProfileCheck(t.id, "anya.travels", t.pipeline);
     expect(t.copyAvatar).not.toHaveBeenCalled();
+  });
+
+  describe("досье в фоне после «Нашли!»", () => {
+    it("считается по тому же снимку, без ожидания чужого замка (waitMs = 0)", async () => {
+      const t = await setup();
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const scraped = okScrapeResult();
+      expect(t.ensureDossier).toHaveBeenCalledExactlyOnceWith(
+        { snapshotId: "snap-1", snapshot: scraped.ok ? scraped.snapshot : undefined },
+        0,
+      );
+    });
+
+    it("«младше 16»: проверка остаётся ok, аватар удалён из Blob, ссылка обнулена", async () => {
+      const t = await setup();
+      t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      expect(t.removeAvatar).toHaveBeenCalledExactlyOnceWith(OUR_AVATAR_URL);
+      expect(t.repo.clearAvatar).toHaveBeenCalledExactlyOnceWith("anya.travels");
+      expect(t.rows.get(t.id)).toMatchObject({ status: "ok", profile: { avatarUrl: null } });
+    });
+
+    it("другие отказы и сбои досье аватар не трогают", async () => {
+      for (const errorCode of ["not_enough_data", "profile_private", "internal"] as const) {
+        const t = await setup();
+        t.ensureDossier.mockResolvedValue({ ok: false, errorCode });
+        await runProfileCheck(t.id, "anya.travels", t.pipeline);
+        expect(t.removeAvatar).not.toHaveBeenCalled();
+        expect(t.rows.get(t.id)?.profile).toMatchObject({ avatarUrl: OUR_AVATAR_URL });
+      }
+    });
+
+    it("Blob не удалил файл: ссылка в проверке остаётся (повторный отказ дочистит), фон не падает", async () => {
+      const t = await setup();
+      t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+      t.removeAvatar.mockRejectedValue(new Error("blob down"));
+      await expect(runProfileCheck(t.id, "anya.travels", t.pipeline)).resolves.toBeUndefined();
+      expect(t.repo.clearAvatar).not.toHaveBeenCalled();
+      expect(t.rows.get(t.id)?.profile).toMatchObject({ avatarUrl: OUR_AVATAR_URL });
+    });
+
+    it("досье бросило исключение: проверка уже ok, ошибка не уходит наружу", async () => {
+      const t = await setup();
+      t.ensureDossier.mockRejectedValue(new Error("boom"));
+      await expect(runProfileCheck(t.id, "anya.travels", t.pipeline)).resolves.toBeUndefined();
+      expect(t.rows.get(t.id)?.status).toBe("ok");
+    });
+
+    it("общий дедлайн фона: зависшее досье не держит функцию, проверка остаётся ok", async () => {
+      vi.useFakeTimers();
+      const t = await setup();
+      t.ensureDossier.mockImplementation(() => new Promise(() => {}));
+      const done = runProfileCheck(t.id, "anya.travels", { ...t.pipeline, totalDeadlineMs: 5_000 });
+      await vi.advanceTimersByTimeAsync(5_001);
+      await done;
+      expect(t.rows.get(t.id)?.status).toBe("ok");
+      expect(t.removeAvatar).not.toHaveBeenCalled();
+    });
+
+    it("нет записанного ok (запись упала) → досье не считаем", async () => {
+      const t = await setup();
+      t.repo.complete.mockRejectedValue(new Error("db down"));
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      expect(t.ensureDossier).not.toHaveBeenCalled();
+    });
+
+    it("в строке [cost] проверки модели нет: досье пишет свою строку само", async () => {
+      const t = await setup();
+      t.scrape.mockImplementation(async (_u, meter) => {
+        meter.recordApify({ results: 1 });
+        return okScrapeResult();
+      });
+      await runProfileCheck(t.id, "anya.travels", t.pipeline);
+      const lines = vi
+        .mocked(console.error)
+        .mock.calls.map((c) => c.join(" "))
+        .filter((l) => l.startsWith("[cost]"));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain("profile-check");
+    });
   });
 
   it("дедлайн: зависший шаг закрывается как internal", async () => {

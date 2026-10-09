@@ -1,10 +1,11 @@
 import type { CheckedProfile, ErrorCode, ProfileSnapshot } from "@/contracts";
-import type { AnalyzeStepResult } from "../analyze";
 import { CostMeter, formatCostLog } from "../cost";
+import type { EnsureDossier } from "../dossier";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import type { ScrapeResult } from "../scrape";
-import type { CopyAvatar } from "./avatar";
-import { HINTS, PIPELINE_DEADLINE_MS } from "./config";
+import type { CopyAvatar, RemoveAvatar } from "./avatar";
+import { HINTS, PIPELINE_DEADLINE_MS, TOTAL_DEADLINE_MS } from "./config";
+import { discardMinorAvatar } from "./minor";
 import type { ProfileCheckRepository } from "./repository";
 
 export type PipelineDeps = {
@@ -12,13 +13,16 @@ export type PipelineDeps = {
   copyAvatar: CopyAvatar;
   /** `meter` — счётчик трат этой проверки; шаг передаёт его в Apify-вызовы. */
   scrape: (username: string, meter: CostMeter) => Promise<ScrapeResult>;
-  analyze: (
-    input: { snapshotId: string; snapshot: ProfileSnapshot },
-    meter: CostMeter,
-  ) => Promise<AnalyzeStepResult>;
+  /** Досье в фоне после «Нашли!» (`waitMs = 0`: если его уже считают, не ждём). Не бросает. */
+  ensureDossier: EnsureDossier;
+  /** Удалить копию аватара из публичного Blob (досье показало «младше 16»). */
+  removeAvatar: RemoveAvatar;
   repo: ProfileCheckRepository;
   now: () => Date;
+  /** Потолок самой проверки (скрейп + аватар). */
   deadlineMs?: number;
+  /** Потолок всей фоновой работы, включая досье: отсчёт от старта фона. */
+  totalDeadlineMs?: number;
 };
 
 /** В лог — только тип события и имя ошибки: ни ника, ни текста профиля, ни ответа модели. */
@@ -56,13 +60,17 @@ export function toCheckedProfile(
 }
 
 type Outcome =
-  { ok: true; snapshotId: string; profile: CheckedProfile } | { ok: false; errorCode: ErrorCode };
+  | { ok: true; snapshotId: string; snapshot: ProfileSnapshot; profile: CheckedProfile }
+  | { ok: false; errorCode: ErrorCode };
 
 /**
- * Фон проверки: scrape → analyze, по шагам обновляет `hint`, в конце пишет `ok` или `failed`.
+ * Фон проверки: scrape (внутри правила без модели: не найден, закрыт, мало данных) → копия аватара
+ * → `ok` («Нашли!»). Модели в проверке нет: траты — только Apify. Потом, уже после записи `ok`,
+ * в той же фоновой работе считается досье (`ensureDossier`), отдельной строкой `[cost]`.
  * Ничего не бросает: любое падение и превышение дедлайна закрывают проверку как `failed/internal`,
- * а не оставляют вечный `checking`. Гардрейлы (закрыт, мало данных, младше 16) — это
- * `failed` с кодом из шагов; платный analyze после отказа scrape не запускается (инвариант 11).
+ * а не оставляют вечный `checking`. Отказ scrape закрывает проверку, досье тогда не считается
+ * (инвариант 11). «Младше 16» определяется досье и проверяется перед заказом (`/api/generations`);
+ * если оно сработало здесь, аватар из публичного Blob удаляется.
  * Если и запись в БД упала — проверку закроет GET по `STALE_AFTER_MS`.
  */
 export async function runProfileCheck(
@@ -71,6 +79,7 @@ export async function runProfileCheck(
   deps: PipelineDeps,
 ): Promise<void> {
   const { repo } = deps;
+  const startedAt = Date.now();
   const meter = new CostMeter();
 
   const setHint = async (hint: string) => {
@@ -86,14 +95,8 @@ export async function runProfileCheck(
     const scraped = await deps.scrape(username, meter);
     if (!scraped.ok) return { ok: false, errorCode: scraped.errorCode };
 
-    await setHint(HINTS.analyze);
-    const analyzed = await deps.analyze(
-      { snapshotId: scraped.snapshotId, snapshot: scraped.snapshot },
-      meter,
-    );
-    if (!analyzed.ok) return { ok: false, errorCode: analyzed.errorCode };
-
-    // Аватар копируем только после успешного analyze: фото закрытого/несовершеннолетнего не храним.
+    // Аватар копируем только после правил: фото закрытого профиля не храним. Если потом досье
+    // скажет «младше 16», копия удаляется (см. `discardMinorAvatar`).
     let avatarUrl: string | null = null;
     try {
       avatarUrl = await deps.copyAvatar({ username, url: scraped.snapshot.avatarUrl });
@@ -103,6 +106,7 @@ export async function runProfileCheck(
     return {
       ok: true,
       snapshotId: scraped.snapshotId,
+      snapshot: scraped.snapshot,
       profile: toCheckedProfile(scraped.snapshot, avatarUrl),
     };
   };
@@ -129,7 +133,7 @@ export async function runProfileCheck(
 
   // Деньги потрачены при любом исходе (и при отказе, и по дедлайну): пишем то, что уже накоплено.
   const cost = meter.snapshot();
-  if (cost.apify || cost.llm.length > 0) console.error(formatCostLog("profile-check", cost));
+  if (cost.apify) console.error(formatCostLog("profile-check", cost));
   if (!settled) {
     // Дедлайн: работа ещё идёт и тратит. В БД строка уже закрыта, полный итог — только в лог.
     void guarded.then(() =>
@@ -151,5 +155,48 @@ export async function runProfileCheck(
     }
   } catch (error) {
     logFailure("не записали результат", error);
+    return; // проверка закроется по STALE_AFTER_MS; досье без `ok` в БД никому не нужно
+  }
+
+  if (outcome.ok) await runDossier(id, username, outcome, deps, startedAt);
+}
+
+/**
+ * Досье в фоне после «Нашли!». Укладываемся в общий потолок фона: не успели — бросаем ожидание, а
+ * недосчитанное досье дорешает старт генерации (замок в `dossier_runs` не даст платить дважды).
+ * «Младше 16» → убираем аватар из публичного Blob.
+ */
+async function runDossier(
+  id: string,
+  username: string,
+  outcome: Extract<Outcome, { ok: true }>,
+  deps: PipelineDeps,
+  startedAt: number,
+): Promise<void> {
+  const remainingMs = (deps.totalDeadlineMs ?? TOTAL_DEADLINE_MS) - (Date.now() - startedAt);
+  if (remainingMs <= 0) return;
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), remainingMs);
+  });
+  try {
+    const result = await Promise.race([
+      deps.ensureDossier({ snapshotId: outcome.snapshotId, snapshot: outcome.snapshot }, 0),
+      timeout,
+    ]);
+    if (result === "timeout") {
+      logFailure("дедлайн фона: досье дорешает старт генерации");
+    } else if (!result.ok && result.errorCode === "minor_detected") {
+      await discardMinorAvatar(
+        { removeAvatar: deps.removeAvatar, repo: deps.repo },
+        username,
+        outcome.profile.avatarUrl,
+      );
+    }
+  } catch (error) {
+    logFailure(`досье в фоне: проверка ${id} не дособрана`, error);
+  } finally {
+    clearTimeout(timer);
   }
 }

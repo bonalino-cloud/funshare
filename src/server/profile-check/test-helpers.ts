@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { vi } from "vitest";
-import type { CheckedProfile } from "@/contracts";
-import type { AnalyzeStepResult } from "../analyze";
+import { CheckedProfile } from "@/contracts";
+import type { DossierResult } from "../dossier";
 import { makeProfile } from "../analyze/test-helpers";
 import { hashValue } from "../hash";
 import type { ScrapeResult } from "../scrape";
@@ -65,6 +65,14 @@ export function makeRepo() {
         return true;
       },
     ),
+    clearAvatar: vi.fn<ProfileCheckRepository["clearAvatar"]>(async (igUsername) => {
+      for (const [id, row] of rows) {
+        const profile = CheckedProfile.safeParse(row.profile);
+        if (row.igUsername === igUsername && row.status === "ok" && profile.success) {
+          rows.set(id, { ...row, profile: { ...profile.data, avatarUrl: null } });
+        }
+      }
+    }),
     fail: vi.fn<ProfileCheckRepository["fail"]>(async (id, errorCode, checkedAt) => {
       const row = rows.get(id);
       if (!row || !closeable(id)) return false;
@@ -81,16 +89,10 @@ export const okScrape = (): ScrapeResult => ({
   snapshotId: "snap-1",
   cached: false,
 });
-export const okAnalyze = (): AnalyzeStepResult => ({
-  ok: true,
-  persona: {} as never, // пайплайн досье не читает: оно уже сохранено шагом
-  promptVersion: "v1",
-  model: "test",
-  cached: false,
-});
+export const okDossier = (): DossierResult => ({ ok: true });
 
 /** Что отдаёт фейковый копировщик аватара: наш Blob, не Instagram. */
-export const OUR_AVATAR_URL = "https://blob.example.com/avatars/abc";
+export const OUR_AVATAR_URL = "https://abc123.public.blob.vercel-storage.com/avatars/abc";
 
 export const EXPECTED_PROFILE: CheckedProfile = {
   username: "anya.travels",
@@ -104,14 +106,15 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const { repo, rows } = makeRepo();
   const tasks: (() => Promise<void>)[] = [];
   const scrape = vi.fn<HandlerDeps["pipeline"]["scrape"]>(async () => okScrape());
-  const analyze = vi.fn<HandlerDeps["pipeline"]["analyze"]>(async () => okAnalyze());
+  const ensureDossier = vi.fn<HandlerDeps["pipeline"]["ensureDossier"]>(async () => okDossier());
+  const removeAvatar = vi.fn<HandlerDeps["pipeline"]["removeAvatar"]>(async () => {});
   const copyAvatar = vi.fn<HandlerDeps["pipeline"]["copyAvatar"]>(async () => OUR_AVATAR_URL);
   const check = vi.fn<HandlerDeps["limiter"]["check"]>(async () => true);
   const deps: HandlerDeps = {
     repo,
     limiter: { check },
     schedule: (task) => void tasks.push(task),
-    pipeline: { scrape, analyze, copyAvatar },
+    pipeline: { scrape, ensureDossier, copyAvatar, removeAvatar },
     now: () => NOW,
     secureCookie: true,
     ...over,
@@ -119,7 +122,7 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const flush = async () => {
     while (tasks.length > 0) await tasks.shift()?.();
   };
-  return { deps, repo, rows, scrape, analyze, copyAvatar, check, tasks, flush };
+  return { deps, repo, rows, scrape, ensureDossier, removeAvatar, copyAvatar, check, tasks, flush };
 }
 
 export function post(body: unknown, init: { token?: string; ip?: string } = {}) {
