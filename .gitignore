@@ -20,3 +20,6 @@ next-env.d.ts
 
 # Зеркало карточки Пульта: мост перезаписывает сам
 PULT.md
+
+# git worktree агентов Claude Code
+.claude/worktrees/
