@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Marquee } from "@/components/brand/Marquee";
 import { RoastHero } from "@/components/roast/RoastHero";
+import { SectionViews } from "@/components/roast/SectionViews";
 import { StickyCta } from "@/components/roast/StickyCta";
 import { DegreesSection } from "@/components/roast/sections/DegreesSection";
 import { FaqSection } from "@/components/roast/sections/FaqSection";
@@ -63,6 +64,7 @@ export default function RoastPage() {
       <FinalCta />
       <RoastFooter />
       <StickyCta />
+      <SectionViews />
     </main>
   );
 }

@@ -62,6 +62,11 @@ export function rememberGeneration(entry: HistoryEntry) {
   listeners.forEach((l) => l());
 }
 
+/** Прошлая прожарка этого браузера: с чем сравнить новую («повторная в другом режиме»). */
+export function recallLatest(): HistoryEntry | undefined {
+  return read()[0];
+}
+
 export function recallLevel(id: string): Level | undefined {
   return read().find((e) => e.id === id)?.level;
 }

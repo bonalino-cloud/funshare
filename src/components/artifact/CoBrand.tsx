@@ -1,4 +1,5 @@
 import type { StaticImageData } from "next/image";
+import { PRIVATE_BLOCK } from "@/lib/client/analytics";
 import atTagSvg from "./assets/at-tag.svg";
 import logoMarkSvg from "./assets/logo-mark.svg";
 import timesSvg from "./assets/times.svg";
@@ -29,7 +30,7 @@ export function CoBrand({ username }: { username: string }) {
       <span className="flex min-w-0 items-center gap-1.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={atTag.src} width={atTag.width} height={atTag.height} alt="" />
-        <span className={`${label} truncate`}>{username}</span>
+        <span className={`${PRIVATE_BLOCK} ${label} truncate`}>{username}</span>
       </span>
     </div>
   );

@@ -6,6 +6,7 @@ import type { Artifact } from "@/contracts";
 import { FunshareLogo } from "@/components/brand/FunshareLogo";
 import { errorLine } from "@/components/create/errors";
 import { FlameVortex } from "@/components/roast/FlameVortex";
+import { PRIVATE_BLOCK, track } from "@/lib/client/analytics";
 import { api, toErrorCode } from "@/lib/client/api";
 import { roastCards } from "@/lib/client/roast-card";
 import { ArtifactCards } from "./ArtifactCards";
@@ -22,7 +23,11 @@ export function ArtifactPage({ slug }: { slug: string }) {
     let alive = true;
     api
       .getArtifact(slug)
-      .then((a) => alive && setArtifact(a))
+      .then((a) => {
+        if (!alive) return;
+        setArtifact(a);
+        track("artifact_view");
+      })
       .catch((e: unknown) => alive && setError(errorLine(toErrorCode(e))));
     return () => {
       alive = false;
@@ -46,7 +51,7 @@ export function ArtifactPage({ slug }: { slug: string }) {
             <FunshareLogo className="h-7 w-auto text-paper" />
           </Link>
           {artifact && (
-            <span className="font-wide text-sm font-bold text-paper/80">
+            <span className={`${PRIVATE_BLOCK} font-wide text-sm font-bold text-paper/80`}>
               @{artifact.subject.username}
             </span>
           )}
@@ -61,6 +66,7 @@ export function ArtifactPage({ slug }: { slug: string }) {
           )}
           <Link
             href="/create"
+            onClick={() => track("cta_click")}
             className="mt-auto flex h-16 w-full items-center justify-center rounded-md bg-paper font-wide text-lg font-extrabold text-ink uppercase transition-transform active:scale-[0.98]"
           >
             Прожарь в ответ
