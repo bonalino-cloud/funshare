@@ -121,7 +121,8 @@ export async function editRound(
 /**
  * Кого отдать модератору (§3): сначала выбор редактора, затем добор по сумме оценок с
  * ограничением `cap` на инсайт, затем без него. `taken` (уже одобренные) занимают места
- * в ограничении; повтор уже взятого (`dupOf`) не берётся.
+ * в ограничении; пара «повтор и его оригинал» (`dupOf`) в выдачу вместе не попадает, в каком
+ * порядке ни взяты.
  */
 export function pickForOutput(args: {
   picked: readonly Candidate[];
@@ -132,16 +133,20 @@ export function pickForOutput(args: {
 }): Candidate[] {
   const out: Candidate[] = [];
   const chosen = new Set(args.taken);
+  /** Оригиналы уже взятых повторов: редактор пометил только повтор, оригинал без пометки. */
+  const originals = new Set(args.taken.flatMap((c) => (c.dupOf ? [c.dupOf] : [])));
   const perInsight = new Map<string, number>();
   for (const c of args.taken) perInsight.set(c.insightId, (perInsight.get(c.insightId) ?? 0) + 1);
 
   const canTake = (c: Candidate, withCap: boolean) =>
     !chosen.has(c) &&
+    !originals.has(c) &&
     !(c.dupOf !== null && chosen.has(c.dupOf)) &&
     (!withCap || (perInsight.get(c.insightId) ?? 0) < args.cap);
   const take = (c: Candidate) => {
     out.push(c);
     chosen.add(c);
+    if (c.dupOf) originals.add(c.dupOf);
     perInsight.set(c.insightId, (perInsight.get(c.insightId) ?? 0) + 1);
   };
   const fill = (list: readonly Candidate[], withCap: boolean) => {

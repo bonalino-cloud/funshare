@@ -530,6 +530,21 @@ describe("редактор", () => {
     )[1];
     expect(second?.outcome).toBe("reserve");
   });
+
+  it("взят повтор (duplicateOf), его оригинал тоже не добирается", async () => {
+    // Редактор выбрал c2, хотя пометил её повтором c1: c1 без своей пометки, но пара — дубль.
+    const editor = fakeEditor(
+      (id) => (id === "c2" ? { duplicateOf: "c1", surprise: 5 } : {}),
+      () => ["c2"],
+    );
+    const r = await writeComedyCandidates(comedyInput({ tier: 2 }), makeComedyDeps({ editor }));
+    const trace = ComedyTrace.parse(r.trace);
+    const [first, second] = trace.candidates.filter(
+      (c) => c.round === 1 && c.outcome !== "dropped_layer4",
+    );
+    expect(second?.outcome).toBe("chosen");
+    expect(first?.outcome).toBe("reserve");
+  });
 });
 
 describe("модератор", () => {
