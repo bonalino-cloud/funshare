@@ -266,6 +266,7 @@ export const TOPIC_LEXICON: Record<TopicCategory, Lexeme> = {
       "иисус",
       "мессия",
       "библи",
+      "библейск",
       "евангел",
       "псалом",
       "сатан",
@@ -275,6 +276,8 @@ export const TOPIC_LEXICON: Record<TopicCategory, Lexeme> = {
       "рамадан",
       "пасхальн",
     ],
+    // «библи» (Библия, библейский) ловила «библиотеку»: живой прогон comedy 2026-10-17.
+    except: ["библиотек", "библиограф", "библиофил"],
     exact: [
       "бог",
       "бога",
