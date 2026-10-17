@@ -144,11 +144,13 @@ async function moderateRound(
     approved.push(...(await moderatePass(batch, approved.length > 0, ctx)));
     const need = maxNew - approved.length;
     if (need <= 0) return;
+    // Последний проход добирает по сумме оценок без ограничения на инсайт.
+    const last = pass + 1 === MODERATION_PASSES;
     batch = pickForOutput({
       picked: [],
       pool: edited.pool.filter((c) => !moderated.has(c)),
       need,
-      cap,
+      cap: last ? Number.POSITIVE_INFINITY : cap,
       taken: approved,
     });
   }

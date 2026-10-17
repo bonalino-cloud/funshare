@@ -21,6 +21,7 @@ import {
 } from "./test-helpers";
 import type { CarriedPunch } from "../roast/write/types";
 import type { ComedyGenerateFn } from "./types";
+import { MODERATION_PASSES } from "./config";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -553,6 +554,33 @@ describe("модератор", () => {
     expect(trace.filters.moderatorPasses).toBe(2);
   });
 
+  it("10 нужно, модератор режет 4, запас только у тех же инсайтов: третий проход без ограничения", async () => {
+    // A1 и A2 модератор режет целиком, у A3 и A4 только первую шутку. Шутки A1 и A2 слабее.
+    const verdict = (text: string) => {
+      const m = /номер (\w+) вызов \d+ вариант (\d)/.exec(text);
+      const [id, n] = [m?.[1], m?.[2]];
+      const doomed = id === "A1" || id === "A2" || ((id === "A3" || id === "A4") && n === "1");
+      return doomed ? { hitsClosedTopic: true } : {};
+    };
+    const editor = fakeEditor((_id, text) =>
+      /номер A[12] /.test(text) ? { surprise: 1 } : { surprise: 4 },
+    );
+    const deps = makeComedyDeps({ moderator: fakeModerator((_id, text) => verdict(text)), editor });
+    const r = await writeComedyCandidates(comedyInput({ tier: 1 }), deps);
+    expect(r.candidates).toHaveLength(10);
+    expect(r.stats.droppedByModerator).toBe(6);
+    const trace = ComedyTrace.parse(r.trace);
+    expect(trace.filters.moderatorPasses).toBe(3);
+    expect(trace.rounds).toHaveLength(1);
+    // Добраны шутки инсайтов, у которых уже есть выбранная: ограничение на инсайт снято.
+    const perInsight = new Map<string, number>();
+    for (const c of r.candidates) {
+      perInsight.set(c.trace.hookId, (perInsight.get(c.trace.hookId) ?? 0) + 1);
+    }
+    expect(Math.max(...perInsight.values())).toBe(2);
+    expect(r.candidates.some((c) => /номер A[12] /.test(c.text))).toBe(false);
+  });
+
   it("нет вердикта — кандидат вычеркнут (unmoderated)", async () => {
     const moderator = vi.fn(async (p: Parameters<ReturnType<typeof fakeModerator>>[0]) => {
       const out = (await fakeModerator()(p)) as { verdicts: { id: string }[] };
@@ -570,8 +598,8 @@ describe("раунд 2 и недобор", () => {
     let calls = 0;
     const moderator = vi.fn(async (p: Parameters<ReturnType<typeof fakeModerator>>[0]) => {
       calls++;
-      // Раунд 1 (оба прохода): вычёркиваем почти всё.
-      return fakeModerator(() => (calls <= 2 ? { hitsClosedTopic: true } : {}))(p);
+      // Раунд 1 (все проходы, по вызову на проход): вычёркиваем всё.
+      return fakeModerator(() => (calls <= MODERATION_PASSES ? { hitsClosedTopic: true } : {}))(p);
     });
     const deps = makeComedyDeps({ moderator });
     const r = await writeComedyCandidates(comedyInput(), deps);
