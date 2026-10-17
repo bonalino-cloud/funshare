@@ -119,6 +119,10 @@ describe("тексты comedy v1", () => {
     ].map((m) => m[1]!);
     const examples = [...quoted, ...block("ОБРАЗЦЫ ТЕМПА"), ...block("КАК ЭТО ВЫГЛЯДИТ")];
     expect(examples).toHaveLength(13);
+    // АНТИПРИМЕРЫ намеренно нарушают правила (дефис, мат хвостом, вывод): в проверку не входят.
+    const anti = block("АНТИПРИМЕРЫ");
+    expect(anti).toHaveLength(2);
+    for (const a of anti) expect(examples).not.toContain(a);
     const ctx = { level: "well_done" as const, canaries: [], leakIndex: buildLeakIndex([]) };
     for (const text of examples) expect([text, checkOutputText(text, ctx)]).toEqual([text, null]);
   });
@@ -215,5 +219,30 @@ describe("пользовательские сообщения", () => {
     expect(text).toContain("[A1] категория A: Зеркало — вместо тренера");
     expect(text).toContain("факты: [F1] Факт номер 1: шейкер в кадре; [Q1] «Дисциплина");
     expect(text).toContain("Выбери 1 инсайтов из <insights>");
+  });
+});
+
+describe("антипримеры генератора и индекс утечек", () => {
+  const anti = punch.PUNCH_SYSTEM.split("\n\n")
+    .find((b) => b.startsWith("АНТИПРИМЕРЫ"))!
+    .split("\n")
+    .filter((l) => l.startsWith("- "))
+    .map((l) => l.slice(2).replace(/ \([^)]*\)\.?$/, ""));
+
+  it("антипример, повторённый моделью, ловится как утечка промпта (цепочка из 8 слов)", () => {
+    expect(anti).toHaveLength(2);
+    for (const text of anti) {
+      expect(checkOutputText(text, { level: "well_done" })).toBe("prompt_leak");
+    }
+  });
+
+  it("обычные шутки старого пути и comedy не задеваются словами антипримеров", () => {
+    for (const [text, level] of [
+      ["Ты фотографируешь закаты чаще, чем видишь их вживую", "medium"],
+      ["Тридцать дней марафона ты выкладываешь одно и то же зеркало", "rare"],
+      ["Шейкер у тебя в кадре чаще, чем ты сам, охуенно", "well_done"],
+    ] as const) {
+      expect(checkOutputText(text, { level })).toBeNull();
+    }
   });
 });

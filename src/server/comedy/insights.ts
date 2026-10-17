@@ -122,7 +122,21 @@ export async function findInsights(ctx: InsightsContext): Promise<Insight[]> {
 
 const factKey = (i: Insight) => [...i.factIds].sort().join("|");
 
-/** Отбор кодом поверх ответа: только существующие id, без повторов и без одинаковой связки фактов. */
+/**
+ * Два инсайта на одной опоре: общих фактов не меньше половины меньшего набора (`[F1, F2]` и
+ * `[F2, F5]` — одна тема, `[F1, F2, F3]` и `[F3, F7, F8]` — разные). Так ловятся инсайты «про
+ * одно и то же» разными словами, а не только с точно одинаковой связкой.
+ */
+export function factsOverlap(a: readonly string[], b: readonly string[]): boolean {
+  const own = new Set(a);
+  const shared = b.filter((id) => own.has(id)).length;
+  return shared > 0 && shared * 2 >= Math.min(a.length, b.length);
+}
+
+/**
+ * Отбор кодом поверх ответа: только существующие id, без повторов; из двух выбранных с
+ * пересекающейся опорой (`factsOverlap`) вторая выбывает.
+ */
 export function parseSelection(
   raw: unknown,
   insights: readonly Insight[],
@@ -131,16 +145,15 @@ export function parseSelection(
   if (!env.success) return { ok: false, note: "ответ не по схеме: нужен объект picks" };
   const byId = new Map(insights.map((i) => [i.id, i]));
   const picks: SelectionPick[] = [];
-  const keys = new Set<string>();
+  const chosen: Insight[] = [];
   for (const item of env.data.picks) {
     if (picks.length >= SELECT_INSIGHTS) break;
     const parsed = SelectItem.safeParse(item);
     if (!parsed.success) continue;
     const insight = byId.get(normalizeRefId(parsed.data.id));
-    if (!insight || picks.some((p) => p.id === insight.id)) continue;
-    // Две выбранные на одной связке фактов: вторая выбывает.
-    if (keys.has(factKey(insight))) continue;
-    keys.add(factKey(insight));
+    if (!insight || chosen.includes(insight)) continue;
+    if (chosen.some((c) => factsOverlap(c.factIds, insight.factIds))) continue;
+    chosen.push(insight);
     picks.push({ ...parsed.data, id: insight.id });
   }
   if (picks.length === 0) {
@@ -154,7 +167,8 @@ export function parseSelection(
 
 /**
  * Добор кодом, если отбор вернул меньше нужного (или упал целиком): оставшиеся инсайты по
- * `potential`, без повтора связки фактов. Без добора недобор отбора ронял бы всю генерацию.
+ * `potential`. Сначала без пересечения опоры с уже выбранными (`factsOverlap`), а если так не
+ * набрать — без точного повтора связки фактов. Без добора недобор отбора ронял бы генерацию.
  */
 export function topUpPicks(
   picks: readonly SelectionPick[],
@@ -163,21 +177,26 @@ export function topUpPicks(
 ): SelectionPick[] {
   const out = [...picks];
   const used = new Set(out.map((p) => p.id));
-  const keys = new Set(insights.filter((i) => used.has(i.id)).map(factKey));
+  const chosen = insights.filter((i) => used.has(i.id));
   const rest = insights
     .map((insight, order) => ({ insight, order }))
     .filter(({ insight }) => !used.has(insight.id))
-    .sort((a, b) => b.insight.potential - a.insight.potential || a.order - b.order);
-  for (const { insight } of rest) {
-    if (out.length >= target) break;
-    if (keys.has(factKey(insight))) continue;
-    keys.add(factKey(insight));
-    out.push({
-      id: insight.id,
-      theme: capCodepoints(insight.title, CAPS.theme),
-      mechanic: `категория ${insight.category}`,
-      score: null,
-    });
+    .sort((a, b) => b.insight.potential - a.insight.potential || a.order - b.order)
+    .map(({ insight }) => insight);
+  const strict = (i: Insight) => !chosen.some((c) => factsOverlap(c.factIds, i.factIds));
+  const loose = (i: Insight) => !chosen.some((c) => factKey(c) === factKey(i));
+  for (const allowed of [strict, loose]) {
+    for (const insight of rest) {
+      if (out.length >= target) break;
+      if (chosen.includes(insight) || !allowed(insight)) continue;
+      chosen.push(insight);
+      out.push({
+        id: insight.id,
+        theme: capCodepoints(insight.title, CAPS.theme),
+        mechanic: `категория ${insight.category}`,
+        score: null,
+      });
+    }
   }
   return out;
 }

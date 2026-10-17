@@ -15,6 +15,7 @@ import {
   makeComedyDeps,
   makeMaterial,
   profileAnswer,
+  PROFILE_FACTS,
   snapshotSource,
   userText,
 } from "./test-helpers";
@@ -256,8 +257,8 @@ describe("профиль", () => {
       makeComedyDeps({ profile: fakeProfile(answer) }),
     );
     const trace = ComedyTrace.parse(r.trace);
-    expect(trace.profile?.facts).toHaveLength(12);
-    expect(trace.profile?.facts.map((f) => f.id).at(-1)).toBe("F12");
+    expect(trace.profile?.facts).toHaveLength(PROFILE_FACTS);
+    expect(trace.profile?.facts.map((f) => f.id).at(-1)).toBe(`F${PROFILE_FACTS}`);
 
     const thin = makeComedyDeps({ profile: fakeProfile(profileAnswer({}, 3)) });
     expect((await failure(writeComedyCandidates(comedyInput(), thin)))?.reason).toBe("llm_failed");

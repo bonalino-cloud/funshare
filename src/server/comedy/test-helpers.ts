@@ -44,7 +44,7 @@ export function makeMaterial(over: Partial<ComedyMaterial> = {}): ComedyMaterial
   };
 }
 
-export function profileAnswer(over: Record<string, unknown> = {}, factCount = 12) {
+export function profileAnswer(over: Record<string, unknown> = {}, factCount = PROFILE_FACTS) {
   return {
     person: { callName: "Кирилл", gender: "male", ageStated: null },
     facts: Array.from({ length: factCount }, (_, i) => ({
@@ -77,15 +77,21 @@ export function profileAnswer(over: Record<string, unknown> = {}, factCount = 12
 export const fakeProfile = (answer: unknown = profileAnswer()) =>
   vi.fn<ComedyGenerateFn>(async () => answer);
 
-/** Инсайты: категорию берёт из задания, опора на факты F1…F12 (связки разные). */
+/** Фактов в профиле-заглушке: хватает на непересекающиеся опоры трёх категорий по 12. */
+export const PROFILE_FACTS = 40;
+
+/**
+ * Инсайты: категорию берёт из задания. Опоры не пересекаются: A — F1…F12, B — F13…F24,
+ * C — F25…F36, у первого инсайта A ещё цитата Q1.
+ */
 export function fakeInsights(count = 6) {
   return vi.fn<ComedyGenerateFn>(async (p) => {
     const cat = /категории ([ABC])/.exec(userText(p))?.[1] ?? "A";
-    const shift = { A: 0, B: 4, C: 8 }[cat] ?? 0;
+    const shift = { A: 0, B: 12, C: 24 }[cat] ?? 0;
     return {
       insights: Array.from({ length: count }, (_, i) => ({
         title: `Инсайт ${cat}${i + 1}`,
-        factIds: [`F${((shift + i) % 12) + 1}`, i === 0 ? "Q1" : `F${((shift + i + 1) % 12) + 1}`],
+        factIds: cat === "A" && i === 0 ? ["F1", "Q1"] : [`F${shift + i + 1}`],
         insight: `Сталкиваем факты ${cat} ${i}`,
         directions: ["паспорт"],
         potential: 5 - (i % 5),
