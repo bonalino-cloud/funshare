@@ -63,6 +63,9 @@ describe("модели, размышления и effort по ролям", () =>
     const run = meter.snapshot();
     expect(new Set(run.llm.map((l) => l.model))).toEqual(new Set([SONNET_MODEL, HAIKU_MODEL]));
     expect(run.llm.find((l) => l.role === "comedy-moderator")?.model).toBe(HAIKU_MODEL);
+    // 1000 вход + 200 выход: Haiku 5.5 $0.10 / $0.50 → 200 мкUSD, Sonnet 5.5 $2 / $10 → 4000.
+    expect(run.llm.find((l) => l.role === "comedy-moderator")?.microUsd).toBe(200);
+    expect(run.llm.find((l) => l.role === "comedy-punch")?.microUsd).toBe(4000);
     expect(run.estimated).toBe(false);
     expect(formatCostLog("write", run)).not.toContain("оценка");
   });
