@@ -1,11 +1,11 @@
-import { PUNCH_MAX_CHARS } from "@/contracts";
 import { capCodepoints, codepointLength, sanitizeText } from "../../facts/text";
-import { MIN_CYRILLIC_SHARE } from "./config";
+import { LEGACY_PUNCH_MAX_CHARS, MIN_CYRILLIC_SHARE } from "./config";
 import { WriterCandidate } from "./schema";
 import type { Hook, HookStyle, JudgeScores } from "./types";
 
 // Проверка одного кандидата писателя кодом, до судьи и до БД. Что не по контракту
-// (`PunchCandidate`: текст до 140 знаков, эмодзи) или не по-русски, вычёркивается.
+// (`PunchCandidate`, эмодзи), длиннее потолка старого писателя (`LEGACY_PUNCH_MAX_CHARS`, 140)
+// или не по-русски, вычёркивается.
 
 export type ValidCandidate = {
   hookId: string;
@@ -58,7 +58,7 @@ export function validateCandidate(
   const text = sanitizeText(c.text);
   if (text === "") return { ok: false, reason: "empty" };
   // Контракт считает единицы UTF-16 (`z.string().max`), это не меньше, чем кодпоинты.
-  if (text.length > PUNCH_MAX_CHARS) return { ok: false, reason: "too_long" };
+  if (text.length > LEGACY_PUNCH_MAX_CHARS) return { ok: false, reason: "too_long" };
   if (cyrillicShare(text) < MIN_CYRILLIC_SHARE) return { ok: false, reason: "not_russian" };
 
   const hook: Hook = style.hook;

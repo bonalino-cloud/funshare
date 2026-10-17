@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PUNCH_MAX_CHARS } from "@/contracts";
 import { CostMeter, type CostRun } from "../../cost";
 import { richRu } from "../../facts/fixtures";
 import { runWriteStep, type WriteStepDeps } from "./run";
@@ -97,7 +98,7 @@ describe("runWriteStep", () => {
     const trial: TrialPunchRow[] = [
       { punchId: "t1", emoji: "🔥", text: "Выбранная в Поджоге шутка", trace: makeTrace() },
       { punchId: "t2", emoji: "🔥", text: "Битая трасса", trace: { nope: 1 } },
-      { punchId: "t3", emoji: "🔥", text: "я".repeat(200), trace: makeTrace() },
+      { punchId: "t3", emoji: "🔥", text: "я".repeat(PUNCH_MAX_CHARS + 1), trace: makeTrace() },
     ];
     const s = setup({ tier: 2, trialGenerationId: "trial" }, trial);
     await runWriteStep("g", s.deps);
