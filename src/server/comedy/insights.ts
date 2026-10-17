@@ -13,7 +13,7 @@ import {
   type InsightCategory,
 } from "./config";
 import { profileFactIds } from "./profile";
-import { logComedy, settleBatches, withRetries, type Parsed } from "./retry";
+import { logComedy, settleBatches, withRetries, type Parsed, type ParseContext } from "./retry";
 import {
   CAPS,
   InsightItem,
@@ -48,14 +48,20 @@ export function keepKnownFacts(raw: readonly string[], known: ReadonlySet<string
 
 const direction = LlmText(CAPS.direction);
 
+/**
+ * Инсайты одной категории. Модель иногда рано закрывает массив (живые прогоны: категория
+ * вернула 1 из 9–12): меньше половины нижней границы — повтор с числом в причине. На последней
+ * попытке принимаем то, что есть (хотя бы один), чтобы не ронять генерацию.
+ */
 export function parseInsights(
   raw: unknown,
   category: InsightCategory,
   known: ReadonlySet<string>,
+  ctx: ParseContext = { lastAttempt: true },
 ): Parsed<Insight[]> {
   const env = InsightsEnvelope.safeParse(raw);
   if (!env.success) return { ok: false, note: "ответ не по схеме: нужен объект insights" };
-  const max = INSIGHTS_PER_CATEGORY[category][1];
+  const [min, max] = INSIGHTS_PER_CATEGORY[category];
   const out: Insight[] = [];
   for (const item of env.data.insights) {
     if (out.length >= max) break;
@@ -83,6 +89,12 @@ export function parseInsights(
     return {
       ok: false,
       note: "ни одного инсайта с опорой: factIds только из id профиля (F1, Q1), potential целое 1–5",
+    };
+  }
+  if (out.length < Math.ceil(min / 2) && !ctx.lastAttempt) {
+    return {
+      ok: false,
+      note: `Нужно ${min}–${max} инсайтов категории ${category}, а пришло ${out.length}. Верни полный список.`,
     };
   }
   return { ok: true, value: out };
@@ -113,7 +125,7 @@ export async function findInsights(ctx: InsightsContext): Promise<Insight[]> {
             retryNote,
           }),
         ctx.generate,
-        (raw) => parseInsights(raw, category, known),
+        (raw, attempt) => parseInsights(raw, category, known, attempt),
       ),
     ),
   );

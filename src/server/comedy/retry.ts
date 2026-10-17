@@ -16,6 +16,9 @@ export type Parsed<T> = { ok: true; value: T } | { ok: false; note: string };
 /** Состояние попыток для сборщика промпта: причина отказа и был ли прошлый сбой вызовом. */
 export type AttemptState = { retryNote: string | undefined; callFailed: boolean };
 
+/** Что `parse` знает о попытке: на последней можно принять неполный ответ, чтобы не ронять шаг. */
+export type ParseContext = { lastAttempt: boolean };
+
 /**
  * Вызов модели с ретраями: сбой вызова или ответ, который `parse` не принял, дают ещё до двух
  * попыток; причина (наш текст) идёт в промпт. Исчерпаны — `llm_failed`. Исключение из `parse`
@@ -25,7 +28,7 @@ export async function withRetries<T>(
   label: string,
   prompt: (state: AttemptState) => ComedyPrompt,
   generate: ComedyGenerateFn,
-  parse: (raw: unknown) => Parsed<T>,
+  parse: (raw: unknown, ctx: ParseContext) => Parsed<T>,
 ): Promise<T> {
   let state: AttemptState = { retryNote: undefined, callFailed: false };
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -38,7 +41,7 @@ export async function withRetries<T>(
       state = { retryNote: schemaError ? error.message : undefined, callFailed: !schemaError };
       continue;
     }
-    const parsed = parse(raw);
+    const parsed = parse(raw, { lastAttempt: attempt === MAX_ATTEMPTS });
     if (parsed.ok) return parsed.value;
     logComedy(`${label}: попытка ${attempt}: ответ не принят`);
     state = { retryNote: parsed.note, callFailed: false };

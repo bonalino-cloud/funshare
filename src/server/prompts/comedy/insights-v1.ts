@@ -89,7 +89,7 @@ export function profileBlock(profile: ComedyProfile): string {
 export function buildInsightsPrompt(input: InsightsPromptInput): ComedyPrompt {
   const [from, to] = input.range;
   const name = CATEGORY_NAME[input.category];
-  const task = `Найди ${from}–${to} инсайтов категории ${input.category} (${name}). Только эта категория.`;
+  const task = `Найди ${from}–${to} инсайтов категории ${input.category} (${name}). Только эта категория. Верни в массиве insights от ${from} до ${to} элементов.`;
   const user = [
     DATA_NOTE,
     profileBlock(input.profile),

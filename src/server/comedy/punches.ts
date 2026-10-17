@@ -157,6 +157,19 @@ function parseBatch(
   return result;
 }
 
+/** Минимум годных шуток на инсайт пачки: меньше — пачка повторяется. */
+const MIN_PUNCHES_PER_INSIGHT = 2;
+
+/** Инсайты пачки, у которых годных шуток меньше `MIN_PUNCHES_PER_INSIGHT`. */
+export function shortInsights(
+  insights: readonly Insight[],
+  accepted: readonly { insightId: string }[],
+): string[] {
+  return insights
+    .filter((i) => accepted.filter((c) => c.insightId === i.id).length < MIN_PUNCHES_PER_INSIGHT)
+    .map((i) => i.id);
+}
+
 async function punchBatch(
   insights: readonly Insight[],
   alreadyWritten: readonly string[],
@@ -177,13 +190,22 @@ async function punchBatch(
         retryNote,
       }),
     ctx.deps.punch,
-    (raw) => {
+    (raw, { lastAttempt }) => {
       const r = parseBatch(raw, insights, seen, round, ctx);
       if (!r) return { ok: false, note: "ответ не по схеме: нужен объект punches" };
       if (r.accepted.length === 0) {
         return {
           ok: false,
           note: `ни одна шутка не принята: русский язык, до ${PUNCH_MAX_CHARS} знаков, без длинного тире, insightId как во входе`,
+        };
+      }
+      // Модель иногда рано закрывает массив: меньше двух годных шуток на инсайт — повтор пачки.
+      // На последней попытке принимаем, что есть.
+      const short = shortInsights(insights, r.accepted);
+      if (short.length > 0 && !lastAttempt) {
+        return {
+          ok: false,
+          note: `На каждый инсайт ровно ${PUNCHES_PER_INSIGHT} шутки; не хватает для: ${short.join(", ")}.`,
         };
       }
       // Принятое запоминаем только при успехе попытки: неудачная не должна занять тексты.

@@ -345,6 +345,37 @@ describe("инсайты и отбор", () => {
     expect(trace.insights.some((i) => i.title === "Без опоры")).toBe(false);
   });
 
+  it("категория рано закрыла массив (1 из 10–12): повтор с числом в причине, остальные не ждут", async () => {
+    const good = fakeInsights(10);
+    let bCalls = 0;
+    const insights = vi.fn<ComedyGenerateFn>(async (p) => {
+      const out = (await good(p)) as { insights: unknown[] };
+      if (!userText(p).includes("категории B")) return out;
+      bCalls++;
+      return bCalls === 1 ? { insights: out.insights.slice(0, 1) } : out;
+    });
+    const r = await writeComedyCandidates(comedyInput(), makeComedyDeps({ insights }));
+    const trace = ComedyTrace.parse(r.trace);
+    expect(trace.insights.filter((i) => i.category === "B")).toHaveLength(10);
+    expect(insights).toHaveBeenCalledTimes(4);
+    const retry = insights.mock.calls.map(([p]) => userText(p)).at(-1)!;
+    expect(retry).toContain("Нужно 10–12 инсайтов категории B, а пришло 1. Верни полный список.");
+    expect(retry).toContain("Верни в массиве insights от 10 до 12 элементов.");
+  });
+
+  it("категория и на последней попытке вернула 1: принято, генерация идёт", async () => {
+    const good = fakeInsights(10);
+    const insights = vi.fn<ComedyGenerateFn>(async (p) => {
+      const out = (await good(p)) as { insights: unknown[] };
+      return userText(p).includes("категории B") ? { insights: out.insights.slice(0, 1) } : out;
+    });
+    const r = await writeComedyCandidates(comedyInput(), makeComedyDeps({ insights }));
+    const trace = ComedyTrace.parse(r.trace);
+    expect(trace.insights.filter((i) => i.category === "B")).toHaveLength(1);
+    expect(insights).toHaveBeenCalledTimes(5);
+    expect(r.candidates).toHaveLength(10);
+  });
+
   it("категория, исчерпавшая ретраи, отпадает; остальные работают", async () => {
     const good = fakeInsights(8);
     const insights = vi.fn(async (p: Parameters<typeof good>[0]) => {
@@ -487,6 +518,48 @@ describe("генератор: проверки кодом и слой 4", () => 
     const r2 = await writeComedyCandidates(comedyInput({ tier: 2, forbidden }), strict);
     expect(r2.candidates.some((c) => c.text.startsWith("Свой человек"))).toBe(false);
     expect(ComedyTrace.parse(r2.trace).filters.layer5.forbidden_topic).toBeGreaterThan(0);
+  });
+
+  it("пачка недобрала шуток на инсайт: повтор с перечнем инсайтов, затем полная", async () => {
+    const full = fakePunch();
+    let calls = 0;
+    const punch = vi.fn<ComedyGenerateFn>(async (p) => {
+      // Номер вызова до await: пачки идут параллельно.
+      const call = ++calls;
+      const out = (await full(p)) as { punches: { insightId: string }[] };
+      const first = /<insights>\n\[(\w+)\]/.exec(userText(p))?.[1];
+      // Первый вызов первой пачки: у её первого инсайта одна шутка вместо трёх.
+      if (call === 1) {
+        let kept = 0;
+        return {
+          punches: out.punches.filter((c) => c.insightId !== first || kept++ < 1),
+        };
+      }
+      return out;
+    });
+    const r = await writeComedyCandidates(comedyInput(), makeComedyDeps({ punch }));
+    const texts = punch.mock.calls.map(([p]) => userText(p));
+    const retry = texts.find((t) => t.includes("не хватает для"));
+    expect(retry).toMatch(/На каждый инсайт ровно 3 шутки; не хватает для: [ABC]\d+\./);
+    expect(texts[0]).toContain("Всего в массиве punches должно быть 9 элементов.");
+    // 4 пачки + 1 повтор.
+    expect(punch).toHaveBeenCalledTimes(5);
+    expect(r.candidates).toHaveLength(10);
+  });
+
+  it("пачка недобирает и на последней попытке: принято, что есть", async () => {
+    const full = fakePunch();
+    const punch = vi.fn<ComedyGenerateFn>(async (p) => {
+      const out = (await full(p)) as { punches: { insightId: string }[] };
+      const first = /<insights>\n\[(\w+)\]/.exec(userText(p))?.[1];
+      let kept = 0;
+      return { punches: out.punches.filter((c) => c.insightId !== first || kept++ < 1) };
+    });
+    const r = await writeComedyCandidates(comedyInput(), makeComedyDeps({ punch }));
+    // 4 пачки по 3 попытки: недобор в каждой, последняя принята (30 − 2 × 4 = 22 шутки).
+    expect(punch).toHaveBeenCalledTimes(12);
+    expect(r.stats.written).toBe(22);
+    expect(r.candidates).toHaveLength(10);
   });
 
   it("пустой ответ генератора: ретраи с причиной, затем llm_failed", async () => {

@@ -121,7 +121,7 @@ export function buildPunchPrompt(input: PunchPromptInput): ComedyPrompt {
     );
   }
   blocks.push(
-    `Напиши ровно ${input.perInsight} шутки на каждый инсайт (всего ${total}). insightId как во входе.${retryTail(input.retryNote)}`,
+    `Напиши ровно ${input.perInsight} шутки на каждый инсайт (всего ${total}). insightId как во входе. Всего в массиве punches должно быть ${total} элементов.${retryTail(input.retryNote)}`,
   );
   return textPrompt(PUNCH_SYSTEM, blocks.join("\n\n"));
 }
