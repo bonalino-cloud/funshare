@@ -6,7 +6,7 @@ exports[`тексты comedy v1 > снимок байтов (sha256) 1`] = `
   "comedy/insights-v1": "3561bad67ea0973a",
   "comedy/moderator-v1": "5850ce763aa1367e",
   "comedy/profile-v1": "98a141f0067e2edc",
-  "comedy/punch-v1": "7674b3dcdc74ff9f",
+  "comedy/punch-v1": "a373868455b5d5fe",
   "comedy/select-v1": "f19a8be4acd09fe7",
 }
 `;

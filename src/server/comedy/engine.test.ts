@@ -416,6 +416,26 @@ describe("генератор: проверки кодом и слой 4", () => 
     expect(trace.filters.layer4.too_long).toBe(1);
   });
 
+  it("дефис с пробелами между словами — spaced_hyphen; диапазон цифр «5 - 7» проходит", async () => {
+    const punch = fakePunch((id, n, call) =>
+      n === 1
+        ? `Шейкер ${id} у тебя в каждом кадре - видно, ебучий тренер`
+        : n === 2
+          ? `От 5 - 7 шейкеров в кадре ${id} вызов ${call}, охуенно`
+          : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+    );
+    const r = await writeComedyCandidates(comedyInput({ tier: 2 }), makeComedyDeps({ punch }));
+    const trace = ComedyTrace.parse(r.trace);
+    const hyphen = trace.candidates.filter((c) => c.reason === "spaced_hyphen");
+    expect(hyphen.length).toBeGreaterThan(0);
+    expect(hyphen.every((c) => c.outcome === "dropped_layer4" && c.text?.includes(" - "))).toBe(
+      true,
+    );
+    expect(trace.filters.layer4.spaced_hyphen).toBe(hyphen.length);
+    expect(r.stats.droppedInvalid).toBeGreaterThanOrEqual(hyphen.length);
+    expect(trace.candidates.some((c) => c.text?.startsWith("От 5 - 7") && !c.reason)).toBe(true);
+  });
+
   it("чужой insightId — unknown_hook; дубль по тексту, в том числе с карри из Поджога", async () => {
     const carried = [carriedPunch("t1", "Карри из Поджога, блядь")];
     const punch = vi.fn(async (p: Parameters<ReturnType<typeof fakePunch>>[0]) => {

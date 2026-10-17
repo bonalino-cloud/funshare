@@ -6,7 +6,12 @@ import type { OutputReason } from "./output-check";
 // задача 13 записала её в `generation_traces` как есть.
 
 /** Слой 4: форма/длина/язык/дубль (`write/candidate.ts`), запретные темы из досье и `OutputReason`. */
-export type Layer4Code = Rejection | OutputReason | "avoid_topic";
+export type Layer4Code =
+  | Rejection
+  | OutputReason
+  | "avoid_topic"
+  /** Дефис с пробелами вместо тире: только кандидаты comedy (`comedy/punches.ts`). */
+  | "spaced_hyphen";
 
 /** Слой 5: провал вопроса модератора или отсутствие вердикта. */
 export type Layer5Code =

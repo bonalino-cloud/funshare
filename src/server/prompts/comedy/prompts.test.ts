@@ -119,6 +119,8 @@ describe("тексты comedy v1", () => {
     ].map((m) => m[1]!);
     const examples = [...quoted, ...block("ОБРАЗЦЫ ТЕМПА"), ...block("КАК ЭТО ВЫГЛЯДИТ")];
     expect(examples).toHaveLength(13);
+    // Мат хвостом через запятую («…, блядь.») правило 4 запрещает: в образцах его нет.
+    for (const text of examples) expect(text).not.toMatch(/,\s*(блядь|сука|нахуй|пиздец)[.!]?$/i);
     // АНТИПРИМЕРЫ намеренно нарушают правила (дефис, мат хвостом, вывод): в проверку не входят.
     const anti = block("АНТИПРИМЕРЫ");
     expect(anti).toHaveLength(2);
