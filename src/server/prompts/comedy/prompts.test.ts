@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ComedyProfileSchema, type ComedyProfile, type Insight } from "../../comedy/schema";
 import { makeMaterial, profileAnswer, userText } from "../../comedy/test-helpers";
-import { checkOutputText } from "../../roast/filters";
+import { buildLeakIndex, checkOutputText } from "../../roast/filters";
 import { promptSources } from "../../roast/filters/prompt-leak";
 import { ALL_CANARIES } from "../canary";
 import { allComedySystemPrompts } from "../registry";
@@ -101,6 +101,26 @@ describe("тексты comedy v1", () => {
         level: "well_done",
       }),
     ).toBe("prompt_leak");
+  });
+
+  // Модель копирует слова из образцов: слово из BANNED_WORDS или HEDGES в примере (а не в списке
+  // «ЗАПРЕЩЕНО») обрекает её шутки на вычёркивание слоем 4. Утечку промпта здесь не считаем.
+  it("примеры шуток генератора проходят слой 4", () => {
+    const block = (title: string) =>
+      punch.PUNCH_SYSTEM.split("\n\n")
+        .find((b) => b.startsWith(title))!
+        .split("\n")
+        .filter((l) => l.startsWith("- "))
+        .map((l) => l.slice(2).replace(/^[a-z_]+: /, ""));
+    const quoted = [
+      ...punch.PUNCH_SYSTEM.split("\n\n")
+        .find((b) => b.startsWith("СТРУКТУРЫ"))!
+        .matchAll(/«([^»]{30,})»/g),
+    ].map((m) => m[1]!);
+    const examples = [...quoted, ...block("ОБРАЗЦЫ ТЕМПА"), ...block("КАК ЭТО ВЫГЛЯДИТ")];
+    expect(examples).toHaveLength(13);
+    const ctx = { level: "well_done" as const, canaries: [], leakIndex: buildLeakIndex([]) };
+    for (const text of examples) expect([text, checkOutputText(text, ctx)]).toEqual([text, null]);
   });
 });
 
