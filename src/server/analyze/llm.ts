@@ -6,8 +6,17 @@ import { withCanary } from "../prompts/canary";
 import type { AnalyzePromptPart } from "../prompts/active";
 import { LlmDossier } from "./schema";
 
-/** Модель досье (architecture/stack.md). Пишется в `personas.model`. */
-export const ANALYZE_MODEL = "claude-sonnet-5";
+/**
+ * Модель досье. Пишется в `personas.model`. С 2026-10-17 Sonnet 5.5: `claude-sonnet-5` на этой
+ * структурной схеме обрывал ответ («other side closed» на ~31-й секунде, 3 попытки из 3), Sonnet
+ * 5.5 отвечает за ~15 с. Цена та же (`cost/prices.ts`).
+ */
+export const ANALYZE_MODEL = "claude-sonnet-5-5";
+/**
+ * Размышления досье: минимум Sonnet 5.5 (`disabled` у него даёт 400), как у ролей comedy
+ * (`comedy/llm.ts`). Задача структурная, важна скорость; effort по умолчанию API (high) допустим.
+ */
+const ANALYZE_PROVIDER_OPTIONS = { anthropic: { thinking: { type: "between_tools" } } };
 /** Таймаут одной попытки (вместе с ретраем SDK): от него считается худший случай досье. */
 export const ANALYZE_TIMEOUT_MS = 90_000;
 // Полное досье по верхним лимитам контракта на кириллице — до ~7k токенов; обрезанный JSON
@@ -55,6 +64,7 @@ export function createAnthropicGenerate(meter?: CostMeter): GenerateFn {
         ],
         output: Output.object({ schema: LlmDossier }),
         maxOutputTokens: MAX_OUTPUT_TOKENS,
+        providerOptions: ANALYZE_PROVIDER_OPTIONS,
         // Ретраи на уровне SDK (сеть, 5xx) ограничены одним: свой бюджет попыток ведёт шаг.
         maxRetries: 1,
         abortSignal: AbortSignal.timeout(ANALYZE_TIMEOUT_MS),
