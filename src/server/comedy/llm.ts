@@ -5,6 +5,7 @@ import { LlmSchemaError } from "../analyze/llm";
 import type { CostMeter, LlmRole, SdkUsage } from "../cost/meter";
 import { parseServerEnv } from "../env";
 import { withCanary, type CanaryRole } from "../prompts/canary";
+import { MIN_CALL_MS } from "./config";
 import {
   EditorOutput,
   InsightsOutput,
@@ -89,6 +90,22 @@ export function comedyRoleConfig(role: ComedyRole): Readonly<RoleConfig> {
   return ROLES[role];
 }
 
+/** Бюджет запуска исчерпан: вызов не начат и денег не стоит. Шаг считает это сбоем вызова. */
+export class ComedyDeadlineError extends Error {
+  constructor() {
+    super("бюджет времени comedy исчерпан");
+    this.name = "ComedyDeadlineError";
+  }
+}
+
+/** Таймаут вызова: таймаут роли, но не дальше общего срока запуска (`deadlineAt`, мс эпохи). */
+function callTimeoutMs(roleMs: number, deadlineAt: number | undefined): number {
+  if (deadlineAt === undefined) return roleMs;
+  const left = deadlineAt - Date.now();
+  if (left < MIN_CALL_MS) throw new ComedyDeadlineError();
+  return Math.min(roleMs, left);
+}
+
 function toContent(parts: readonly PromptPart[]) {
   return parts.map((part) =>
     part.type === "text"
@@ -97,17 +114,23 @@ function toContent(parts: readonly PromptPart[]) {
   );
 }
 
-/** Реальный вызов одной роли. Неудачная попытка тоже идёт в счётчик: она стоит денег. */
+/**
+ * Реальный вызов одной роли. Неудачная попытка тоже идёт в счётчик: она стоит денег.
+ * `deadlineAt` (мс эпохи) — общий срок всех вызовов запуска (`COMEDY_BUDGET_MS`): после него
+ * вызовы не начинаются (`ComedyDeadlineError`), а начатый обрывается на сроке.
+ */
 export function createComedyGenerate(
   role: ComedyRole,
   meter?: CostMeter,
   modelId: string = COMEDY_MODEL,
+  deadlineAt?: number,
 ): ComedyGenerateFn {
   const cfg = ROLES[role];
   const output = Output.object({
     schema: jsonSchema<unknown>(() => zodSchema(cfg.schema).jsonSchema),
   });
   return async ({ system, parts }) => {
+    const timeoutMs = callTimeoutMs(cfg.timeoutMs, deadlineAt);
     const apiKey = parseServerEnv(process.env).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY не задан");
     const anthropic = createAnthropic({ apiKey });
@@ -121,7 +144,7 @@ export function createComedyGenerate(
         maxOutputTokens: cfg.maxOutputTokens,
         // Свой бюджет попыток ведёт шаг; SDK добавляет не больше одного повтора на сеть и 5xx.
         maxRetries: 1,
-        abortSignal: AbortSignal.timeout(cfg.timeoutMs),
+        abortSignal: AbortSignal.timeout(timeoutMs),
       });
       usage = result.totalUsage;
       if (result.finishReason !== "stop") {

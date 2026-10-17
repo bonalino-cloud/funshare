@@ -3,7 +3,15 @@ import { NoObjectGeneratedError } from "ai";
 import { LlmSchemaError } from "../analyze/llm";
 import { CostMeter } from "../cost/meter";
 import { CANARIES } from "../prompts/canary";
-import { createComedyGenerate, type ComedyRole } from "./llm";
+import { COMEDY_BUDGET_MS, MIN_CALL_MS } from "./config";
+import { defaultComedyDeps } from "./engine";
+import {
+  COMEDY_MODEL,
+  ComedyDeadlineError,
+  comedyRoleConfig,
+  createComedyGenerate,
+  type ComedyRole,
+} from "./llm";
 
 const generateText = vi.hoisted(() => vi.fn());
 vi.mock("ai", async (importOriginal) => ({
@@ -88,6 +96,46 @@ describe("createComedyGenerate", () => {
     expect(String((err as Error).message)).not.toContain("секретный");
     const [line] = meter.snapshot().llm;
     expect(line).toMatchObject({ role: "comedy-punch", calls: 1, failedCalls: 1, outputTokens: 5 });
+  });
+
+  it("общий срок: таймаут вызова не дальше срока; у срока вызов не начинается и не стоит денег", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
+    generateText.mockResolvedValue({ output: { ok: 1 }, finishReason: "stop", totalUsage: usage });
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    const prompt = { system: "s", parts: [] };
+
+    await createComedyGenerate("punch")(prompt);
+    expect(timeout).toHaveBeenLastCalledWith(comedyRoleConfig("punch").timeoutMs);
+
+    await createComedyGenerate("punch", undefined, COMEDY_MODEL, Date.now() + 30_000)(prompt);
+    const budgeted = timeout.mock.lastCall?.[0] ?? 0;
+    expect(budgeted).toBeLessThanOrEqual(30_000);
+    expect(budgeted).toBeGreaterThan(25_000);
+
+    generateText.mockClear();
+    const meter = new CostMeter();
+    const late = createComedyGenerate("profile", meter, COMEDY_MODEL, Date.now() + MIN_CALL_MS - 1);
+    await expect(late(prompt)).rejects.toBeInstanceOf(ComedyDeadlineError);
+    expect(generateText).not.toHaveBeenCalled();
+    expect(meter.snapshot().llm).toEqual([]);
+  });
+
+  it("боевые зависимости: один срок COMEDY_BUDGET_MS на все роли запуска", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
+    generateText.mockResolvedValue({ output: { ok: 1 }, finishReason: "stop", totalUsage: usage });
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-17T12:00:00Z") });
+    try {
+      const deps = defaultComedyDeps();
+      vi.setSystemTime(Date.now() + COMEDY_BUDGET_MS - MIN_CALL_MS - 1_000);
+      await expect(deps.moderator({ system: "s", parts: [] })).resolves.toEqual({ ok: 1 });
+      vi.setSystemTime(Date.now() + 2_000);
+      await expect(deps.punch({ system: "s", parts: [] })).rejects.toBeInstanceOf(
+        ComedyDeadlineError,
+      );
+      expect(generateText).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("нет ключа: ошибка до вызова модели", async () => {

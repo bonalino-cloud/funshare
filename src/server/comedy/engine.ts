@@ -14,6 +14,7 @@ import { maxNewCandidates, MIN_CANDIDATES_BY_LEVEL } from "../roast/write/config
 import { WriteFailedError, type WriteStats, type WrittenCandidate } from "../roast/write/types";
 import type { WriteResult } from "../roast/write/write-candidates";
 import {
+  COMEDY_BUDGET_MS,
   COMEDY_TASTE_PACK,
   isComedyLevel,
   MAX_ROUNDS,
@@ -23,7 +24,7 @@ import {
 } from "./config";
 import { editRound, pickForOutput, type EditedRound } from "./editor";
 import { findInsights, selectInsights } from "./insights";
-import { COMEDY_MODEL, createComedyGenerate } from "./llm";
+import { COMEDY_MODEL, createComedyGenerate, type ComedyRole } from "./llm";
 import { fetchMaterialImages, fromSnapshot } from "./material";
 import { moderatePass } from "./moderate";
 import { buildComedyProfile, factSource } from "./profile";
@@ -56,14 +57,18 @@ export type ComedyResult = WriteResult<ComedyTrace>;
 /** Реальные реализации создаются лениво: сборка и тесты не требуют ключа и сети. */
 export function defaultComedyDeps(): ComedyDeps {
   const meter = new CostMeter();
+  // Один срок на все вызовы запуска: шаг не упрётся в лимит функции (config `COMEDY_BUDGET_MS`).
+  const deadlineAt = Date.now() + COMEDY_BUDGET_MS;
+  const generate = (role: ComedyRole) =>
+    createComedyGenerate(role, meter, COMEDY_MODEL, deadlineAt);
   return {
     meter,
-    profile: createComedyGenerate("profile", meter),
-    insights: createComedyGenerate("insights", meter),
-    select: createComedyGenerate("select", meter),
-    punch: createComedyGenerate("punch", meter),
-    editor: createComedyGenerate("editor", meter),
-    moderator: createComedyGenerate("moderator", meter),
+    profile: generate("profile"),
+    insights: generate("insights"),
+    select: generate("select"),
+    punch: generate("punch"),
+    editor: generate("editor"),
+    moderator: generate("moderator"),
     fetchCovers: createCoverFetcher(),
     model: COMEDY_MODEL,
     newId: () => `p_${randomUUID().slice(0, 8)}`,
