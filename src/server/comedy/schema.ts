@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { capCodepoints, sanitizeText } from "../facts/text";
+import { capCodepoints, cleanUntrusted, sanitizeText } from "../facts/text";
 import { INSIGHT_CATEGORIES } from "./config";
 
 // Схемы выходов comedy-движка (comedy-engine §3). Модели уходит строгая JSON Schema (`*Output`),
@@ -187,6 +187,26 @@ export const LlmNullableText = (cap: number) =>
     .nullable()
     .transform((s) => (s === null ? null : capCodepoints(sanitizeText(s), cap) || null));
 
+/**
+ * Текст профиля: модель читает картинки, а текст на фото PII-чистку не проходил (телефон на
+ * обложке «Запись: +7 …»), и промпт просит копировать текст обложек дословно. Профиль кормит
+ * шутки, а шутки уходят в публичный артефакт: тот же `cleanUntrusted`, что у подписей и у
+ * досье `analyze` (`analyze/postprocess.ts`). Телефоны, почта, ссылки, карты, адреса вырезаются.
+ */
+const scrubbed = (s: string, cap: number) => capCodepoints(cleanUntrusted(s).text, cap);
+
+export const ProfileText = (cap: number) =>
+  z
+    .string()
+    .transform((s) => scrubbed(s, cap))
+    .pipe(z.string().min(1));
+
+export const ProfileNullableText = (cap: number) =>
+  z
+    .string()
+    .nullable()
+    .transform((s) => (s === null ? null : scrubbed(s, cap) || null));
+
 const LlmId = z
   .string()
   .transform((s) => sanitizeText(s))
@@ -211,14 +231,14 @@ const ZERO_COVERAGE = {
 export const ProfileCore = z.object({
   person: z
     .object({
-      callName: LlmNullableText(CAPS.callName).catch(null),
+      callName: ProfileNullableText(CAPS.callName).catch(null),
       gender: z.enum(GENDERS).catch("unknown"),
-      ageStated: LlmNullableText(CAPS.ageStated).catch(null),
+      ageStated: ProfileNullableText(CAPS.ageStated).catch(null),
     })
     .catch({ callName: null, gender: "unknown", ageStated: null }),
   coverage: ProfileOutput.shape.coverage.catch(ZERO_COVERAGE),
-  keyObservation: LlmText(CAPS.keyObservation).catch("(нет)"),
-  ownHumor: LlmNullableText(CAPS.ownHumor).catch(null),
+  keyObservation: ProfileText(CAPS.keyObservation).catch("(нет)"),
+  ownHumor: ProfileNullableText(CAPS.ownHumor).catch(null),
   minorSignals: z.boolean(),
   facts: z.array(z.unknown()),
   // Закрытые темы входят в список «нельзя» дальше: без них ответ не принимаем.
@@ -230,18 +250,18 @@ export const ProfileCore = z.object({
 
 export const FactItem = z.object({
   section: z.enum(SECTIONS),
-  text: LlmText(CAPS.factText),
-  source: LlmText(CAPS.source),
+  text: ProfileText(CAPS.factText),
+  source: ProfileText(CAPS.source),
   basis: z.enum(FACT_BASES),
 });
 export const QuoteItem = z.object({
-  text: LlmText(CAPS.quoteText),
-  source: LlmText(CAPS.source),
-  about: LlmText(CAPS.about),
+  text: ProfileText(CAPS.quoteText),
+  source: ProfileText(CAPS.source),
+  about: ProfileText(CAPS.about),
 });
 export const AudienceItem = z.object({
-  text: LlmText(CAPS.audienceText),
-  source: LlmText(CAPS.source),
+  text: ProfileText(CAPS.audienceText),
+  source: ProfileText(CAPS.source),
 });
 
 export const InsightsEnvelope = z.object({ insights: z.array(z.unknown()) });

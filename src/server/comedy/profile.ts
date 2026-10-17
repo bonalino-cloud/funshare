@@ -6,8 +6,8 @@ import {
   AudienceItem,
   CAPS,
   FactItem,
-  LlmText,
   ProfileCore,
+  ProfileText,
   QuoteItem,
   type ComedyProfile,
 } from "./schema";
@@ -33,7 +33,7 @@ function acceptItems<T>(
 }
 
 const shortText = (cap: number) => (x: unknown) => {
-  const r = LlmText(cap).safeParse(x);
+  const r = ProfileText(cap).safeParse(x);
   return r.success ? r.data : null;
 };
 

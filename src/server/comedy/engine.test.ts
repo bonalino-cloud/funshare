@@ -262,6 +262,42 @@ describe("профиль", () => {
     expect(thin.profile).toHaveBeenCalledTimes(3);
   });
 
+  it("PII из текста на картинках вырезается из профиля: дальше ни в промпты, ни в трассу", async () => {
+    const answer = profileAnswer({
+      person: { callName: "Кирилл +7 999 123-45-67", gender: "male", ageStated: null },
+      quotes: [
+        {
+          text: "Запись: +7 (999) 123-45-67, пиши kirill@mail.ru",
+          source: "cover:0",
+          about: "запись",
+        },
+      ],
+      keyObservation: "Зовёт в студию на ул. Ленина, 5 и на taplink.cc/kirill",
+    });
+    answer.facts = [
+      {
+        section: "work_money",
+        text: "На обложке номер 8 999 123 45 67",
+        source: "cover:1",
+        basis: "seen",
+      },
+      ...answer.facts,
+    ];
+    const deps = makeComedyDeps({ profile: fakeProfile(answer) });
+    const r = await writeComedyCandidates(comedyInput(), deps);
+    const seen = [
+      JSON.stringify(ComedyTrace.parse(r.trace).profile),
+      ...[deps.insights, deps.select, deps.punch].map((fn) =>
+        userText(vi.mocked(fn).mock.calls[0]![0]),
+      ),
+    ].join("\n");
+    for (const pii of ["123-45-67", "123 45 67", "mail.ru", "Ленина", "taplink"]) {
+      expect(seen).not.toContain(pii);
+    }
+    expect(seen).toContain("Запись:");
+    expect(seen).toContain("На обложке номер");
+  });
+
   it("закрытые темы профиля и досье уходят списком «нельзя» в инсайты, генератор и модератор", async () => {
     const deps = makeComedyDeps({
       profile: fakeProfile(profileAnswer({ closedTopics: ["здоровье мамы"] })),
