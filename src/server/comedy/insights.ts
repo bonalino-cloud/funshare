@@ -104,6 +104,7 @@ export type InsightsContext = {
   profile: ComedyProfile;
   mode: GenerationMode;
   forbidden: readonly string[];
+  delicate: readonly string[];
   generate: ComedyGenerateFn;
 };
 
@@ -120,6 +121,7 @@ export async function findInsights(ctx: InsightsContext): Promise<Insight[]> {
             profile: ctx.profile,
             mode: ctx.mode,
             forbidden: ctx.forbidden,
+            delicate: ctx.delicate,
             category,
             range: INSIGHTS_PER_CATEGORY[category],
             retryNote,
@@ -216,7 +218,7 @@ export function topUpPicks(
 export async function selectInsights(
   profile: ComedyProfile,
   insights: readonly Insight[],
-  forbidden: readonly string[],
+  topics: { forbidden: readonly string[]; delicate: readonly string[] },
   generate: ComedyGenerateFn,
 ): Promise<Selection> {
   const count = Math.min(SELECT_INSIGHTS, insights.length);
@@ -224,7 +226,7 @@ export async function selectInsights(
   try {
     picks = await withRetries(
       "отбор",
-      ({ retryNote }) => buildSelectPrompt({ profile, insights, forbidden, count, retryNote }),
+      ({ retryNote }) => buildSelectPrompt({ profile, insights, ...topics, count, retryNote }),
       generate,
       (raw) => parseSelection(raw, insights),
     );

@@ -220,6 +220,7 @@ async function punchBatch(
         insights,
         mode: ctx.mode,
         forbidden: ctx.forbidden,
+        delicate: ctx.delicate,
         alreadyWritten,
         perInsight: PUNCHES_PER_INSIGHT,
         retryNote,

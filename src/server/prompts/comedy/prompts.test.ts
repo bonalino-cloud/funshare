@@ -159,6 +159,7 @@ describe("пользовательские сообщения", () => {
         profile: makeProfile(),
         mode: "friend",
         forbidden: ["бывший муж"],
+        delicate: ["доходы бизнеса"],
         category: "B",
         range: [10, 12],
       }),
@@ -167,6 +168,9 @@ describe("пользовательские сообщения", () => {
     expect(text).toContain("[Q1] «Дисциплина");
     expect(text).toContain("Режим: «друга»");
     expect(text).toContain("<forbidden_topics>\n- бывший муж\n</forbidden_topics>");
+    expect(text).toContain(
+      "Деликатно, лучше обходить:\n<delicate_topics>\n- доходы бизнеса\n</delicate_topics>",
+    );
     expect(text).toContain(
       "Найди 10–12 инсайтов категории B (неожиданные связи). Только эта категория.",
     );
@@ -178,6 +182,7 @@ describe("пользовательские сообщения", () => {
       insights: [insight()],
       mode: "self",
       forbidden: [],
+      delicate: [],
       alreadyWritten: ["Шутка — повтор [c3]"],
       perInsight: 3,
     });
@@ -211,6 +216,9 @@ describe("пользовательские сообщения", () => {
     );
     expect(m).toContain("[m1] Шутка (m2)");
     expect(m).toContain("- дети");
+    expect(moderator.MODERATOR_SYSTEM).toContain(
+      "НЕ закрытые темы, за них не вычёркивай: деньги, цены, траты, доход, бизнес",
+    );
   });
 
   it("отбор: инсайты с фактами одной строкой и обращение", () => {
@@ -219,6 +227,7 @@ describe("пользовательские сообщения", () => {
         profile: makeProfile(),
         insights: [insight()],
         forbidden: ["бывший муж"],
+        delicate: [],
         count: 1,
       }),
     );
@@ -228,6 +237,8 @@ describe("пользовательские сообщения", () => {
     expect(text).toContain("Выбери 1 инсайтов из <insights>");
     expect(text).toContain("<forbidden_topics>\n- бывший муж\n</forbidden_topics>");
     expect(text).toContain("задевают темы из списка «нельзя», не бери");
+    // Пустой список «деликатно» блока не даёт.
+    expect(text).not.toContain("Деликатно");
   });
 });
 

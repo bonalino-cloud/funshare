@@ -296,7 +296,7 @@ describe("runWriteStep", () => {
       expect(s.comedyDeps.profile).not.toHaveBeenCalled();
     });
 
-    it("запретные темы досье доходят до comedy, факты заказчика — в материал", async () => {
+    it("темы досье доходят до comedy раздельно, факты заказчика — в материал", async () => {
       const persona = makePersona(
         { avoidTopics: ["бывшая работа"], sensitiveEvents: ["развод"] },
         14,
@@ -308,8 +308,12 @@ describe("runWriteStep", () => {
       const moderatorText = JSON.stringify(
         vi.mocked(s.comedyDeps.moderator).mock.calls[0]![0].parts,
       );
-      expect(moderatorText).toContain("бывшая работа");
+      // Модератору — только «нельзя» (sensitiveEvents ∪ closedTopics), avoidTopics — генератору.
       expect(moderatorText).toContain("развод");
+      expect(moderatorText).not.toContain("бывшая работа");
+      const punchText = JSON.stringify(vi.mocked(s.comedyDeps.punch).mock.calls[0]![0].parts);
+      expect(punchText).toContain("Деликатно, лучше обходить");
+      expect(punchText).toContain("бывшая работа");
     });
 
     it("sensitiveEvents досье доходят до comedy отдельно: шутку про событие режет код", async () => {

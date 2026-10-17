@@ -5,6 +5,7 @@ import {
   clean,
   DATA_NOTE,
   factLines,
+  delicateBlock,
   forbiddenBlock,
   insightFacts,
   retryTail,
@@ -38,8 +39,10 @@ export const SELECT_SYSTEM = `Ты главный редактор писате�
 export type SelectPromptInput = {
   profile: ComedyProfile;
   insights: readonly Insight[];
-  /** Список «нельзя»: закрытые темы профиля ∪ запретные темы досье. */
+  /** Список «нельзя»: `sensitiveEvents ∪ closedTopics`. */
   forbidden: readonly string[];
+  /** Деликатно, лучше обходить: `avoidTopics` досье. */
+  delicate: readonly string[];
   /** Сколько выбрать (15 или все, если меньше). */
   count: number;
   retryNote?: string;
@@ -64,6 +67,7 @@ export function buildSelectPrompt(input: SelectPromptInput): ComedyPrompt {
     DATA_NOTE,
     `Герой: ${callName(input.profile)}`,
     forbiddenBlock(input.forbidden),
+    ...delicateBlock(input.delicate),
     `<insights>\n${insights.join("\n\n")}\n</insights>`,
     `Выбери ${input.count} инсайтов из <insights> и расставь по убыванию силы. Инсайты, которые задевают темы из списка «нельзя», не бери. id как во входе.${retryTail(input.retryNote)}`,
   ].join("\n\n");

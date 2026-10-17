@@ -210,7 +210,7 @@ export function makeComedyDeps(over: Partial<ComedyDeps> = {}): ComedyDeps {
 
 export const comedyInput = (over: Partial<ComedyInput> = {}): ComedyInput => ({
   source: { kind: "material", material: makeMaterial() },
-  forbidden: [],
+  avoidTopics: [],
   sensitiveEvents: [],
   extraFacts: [],
   mode: "self",

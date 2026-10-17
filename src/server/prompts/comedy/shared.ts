@@ -46,9 +46,19 @@ export function callName(profile: ComedyProfile): string {
   return profile.person.callName ? clean(profile.person.callName, 40) : "(не указано)";
 }
 
-/** Список «нельзя»: закрытые темы профиля ∪ запретные темы досье. */
+/** Список «нельзя»: тяжёлые события досье (`sensitiveEvents`) ∪ закрытые темы профиля. */
 export function forbiddenBlock(forbidden: readonly string[]): string {
   return `Список «нельзя»:\n<forbidden_topics>\n${list(forbidden, 200)}\n</forbidden_topics>`;
+}
+
+/**
+ * Темы досье `avoidTopics`: деликатно, лучше обходить, но не красная линия (деньги по политике
+ * открыты, а досье пишет «любые догадки о доходах»). Модератору не уходят. Пусто — блока нет.
+ */
+export function delicateBlock(delicate: readonly string[]): string[] {
+  return delicate.length === 0
+    ? []
+    : [`Деликатно, лучше обходить:\n<delicate_topics>\n${list(delicate, 200)}\n</delicate_topics>`];
 }
 
 export function retryTail(note: string | undefined): string {

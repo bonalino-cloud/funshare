@@ -5,7 +5,6 @@ import {
   PunchCandidate,
   type Tier,
 } from "@/contracts";
-import { forbiddenTopics } from "../../analyze/forbidden";
 import {
   ComedyFailedError,
   COMEDY_TRACE_STEP,
@@ -211,7 +210,7 @@ export async function runWriteStep(
         generationId,
         {
           source: { kind: "snapshot", snapshot: snapshot.data, facts },
-          forbidden: forbiddenTopics(persona.data),
+          avoidTopics: persona.data.avoidTopics,
           sensitiveEvents: persona.data.sensitiveEvents ?? [],
           extraFacts: row.extraFacts,
           mode: row.mode,

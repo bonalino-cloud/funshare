@@ -74,7 +74,7 @@ export function defaultComedyDeps(): ComedyDeps {
   };
 }
 
-/** Список «нельзя»: запретные темы досье ∪ закрытые темы профиля, без дублей. */
+/** Объединение списков тем без дублей (без учёта регистра и краёв). */
 export function mergeTopics(...lists: readonly (readonly string[])[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -262,10 +262,17 @@ async function run(
   const profile = await timed("profile", () => buildComedyProfile(material, deps.profile));
   rec.profile = profile;
 
+  // «Нельзя» — только красные линии: тяжёлые события досье и закрытые темы профиля. Темы
+  // `avoidTopics` идут в промпты как «деликатно», модератору их не даём: там бывают открытые
+  // темы (деньги), и он вычёркивал за них (живой прогон 2026-10-17: 7 из 20).
+  const forbidden = mergeTopics(input.sensitiveEvents, profile.closedTopics);
+  const forbiddenKeys = new Set(forbidden.map((t) => t.toLowerCase()));
+  const inForbidden = (t: string) => forbiddenKeys.has(t.toLowerCase());
   const ctx: RunContext = {
     level: input.level,
     mode: input.mode,
-    forbidden: mergeTopics(input.forbidden, profile.closedTopics),
+    forbidden,
+    delicate: mergeTopics(input.avoidTopics).filter((t) => !inForbidden(t)),
     sensitiveEvents: input.sensitiveEvents,
     profile,
     deps,
@@ -273,11 +280,22 @@ async function run(
     counters,
   };
   const insights = await timed("insights", () =>
-    findInsights({ profile, mode: input.mode, forbidden: ctx.forbidden, generate: deps.insights }),
+    findInsights({
+      profile,
+      mode: input.mode,
+      forbidden: ctx.forbidden,
+      delicate: ctx.delicate,
+      generate: deps.insights,
+    }),
   );
   rec.insights = insights;
   const selection = await timed("select", () =>
-    selectInsights(profile, insights, ctx.forbidden, deps.select),
+    selectInsights(
+      profile,
+      insights,
+      { forbidden: ctx.forbidden, delicate: ctx.delicate },
+      deps.select,
+    ),
   );
   rec.selection = selection;
 

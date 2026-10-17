@@ -64,11 +64,15 @@ export type ComedySource =
 
 export type ComedyInput = {
   source: ComedySource;
-  /** `avoidTopics ∪ sensitiveEvents` из досье (`forbiddenTopics`); без досье пусто. */
-  forbidden: readonly string[];
   /**
-   * `sensitiveEvents` досье отдельно (потеря, болезнь, развод, переезд из-за войны): красная
-   * линия держится и кодом, слой 4 `sensitive_event` в `punches.ts`. Без досье пусто.
+   * `avoidTopics` досье: в промпты инсайтов, отбора и генератора как «деликатно, лучше обходить»,
+   * модератору не уходят (там бывают открытые темы вроде денег). Без досье пусто.
+   */
+  avoidTopics: readonly string[];
+  /**
+   * `sensitiveEvents` досье (потеря, болезнь, развод, переезд из-за войны): вместе с
+   * `closedTopics` профиля — список «нельзя» для всех промптов и модератора; красная линия
+   * держится и кодом, слой 4 `sensitive_event` в `punches.ts`. Без досье пусто.
    */
   sensitiveEvents: readonly string[];
   /** Факты от пользователя: недоверенный текст. Для `snapshot` входят в материал. */

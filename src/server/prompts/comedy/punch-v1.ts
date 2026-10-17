@@ -7,6 +7,7 @@ import {
   clean,
   DATA_NOTE,
   factLines,
+  delicateBlock,
   forbiddenBlock,
   genderLabel,
   insightFacts,
@@ -78,7 +79,10 @@ export type PunchPromptInput = {
   profile: ComedyProfile;
   insights: readonly Insight[];
   mode: GenerationMode;
+  /** Список «нельзя»: `sensitiveEvents ∪ closedTopics`. */
   forbidden: readonly string[];
+  /** Деликатно, лучше обходить: `avoidTopics` досье. */
+  delicate: readonly string[];
   /** Уже написанное (прошлый раунд и выбранное в Поджоге): не повторять ассоциации. */
   alreadyWritten: readonly string[];
   perInsight: number;
@@ -112,6 +116,7 @@ export function buildPunchPrompt(input: PunchPromptInput): ComedyPrompt {
     DATA_NOTE,
     `Герой: ${callName(input.profile)}. Пол: ${genderLabel(input.profile.person.gender)}. ${modeLine(input.mode)}`,
     forbiddenBlock(input.forbidden),
+    ...delicateBlock(input.delicate),
     `<insights>\n${input.insights.map((i) => insightBlock(i, lines)).join("\n\n")}\n</insights>`,
   ];
   if (input.alreadyWritten.length > 0) {

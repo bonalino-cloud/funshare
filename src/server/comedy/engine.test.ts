@@ -302,16 +302,27 @@ describe("профиль", () => {
     expect(seen).toContain("На обложке номер");
   });
 
-  it("закрытые темы профиля и досье уходят списком «нельзя» в инсайты, генератор и модератор", async () => {
+  it("«нельзя» (закрытые темы профиля ∪ события досье) — всем четырём; avoidTopics — без модератора", async () => {
     const deps = makeComedyDeps({
       profile: fakeProfile(profileAnswer({ closedTopics: ["здоровье мамы"] })),
     });
-    await writeComedyCandidates(comedyInput({ forbidden: ["бывший муж"] }), deps);
-    for (const fn of [deps.insights, deps.punch, deps.moderator]) {
+    await writeComedyCandidates(
+      comedyInput({ avoidTopics: ["бывший муж"], sensitiveEvents: ["развод в прошлом году"] }),
+      deps,
+    );
+    for (const fn of [deps.insights, deps.select, deps.punch, deps.moderator]) {
       const text = userText(vi.mocked(fn).mock.calls[0]![0]);
-      expect(text).toContain("здоровье мамы");
-      expect(text).toContain("бывший муж");
+      expect(text).toMatch(
+        /<forbidden_topics>\n- развод в прошлом году\n- здоровье мамы\n<\/forbidden_topics>/,
+      );
     }
+    for (const fn of [deps.insights, deps.select, deps.punch]) {
+      const text = userText(vi.mocked(fn).mock.calls[0]![0]);
+      expect(text).toContain(
+        "Деликатно, лучше обходить:\n<delicate_topics>\n- бывший муж\n</delicate_topics>",
+      );
+    }
+    expect(userText(vi.mocked(deps.moderator).mock.calls[0]![0])).not.toContain("бывший муж");
   });
 });
 
@@ -491,21 +502,22 @@ describe("генератор: проверки кодом и слой 4", () => 
     expect(r.candidates.filter((c) => c.text.startsWith("Карри"))).toHaveLength(1);
   });
 
-  it("запретные темы досье код по основам не режет: решает модератор", async () => {
-    const forbidden = ["догадки о доходах арендного бизнеса на Шри-Ланке"];
+  it("темы досье код по основам не режет; модератор с hitsClosedTopic режет", async () => {
+    const avoidTopics = ["догадки о доходах арендного бизнеса на Шри-Ланке"];
     const lanka = (id: string) => `Свой человек на Шри-Ланке ${id}: аренда у тебя ебучая`;
     const punch = fakePunch((id, n, call) =>
       n === 1 ? lanka(id) : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
     );
     const ok = makeComedyDeps({ punch });
-    const r = await writeComedyCandidates(comedyInput({ forbidden }), ok);
+    const r = await writeComedyCandidates(comedyInput({ avoidTopics }), ok);
     const trace = ComedyTrace.parse(r.trace);
     expect(trace.filters.layer4.avoid_topic).toBeUndefined();
     expect(r.candidates.some((c) => c.text.startsWith("Свой человек на Шри-Ланке"))).toBe(true);
-    // Список «нельзя» доходит до инсайтов, отбора, генератора и модератора.
-    for (const fn of [ok.insights, ok.select, ok.punch, ok.moderator]) {
-      expect(userText(vi.mocked(fn).mock.calls[0]![0])).toContain(forbidden[0]);
+    // avoidTopics — «деликатно» в инсайтах, отборе и генераторе; модератору не уходят.
+    for (const fn of [ok.insights, ok.select, ok.punch]) {
+      expect(userText(vi.mocked(fn).mock.calls[0]![0])).toContain(avoidTopics[0]);
     }
+    expect(userText(vi.mocked(ok.moderator).mock.calls[0]![0])).not.toContain(avoidTopics[0]);
 
     const strict = makeComedyDeps({
       punch: fakePunch((id, n, call) =>
@@ -515,9 +527,32 @@ describe("генератор: проверки кодом и слой 4", () => 
         text.startsWith("Свой человек на Шри-Ланке") ? { hitsClosedTopic: true } : {},
       ),
     });
-    const r2 = await writeComedyCandidates(comedyInput({ tier: 2, forbidden }), strict);
+    const r2 = await writeComedyCandidates(comedyInput({ tier: 2, avoidTopics }), strict);
     expect(r2.candidates.some((c) => c.text.startsWith("Свой человек"))).toBe(false);
     expect(ComedyTrace.parse(r2.trace).filters.layer5.forbidden_topic).toBeGreaterThan(0);
+  });
+
+  it("деньги из avoidTopics не в «нельзя»: шутка про «дорого» доходит до модератора", async () => {
+    const avoidTopics = ["любые догадки о доходах и деньгах арендного бизнеса"];
+    const sensitiveEvents = ["стихийное бедствие на острове"];
+    const pricey = (id: string) => `БЕСИТ ${id}, когда говорят, что дорого: виллы у тебя охуенные`;
+    const punch = fakePunch((id, n, call) =>
+      n === 1 ? pricey(id) : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+    );
+    const deps = makeComedyDeps({
+      punch,
+      profile: fakeProfile(profileAnswer({ closedTopics: ["здоровье отца"] })),
+    });
+    const r = await writeComedyCandidates(comedyInput({ avoidTopics, sensitiveEvents }), deps);
+    const moderatorTexts = vi.mocked(deps.moderator).mock.calls.map(([p]) => userText(p));
+    expect(moderatorTexts.some((t) => t.includes("БЕСИТ"))).toBe(true);
+    for (const t of moderatorTexts) {
+      expect(t).toMatch(
+        /<forbidden_topics>\n- стихийное бедствие на острове\n- здоровье отца\n<\/forbidden_topics>/,
+      );
+      expect(t).not.toContain("доходах");
+    }
+    expect(r.candidates.some((c) => c.text.startsWith("БЕСИТ"))).toBe(true);
   });
 
   it("пачка недобрала шуток на инсайт: повтор с перечнем инсайтов, затем полная", async () => {
@@ -572,7 +607,7 @@ describe("генератор: проверки кодом и слой 4", () => 
           : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
     );
     const r = await writeComedyCandidates(
-      comedyInput({ tier: 2, sensitiveEvents, forbidden: sensitiveEvents }),
+      comedyInput({ tier: 2, sensitiveEvents }),
       makeComedyDeps({ punch }),
     );
     const trace = ComedyTrace.parse(r.trace);

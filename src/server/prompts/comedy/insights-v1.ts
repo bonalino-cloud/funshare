@@ -6,6 +6,7 @@ import {
   callName,
   clean,
   DATA_NOTE,
+  delicateBlock,
   forbiddenBlock,
   list,
   modeLine,
@@ -52,8 +53,10 @@ const CATEGORY_NAME: Record<InsightCategory, string> = {
 export type InsightsPromptInput = {
   profile: ComedyProfile;
   mode: GenerationMode;
-  /** Список «нельзя»: `closedTopics ∪ avoidTopics ∪ sensitiveEvents`. */
+  /** Список «нельзя»: `sensitiveEvents ∪ closedTopics`. */
   forbidden: readonly string[];
+  /** Деликатно, лучше обходить: `avoidTopics` досье. */
+  delicate: readonly string[];
   category: InsightCategory;
   /** Сколько инсайтов просим: [от, до]. */
   range: readonly [number, number];
@@ -95,6 +98,7 @@ export function buildInsightsPrompt(input: InsightsPromptInput): ComedyPrompt {
     profileBlock(input.profile),
     modeLine(input.mode),
     forbiddenBlock(input.forbidden),
+    ...delicateBlock(input.delicate),
     `${task}${retryTail(input.retryNote)}`,
   ].join("\n\n");
   return textPrompt(INSIGHTS_SYSTEM, user);

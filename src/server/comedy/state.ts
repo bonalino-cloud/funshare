@@ -25,8 +25,10 @@ export type Candidate = {
 export type RunContext = {
   level: Level;
   mode: GenerationMode;
-  /** Список «нельзя»: закрытые темы профиля ∪ запретные темы досье. */
+  /** Список «нельзя»: `sensitiveEvents` досье ∪ `closedTopics` профиля. */
   forbidden: readonly string[];
+  /** Деликатно, лучше обходить: `avoidTopics` досье (не красная линия, модератору не уходят). */
+  delicate: readonly string[];
   /** Тяжёлые события досье: шутка с двумя основами одного события вычёркивается кодом. */
   sensitiveEvents: readonly string[];
   profile: ComedyProfile;

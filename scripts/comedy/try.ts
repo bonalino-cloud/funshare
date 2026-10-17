@@ -3,7 +3,6 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { desc, eq } from "drizzle-orm";
 import { GenerationMode, PersonaProfile, ProfileSnapshot, type Tier } from "../../src/contracts";
-import { forbiddenTopics } from "../../src/server/analyze/forbidden";
 import { resizeCover } from "../../src/server/analyze/cover-fetch";
 import {
   ComedyFailedError,
@@ -52,7 +51,7 @@ const safeName = (s: string) =>
 
 async function sourceFromDb(
   nick: string,
-): Promise<Pick<ComedyInput, "source" | "forbidden" | "sensitiveEvents"> | null> {
+): Promise<Pick<ComedyInput, "source" | "avoidTopics" | "sensitiveEvents"> | null> {
   if (!process.env.DATABASE_URL) {
     console.error("для --ig нужен DATABASE_URL (vercel env pull .env.local)");
     return null;
@@ -90,7 +89,7 @@ async function sourceFromDb(
   const snapshot = ProfileSnapshot.parse(snap.data);
   return {
     source: { kind: "snapshot", snapshot, facts: buildProfileFacts(snapshot) },
-    forbidden: persona?.success ? forbiddenTopics(persona.data) : [],
+    avoidTopics: persona?.success ? persona.data.avoidTopics : [],
     sensitiveEvents: persona?.success ? (persona.data.sensitiveEvents ?? []) : [],
   };
 }
@@ -161,13 +160,13 @@ async function main(): Promise<number> {
   }
   const extra = values.extra ?? [];
 
-  let base: Pick<ComedyInput, "source" | "forbidden" | "sensitiveEvents"> | null;
+  let base: Pick<ComedyInput, "source" | "avoidTopics" | "sensitiveEvents"> | null;
   if (nick) {
     base = await sourceFromDb(nick);
   } else {
     base = {
       source: await sourceFromFile(values.material!, extra),
-      forbidden: [],
+      avoidTopics: [],
       sensitiveEvents: [],
     };
   }
