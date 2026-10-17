@@ -32,9 +32,26 @@ write (level = well_done)
   кандидаты (10 / 20) ──▶ punch_candidates, трасса `comedy` ──▶ awaiting_selection (как сейчас)
 ```
 
-Модель везде `claude-sonnet-5`. Оценка: ~25–30 ¢ за генерацию, ~2 мин на шаг (профиль ~50 с, инсайты ~20 с,
-отбор ~10 с, панчи ~20 с, редактор ~15 с, модератор ~10 с). Трата пишется в `generations.cost_*` как сейчас,
-роли счётчика: `comedy-profile`, `comedy-insights`, `comedy-select`, `comedy-punch`, `comedy-editor`, `comedy-moderator`.
+Модели по ролям задаются в одном месте (`ROLES` в `src/server/comedy/llm.ts`, там же `thinking` и `effort`):
+
+| Роль | Модель | `thinking` | `effort` |
+|---|---|---|---|
+| профиль, отбор | `claude-sonnet-5-5` | `between_tools` | medium |
+| инсайты, генератор, редактор | `claude-sonnet-5-5` | `between_tools` | high |
+| модератор | `claude-haiku-5-5` | `disabled` | low |
+
+`between_tools` — минимум для Sonnet 5.5 (`disabled` даёт 400), работает при effort не выше high; Haiku 5.5
+принимает `disabled`. Adaptive на генераторе включается заменой одной строки в `ROLES`. Модель роли пишется в
+трассу `comedy` (`models`), в счётчик трат и в `PunchTrace` (`writerModel` генератора, `judgeModel` редактора).
+Цены за 1M токенов (`cost/prices.ts`, прайс 2026-10-06): Sonnet 5.5 $2 / $10, Haiku 5.5 $0.10 / $0.50.
+
+Скорость (замер 2026-10-17): Sonnet 5 ~54 ток/с, Sonnet 5.5 ~84, Haiku 5.5 ~133. Живой прогон на Sonnet 5
+(12 постов, без картинок): 317 с (профиль 98, инсайты 77, отбор 34, панчи 51, редактор 38, модератор 18), 52 ¢.
+Ожидание после перехода на Sonnet 5.5 и Haiku 5.5 и сокращения выхода (до 45 фактов, 28–34 инсайта, короче
+тексты, генератор по 3 инсайта в 4 параллельных вызовах): ~2,5 мин на шаг (профиль ~45 с, инсайты ~35 с,
+отбор ~20 с, панчи ~15 с, редактор ~25 с, модератор ~5 с), ~35–45 ¢ за генерацию. Это оценка, проверяется живым
+прогоном. Трата пишется в `generations.cost_*` как сейчас, роли счётчика: `comedy-profile`, `comedy-insights`,
+`comedy-select`, `comedy-punch`, `comedy-editor`, `comedy-moderator`.
 
 Бюджет времени: `write` один workflow-step с лимитом функции 300 с, а цепочка последовательная (до 11 вызовов
 с ретраями: без общего срока худший случай ~45 мин, функцию убьют, workflow повторит шаг и заплатит снова).
@@ -383,7 +400,7 @@ src/server/comedy/
   trace.ts           трасса шага `comedy`
 src/server/prompts/comedy/{profile,insights,select,punch,editor,moderator}-v1.ts
 scripts/comedy/try.ts        pnpm comedy:try --ig <ник> | --material <file.json> [--tier 1|2] [--mode self|friend] [--extra "…"]
-scripts/comedy/collect-ig.ts pnpm comedy:collect --ig <ник> → material JSON через OpenCLI (локально)
+scripts/comedy/collect-ig.ts pnpm comedy:collect --ig <ник> → material JSON через OpenCLI (локально); в работе (оркестратор)
 ```
 
 Подключение: `runWriteStep` — если `COMEDY_LEVELS.includes(row.level)`, зовётся `writeComedyCandidates`
