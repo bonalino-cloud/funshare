@@ -46,34 +46,76 @@ export function hasSpacedHyphen(text: string): boolean {
   return SPACED_HYPHEN.test(text);
 }
 
-const WORD = /[\p{L}\p{N}]+/gu;
+/** Слово или составное имя через дефис («Санкт-Петербург», «Шри-Ланке», «из-за»). */
+const TOKEN = /[\p{L}\p{N}]+(?:[-\u2010\u2011][\p{L}\p{N}]+)*/gu;
+const HYPHEN = /[-\u2010\u2011]/u;
 /** Основа — первые 5 букв, как в `overlapsForbidden` старого пути. */
 const STEM = 5;
 const MIN_WORD = 4;
+/**
+ * Гласные, «й» и «ь» на конце срезаются до основы: у коротких слов окончание попадает в первые
+ * 5 букв («Ланка / Ланке / Ланку», «мама / мамы», «Киев / Киева» — одна основа). Корень короче
+ * 3 букв не режем («моей»).
+ */
+const VOWEL_TAIL = /[аеиоуыэюяйь]+$/u;
+const MIN_ROOT = 3;
+/**
+ * Частые слова, которые событие не опознают, их основы не считаются: «в 2023 году» — одна дата,
+ * а не две основы; «новая жизнь», «сложное время» есть в каждой второй шутке.
+ */
+const VAGUE_STEMS: ReadonlySet<string> = new Set([
+  ...["год", "годом", "годам", "годах"],
+  ...["нов", "новог", "новом", "новым", "новых"],
+  ...["жизн", "врем", "време"],
+]);
 /** Столько разных основ одного события должно совпасть, чтобы шутка считалась про него. */
 const SENSITIVE_STEMS_TO_HIT = 2;
 
-function stems(text: string): Set<string> {
-  const words = text.toLowerCase().replace(/ё/g, "е").match(WORD) ?? [];
-  return new Set(
-    words.filter((w) => w.length >= MIN_WORD && !STOPWORDS.has(w)).map((w) => w.slice(0, STEM)),
-  );
+function stemOf(word: string): string {
+  const root = word.replace(VOWEL_TAIL, "");
+  return (root.length >= MIN_ROOT ? root : word).slice(0, STEM);
+}
+
+/**
+ * Основы текста группами: одно слово — группа из одной основы, составное имя через дефис —
+ * одна группа из основ своих частей («Санкт-Петербург» — одно имя, а не две основы).
+ * Части короче 4 букв и стоп-слова не считаются («Шри-Ланке» = «ланк», «из-за» пусто).
+ */
+function stemGroups(text: string): string[][] {
+  const tokens = text.toLowerCase().replace(/ё/g, "е").match(TOKEN) ?? [];
+  return tokens
+    .map((token) =>
+      token
+        .split(HYPHEN)
+        .filter((w) => w.length >= MIN_WORD && !STOPWORDS.has(w))
+        .map(stemOf)
+        .filter((s) => !VAGUE_STEMS.has(s)),
+    )
+    .filter((group) => group.length > 0);
+}
+
+/** Сколько разных групп события нашлось в тексте; группа с уже засчитанной основой — повтор. */
+function sharedGroups(own: ReadonlySet<string>, event: string): number {
+  const counted = new Set<string>();
+  let shared = 0;
+  for (const group of stemGroups(event)) {
+    if (!group.some((s) => own.has(s)) || group.some((s) => counted.has(s))) continue;
+    for (const s of group) counted.add(s);
+    shared++;
+  }
+  return shared;
 }
 
 /**
  * Шутка про тяжёлое событие досье (`sensitiveEvents`): по одному событию совпали хотя бы две
  * разные основы. Красная линия держится кодом, а не только моделями. Одна основа не режет:
- * событие «бедствие на Шри-Ланке» и шутка «свой человек на Шри-Ланке» (общая только «ланке»)
- * про бизнес героя, а не про бедствие. `avoidTopics` код не проверяет: там темы, а не события,
- * основы ловили весь бизнес героя.
+ * событие «бедствие на Шри-Ланке» и шутка «свой человек на Шри-Ланке» (общая только «ланк»)
+ * про бизнес героя, а не про бедствие. Повтор слова и составное имя через дефис — одна основа.
+ * `avoidTopics` код не проверяет: там темы, а не события, основы ловили весь бизнес героя.
  */
 export function hitsSensitiveEvent(text: string, events: readonly string[]): boolean {
-  const own = stems(text);
-  return events.some((event) => {
-    let shared = 0;
-    for (const stem of stems(event)) if (own.has(stem)) shared++;
-    return shared >= SENSITIVE_STEMS_TO_HIT;
-  });
+  const own = new Set(stemGroups(text).flat());
+  return events.some((event) => sharedGroups(own, event) >= SENSITIVE_STEMS_TO_HIT);
 }
 
 export type ValidPunch = { insightId: string; structure: Structure; emoji: string; text: string };
