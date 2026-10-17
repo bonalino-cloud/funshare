@@ -27,6 +27,8 @@ export type RunContext = {
   mode: GenerationMode;
   /** Список «нельзя»: закрытые темы профиля ∪ запретные темы досье. */
   forbidden: readonly string[];
+  /** Тяжёлые события досье: шутка с двумя основами одного события вычёркивается кодом. */
+  sensitiveEvents: readonly string[];
   profile: ComedyProfile;
   deps: ComedyDeps;
   rec: ComedyTraceRecorder;

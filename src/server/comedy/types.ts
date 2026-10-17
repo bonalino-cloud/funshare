@@ -66,6 +66,11 @@ export type ComedyInput = {
   source: ComedySource;
   /** `avoidTopics ∪ sensitiveEvents` из досье (`forbiddenTopics`); без досье пусто. */
   forbidden: readonly string[];
+  /**
+   * `sensitiveEvents` досье отдельно (потеря, болезнь, развод, переезд из-за войны): красная
+   * линия держится и кодом, слой 4 `sensitive_event` в `punches.ts`. Без досье пусто.
+   */
+  sensitiveEvents: readonly string[];
   /** Факты от пользователя: недоверенный текст. Для `snapshot` входят в материал. */
   extraFacts: readonly string[];
   mode: GenerationMode;

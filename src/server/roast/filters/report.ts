@@ -11,7 +11,9 @@ export type Layer4Code =
   | OutputReason
   | "avoid_topic"
   /** Дефис с пробелами вместо тире: только кандидаты comedy (`comedy/punches.ts`). */
-  | "spaced_hyphen";
+  | "spaced_hyphen"
+  /** Две основы одного тяжёлого события досье: только кандидаты comedy (`comedy/punches.ts`). */
+  | "sensitive_event";
 
 /** Слой 5: провал вопроса модератора или отсутствие вердикта. */
 export type Layer5Code =

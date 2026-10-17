@@ -562,6 +562,25 @@ describe("генератор: проверки кодом и слой 4", () => 
     expect(r.candidates).toHaveLength(10);
   });
 
+  it("тяжёлое событие досье: две основы режет слой 4 (sensitive_event), одна проходит", async () => {
+    const sensitiveEvents = ["стихийное бедствие на Шри-Ланке и сбор помощи острову"];
+    const punch = fakePunch((id, n, call) =>
+      n === 1
+        ? `После бедствия на Шри-Ланке ${id} ты сдаёшь виллы, охуенно`
+        : n === 2
+          ? `Свой человек на Шри-Ланке ${id} вызов ${call}, аренда ебучая`
+          : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+    );
+    const r = await writeComedyCandidates(
+      comedyInput({ tier: 2, sensitiveEvents, forbidden: sensitiveEvents }),
+      makeComedyDeps({ punch }),
+    );
+    const trace = ComedyTrace.parse(r.trace);
+    expect(trace.filters.layer4.sensitive_event).toBeGreaterThan(0);
+    expect(r.candidates.some((c) => c.text.includes("бедствия"))).toBe(false);
+    expect(r.candidates.some((c) => c.text.startsWith("Свой человек на Шри-Ланке"))).toBe(true);
+  });
+
   it("пустой ответ генератора: ретраи с причиной, затем llm_failed", async () => {
     const punch = vi.fn<ComedyGenerateFn>(async () => ({ punches: [] }));
     const e = await failure(writeComedyCandidates(comedyInput(), makeComedyDeps({ punch })));

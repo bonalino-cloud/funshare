@@ -52,7 +52,7 @@ const safeName = (s: string) =>
 
 async function sourceFromDb(
   nick: string,
-): Promise<Pick<ComedyInput, "source" | "forbidden"> | null> {
+): Promise<Pick<ComedyInput, "source" | "forbidden" | "sensitiveEvents"> | null> {
   if (!process.env.DATABASE_URL) {
     console.error("для --ig нужен DATABASE_URL (vercel env pull .env.local)");
     return null;
@@ -91,6 +91,7 @@ async function sourceFromDb(
   return {
     source: { kind: "snapshot", snapshot, facts: buildProfileFacts(snapshot) },
     forbidden: persona?.success ? forbiddenTopics(persona.data) : [],
+    sensitiveEvents: persona?.success ? (persona.data.sensitiveEvents ?? []) : [],
   };
 }
 
@@ -160,11 +161,15 @@ async function main(): Promise<number> {
   }
   const extra = values.extra ?? [];
 
-  let base: Pick<ComedyInput, "source" | "forbidden"> | null;
+  let base: Pick<ComedyInput, "source" | "forbidden" | "sensitiveEvents"> | null;
   if (nick) {
     base = await sourceFromDb(nick);
   } else {
-    base = { source: await sourceFromFile(values.material!, extra), forbidden: [] };
+    base = {
+      source: await sourceFromFile(values.material!, extra),
+      forbidden: [],
+      sensitiveEvents: [],
+    };
   }
   if (!base) return 1;
   const name =

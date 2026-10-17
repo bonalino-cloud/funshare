@@ -212,6 +212,7 @@ export async function runWriteStep(
         {
           source: { kind: "snapshot", snapshot: snapshot.data, facts },
           forbidden: forbiddenTopics(persona.data),
+          sensitiveEvents: persona.data.sensitiveEvents ?? [],
           extraFacts: row.extraFacts,
           mode: row.mode,
           level: row.level,

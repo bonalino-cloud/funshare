@@ -1,4 +1,5 @@
 import { PUNCH_MAX_CHARS } from "@/contracts";
+import { STOPWORDS } from "../facts/stopwords";
 import { sanitizeText } from "../facts/text";
 import { buildPunchPrompt } from "../prompts/comedy/punch-v1";
 import {
@@ -30,9 +31,9 @@ import { newComedyEntry, type ComedyTraceEntry } from "./trace";
 // Шаг 3 (comedy-engine §7.4): по 3 шутки на инсайт, пачками по 3 инсайта параллельно. Каждая
 // шутка проверяется кодом (§3): инсайт из пачки, длина ≤ PUNCH_MAX_CHARS, кириллица ≥ 0.6,
 // эмодзи через `cleanEmoji`, слой 4 (`checkOutputText`, well done), дефис с пробелами вместо тире,
-// дубль по нормализованному тексту (с выбранными в Поджоге тоже). Запретные темы досье код по
-// основам слов НЕ проверяет: основы ловили весь бизнес героя («аренд», «ланке»). Список «нельзя»
-// уходит в промпты и модератору, вычёркивает модератор (`hitsClosedTopic`).
+// тяжёлое событие досье (две основы одного события, `sensitive_event`), дубль по нормализованному
+// тексту (с выбранными в Поджоге тоже). Темы `avoidTopics` код по основам НЕ проверяет: основы
+// ловили весь бизнес героя («аренд», «ланке»); они уходят в промпты и модератору.
 
 /**
  * Дефис с пробелами вместо тире («факт - вывод»): `punch-v1` его запрещает, а общий слой 4
@@ -43,6 +44,36 @@ const SPACED_HYPHEN = /(?<=[^\s\d])[ \t]+-[ \t]+(?=[^\s\d])/u;
 
 export function hasSpacedHyphen(text: string): boolean {
   return SPACED_HYPHEN.test(text);
+}
+
+const WORD = /[\p{L}\p{N}]+/gu;
+/** Основа — первые 5 букв, как в `overlapsForbidden` старого пути. */
+const STEM = 5;
+const MIN_WORD = 4;
+/** Столько разных основ одного события должно совпасть, чтобы шутка считалась про него. */
+const SENSITIVE_STEMS_TO_HIT = 2;
+
+function stems(text: string): Set<string> {
+  const words = text.toLowerCase().replace(/ё/g, "е").match(WORD) ?? [];
+  return new Set(
+    words.filter((w) => w.length >= MIN_WORD && !STOPWORDS.has(w)).map((w) => w.slice(0, STEM)),
+  );
+}
+
+/**
+ * Шутка про тяжёлое событие досье (`sensitiveEvents`): по одному событию совпали хотя бы две
+ * разные основы. Красная линия держится кодом, а не только моделями. Одна основа не режет:
+ * событие «бедствие на Шри-Ланке» и шутка «свой человек на Шри-Ланке» (общая только «ланке»)
+ * про бизнес героя, а не про бедствие. `avoidTopics` код не проверяет: там темы, а не события,
+ * основы ловили весь бизнес героя.
+ */
+export function hitsSensitiveEvent(text: string, events: readonly string[]): boolean {
+  const own = stems(text);
+  return events.some((event) => {
+    let shared = 0;
+    for (const stem of stems(event)) if (own.has(stem)) shared++;
+    return shared >= SENSITIVE_STEMS_TO_HIT;
+  });
 }
 
 export type ValidPunch = { insightId: string; structure: Structure; emoji: string; text: string };
@@ -135,6 +166,10 @@ function parseBatch(
     }
     if (hasSpacedHyphen(p.text)) {
       drop(p.insightId, "spaced_hyphen", p);
+      continue;
+    }
+    if (hitsSensitiveEvent(p.text, ctx.sensitiveEvents)) {
+      drop(p.insightId, "sensitive_event", p);
       continue;
     }
     const key = normalizeForDedupe(p.text);

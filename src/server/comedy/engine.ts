@@ -266,6 +266,7 @@ async function run(
     level: input.level,
     mode: input.mode,
     forbidden: mergeTopics(input.forbidden, profile.closedTopics),
+    sensitiveEvents: input.sensitiveEvents,
     profile,
     deps,
     rec,

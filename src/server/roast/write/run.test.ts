@@ -9,7 +9,7 @@ import { WriteTrace } from "./trace";
 import { makePersona, makeTrace, makeWriteDeps } from "./test-helpers";
 import { ComedyFailedError } from "../../comedy";
 import { ComedyTrace } from "../../comedy/trace";
-import { fakeModerator, makeComedyDeps } from "../../comedy/test-helpers";
+import { fakeModerator, fakePunch, makeComedyDeps } from "../../comedy/test-helpers";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -310,6 +310,20 @@ describe("runWriteStep", () => {
       );
       expect(moderatorText).toContain("бывшая работа");
       expect(moderatorText).toContain("развод");
+    });
+
+    it("sensitiveEvents досье доходят до comedy отдельно: шутку про событие режет код", async () => {
+      const persona = makePersona({ sensitiveEvents: ["переезд из Харькова из-за войны"] }, 14);
+      const s = setup({ level: "well_done", tier: 2, persona });
+      s.comedyDeps.punch = fakePunch((id, n, call) =>
+        n === 1
+          ? `Ты переехал из Харькова ${id} и сразу в спортзал, охуенно`
+          : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+      );
+      await runWriteStep("g", s.deps);
+      const trace = ComedyTrace.parse(s.traces[0]?.data);
+      expect(trace.filters.layer4.sensitive_event).toBeGreaterThan(0);
+      expect(s.saved.some((c) => c.text.includes("Харькова"))).toBe(false);
     });
 
     it("провал comedy: трасса comedy записана, с ошибкой дальше не едет, траты записаны", async () => {
