@@ -41,6 +41,18 @@ export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
     cacheWriteUsdPerMTok: 2.5,
     verified: true,
   },
+  /**
+   * `claude-sonnet-5-5` (досье `analyze`). Прайс Anthropic на 2026-10-06, как у Sonnet 5: вход $2,
+   * выход $10, чтение кэша $0.20, запись в 5-минутный кэш $2.50. Промпт-кэш в вызовах не
+   * используется, на сумму кэш-цены не влияют.
+   */
+  "claude-sonnet-5-5": {
+    inputUsdPerMTok: 2,
+    outputUsdPerMTok: 10,
+    cacheReadUsdPerMTok: 0.2,
+    cacheWriteUsdPerMTok: 2.5,
+    verified: true,
+  },
 };
 
 /**
