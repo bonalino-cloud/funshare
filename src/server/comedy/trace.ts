@@ -89,7 +89,15 @@ export const ComedyTrace = z.object({
     editor: z.string(),
     moderator: z.string(),
   }),
-  model: z.string().max(ID_CAP),
+  /** Модель каждой роли (профиль, инсайты, отбор, генератор, редактор, модератор). */
+  models: z.object({
+    profile: z.string().max(ID_CAP),
+    insights: z.string().max(ID_CAP),
+    select: z.string().max(ID_CAP),
+    punch: z.string().max(ID_CAP),
+    editor: z.string().max(ID_CAP),
+    moderator: z.string().max(ID_CAP),
+  }),
   /** Тайминги подшагов, мс (раунды суммируются). */
   timingsMs: z.record(z.string(), Ms),
   profile: ComedyProfileSchema.nullable(),
@@ -174,7 +182,7 @@ type Header = {
   mode: ComedyTrace["mode"];
   tier: number;
   prompts: ComedyTrace["prompts"];
-  model: string;
+  models: ComedyTrace["models"];
 };
 
 /** Сборщик трассы одного запуска: копит по ходу шага, в конце отдаёт проверенную трассу. */

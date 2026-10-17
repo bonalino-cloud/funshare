@@ -66,13 +66,14 @@ describe("writeComedyCandidates: счастливый путь", () => {
     ).toBe(true);
     expect(r.promptVersion).toBe("comedy/punch-v1");
     expect(r.tastePack).toBe("comedy/v1");
-    expect(r.moderator).toEqual({ promptVersion: "comedy/moderator-v1", model: "test-model" });
+    expect(r.moderator).toEqual({ promptVersion: "comedy/moderator-v1", model: "test-moderator" });
     const t = r.candidates[0]!.trace;
     expect(t.structure).toBe("false_compliment");
     expect(t.mechanism).toBe("faux_compliment");
     expect(t.insightId).toBe(t.hookId);
     expect(t.totalScore).toBe(20);
     expect(t.jokeCardId).toBeNull();
+    expect([t.writerModel, t.judgeModel]).toEqual(["test-punch", "test-editor"]);
     expect(t.evidenceRef).toMatch(/^post:\d$/);
     expect(PunchTraceSchema.parse(t).structure).toBe("false_compliment");
     // Поджог: не больше одной шутки на инсайт.
@@ -101,6 +102,7 @@ describe("writeComedyCandidates: счастливый путь", () => {
     expect(trace.selection?.work).toHaveLength(10);
     expect(trace.selection?.reserve).toHaveLength(5);
     expect(trace.prompts.profile).toBe("comedy/profile-v1");
+    expect(trace.models).toMatchObject({ profile: "test-profile", moderator: "test-moderator" });
     const chosen = trace.candidates.filter((c) => c.outcome === "chosen");
     expect(chosen.map((c) => c.punchId).sort()).toEqual(r.candidates.map((c) => c.id).sort());
     expect(trace.candidates.some((c) => c.outcome === "reserve")).toBe(true);

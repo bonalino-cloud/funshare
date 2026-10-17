@@ -5,11 +5,15 @@ import { CostMeter } from "../cost/meter";
 import { CANARIES } from "../prompts/canary";
 import { COMEDY_BUDGET_MS, MIN_CALL_MS } from "./config";
 import { defaultComedyDeps } from "./engine";
+import { formatCostLog } from "../cost/meter";
 import {
-  COMEDY_MODEL,
+  COMEDY_ROLES,
   ComedyDeadlineError,
+  comedyModels,
   comedyRoleConfig,
   createComedyGenerate,
+  HAIKU_MODEL,
+  SONNET_MODEL,
   type ComedyRole,
 } from "./llm";
 
@@ -27,6 +31,58 @@ afterEach(() => {
 
 const usage = { inputTokens: 1000, outputTokens: 200 };
 
+describe("модели, размышления и effort по ролям", () => {
+  it("сочиняют и оценивают Sonnet 5.5 с between_tools, модерирует Haiku 5.5 без размышлений", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
+    generateText.mockResolvedValue({ output: { ok: 1 }, finishReason: "stop", totalUsage: usage });
+    const meter = new CostMeter();
+    const sent: Record<string, { model: string; thinking: unknown; effort: unknown }> = {};
+    for (const role of COMEDY_ROLES) {
+      generateText.mockClear();
+      await createComedyGenerate(role, { meter })({ system: "s", parts: [] });
+      const call = generateText.mock.calls[0]?.[0] as {
+        model: { modelId: string };
+        providerOptions: { anthropic: { thinking: unknown; effort: unknown } };
+      };
+      sent[role] = {
+        model: call.model.modelId,
+        thinking: call.providerOptions.anthropic.thinking,
+        effort: call.providerOptions.anthropic.effort,
+      };
+    }
+    for (const role of ["profile", "insights", "select", "punch", "editor"] as const) {
+      expect(sent[role]).toMatchObject({
+        model: SONNET_MODEL,
+        thinking: { type: "between_tools" },
+      });
+    }
+    expect(sent.moderator).toMatchObject({ model: HAIKU_MODEL, thinking: { type: "disabled" } });
+    for (const role of COMEDY_ROLES)
+      expect(["low", "medium", "high"]).toContain(sent[role]!.effort);
+    // Модель роли — в счётчике, цена известна и сверена: в логе нет пометки «оценка».
+    const run = meter.snapshot();
+    expect(new Set(run.llm.map((l) => l.model))).toEqual(new Set([SONNET_MODEL, HAIKU_MODEL]));
+    expect(run.llm.find((l) => l.role === "comedy-moderator")?.model).toBe(HAIKU_MODEL);
+    expect(run.estimated).toBe(false);
+    expect(formatCostLog("write", run)).not.toContain("оценка");
+  });
+
+  it("Sonnet 5.5 никогда не получает disabled (400 у провайдера)", () => {
+    for (const role of COMEDY_ROLES) {
+      const cfg = comedyRoleConfig(role);
+      if (cfg.model === SONNET_MODEL) expect(cfg.thinking).not.toBe("disabled");
+    }
+    expect(comedyModels()).toEqual({
+      profile: SONNET_MODEL,
+      insights: SONNET_MODEL,
+      select: SONNET_MODEL,
+      punch: SONNET_MODEL,
+      editor: SONNET_MODEL,
+      moderator: HAIKU_MODEL,
+    });
+  });
+});
+
 describe("createComedyGenerate", () => {
   it("метка canary своей природы, роль счётчика comedy-*, картинки уходят файлами", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
@@ -42,10 +98,7 @@ describe("createComedyGenerate", () => {
     ];
     for (const [role, canary] of cases) {
       generateText.mockClear();
-      const out = await createComedyGenerate(
-        role,
-        meter,
-      )({
+      const out = await createComedyGenerate(role, { meter })({
         system: "СИСТЕМА",
         parts: [
           { type: "text", text: "Аватар" },
@@ -88,10 +141,9 @@ describe("createComedyGenerate", () => {
       }),
     );
     const meter = new CostMeter();
-    const err = await createComedyGenerate(
-      "punch",
-      meter,
-    )({ system: "s", parts: [] }).catch((e: unknown) => e);
+    const err = await createComedyGenerate("punch", { meter })({ system: "s", parts: [] }).catch(
+      (e: unknown) => e,
+    );
     expect(err).toBeInstanceOf(LlmSchemaError);
     expect(String((err as Error).message)).not.toContain("секретный");
     const [line] = meter.snapshot().llm;
@@ -107,14 +159,17 @@ describe("createComedyGenerate", () => {
     await createComedyGenerate("punch")(prompt);
     expect(timeout).toHaveBeenLastCalledWith(comedyRoleConfig("punch").timeoutMs);
 
-    await createComedyGenerate("punch", undefined, COMEDY_MODEL, Date.now() + 30_000)(prompt);
+    await createComedyGenerate("punch", { deadlineAt: Date.now() + 30_000 })(prompt);
     const budgeted = timeout.mock.lastCall?.[0] ?? 0;
     expect(budgeted).toBeLessThanOrEqual(30_000);
     expect(budgeted).toBeGreaterThan(25_000);
 
     generateText.mockClear();
     const meter = new CostMeter();
-    const late = createComedyGenerate("profile", meter, COMEDY_MODEL, Date.now() + MIN_CALL_MS - 1);
+    const late = createComedyGenerate("profile", {
+      meter,
+      deadlineAt: Date.now() + MIN_CALL_MS - 1,
+    });
     await expect(late(prompt)).rejects.toBeInstanceOf(ComedyDeadlineError);
     expect(generateText).not.toHaveBeenCalled();
     expect(meter.snapshot().llm).toEqual([]);

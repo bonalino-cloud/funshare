@@ -20,12 +20,25 @@ import type { ComedyGenerateFn, PromptPart } from "./types";
 // `Output.object`. Схема уходит модели как JSON Schema, но SDK ответ НЕ валидирует: каждый
 // элемент проверяет код (schema.ts). Ключ читается при вызове и в ошибки не попадает.
 
-/** Модель всех шагов comedy-движка (§1). */
-export const COMEDY_MODEL = "claude-sonnet-5";
+/** Модели comedy-движка (§1): сочиняет и оценивает Sonnet 5.5, модерирует Haiku 5.5. */
+export const SONNET_MODEL = "claude-sonnet-5-5";
+export const HAIKU_MODEL = "claude-haiku-5-5";
 
 export type ComedyRole = "profile" | "insights" | "select" | "punch" | "editor" | "moderator";
 
+/**
+ * Режим размышлений (`providerOptions.anthropic.thinking.type`). Sonnet 5.5 не принимает
+ * `disabled` (400): его минимум `between_tools`, без размышлений перед ответом. Haiku 5.5
+ * принимает `disabled`. `adaptive` — модель сама решает, сколько думать (дольше и дороже).
+ */
+export type ThinkingMode = "between_tools" | "disabled" | "adaptive";
+/** `between_tools` и `disabled` работают только при effort не выше `high`: выше не пускаем. */
+export type Effort = "low" | "medium" | "high";
+
 type RoleConfig = {
+  model: string;
+  thinking: ThinkingMode;
+  effort: Effort;
   /** Роль счётчика трат (`generations.cost_detail`). */
   meter: LlmRole;
   /**
@@ -39,17 +52,26 @@ type RoleConfig = {
   timeoutMs: number;
 };
 
-// Профиль: до 60 фактов по ~180 знаков кириллицы плюс цитаты (~10k токенов) и 13 картинок на
-// входе. Инсайты: до 14 на категорию. Генератор: 5 инсайтов × 3 шутки. Редактор: до 30 оценок.
+// ЕДИНСТВЕННОЕ место, где выбираются модель, размышления и effort каждой роли. Включить
+// adaptive на генераторе — заменить `thinking` в строке `punch`. Замер 2026-10-17: Sonnet 5
+// ~54 ток/с, Sonnet 5.5 ~84, Haiku 5.5 ~133.
+// Профиль: до 45 фактов по ~140 знаков кириллицы плюс цитаты и 13 картинок на входе. Инсайты:
+// до 12 на категорию. Генератор: 3 инсайта × 3 шутки. Редактор: до 30 оценок.
 const ROLES: Record<ComedyRole, RoleConfig> = {
   profile: {
+    model: SONNET_MODEL,
+    thinking: "between_tools",
+    effort: "medium",
     meter: "comedy-profile",
     canary: "analyze",
     schema: ProfileOutput,
-    maxOutputTokens: 16_384,
+    maxOutputTokens: 12_288,
     timeoutMs: 150_000,
   },
   insights: {
+    model: SONNET_MODEL,
+    thinking: "between_tools",
+    effort: "high",
     meter: "comedy-insights",
     canary: "writer",
     schema: InsightsOutput,
@@ -57,6 +79,9 @@ const ROLES: Record<ComedyRole, RoleConfig> = {
     timeoutMs: 90_000,
   },
   select: {
+    model: SONNET_MODEL,
+    thinking: "between_tools",
+    effort: "medium",
     meter: "comedy-select",
     canary: "judge",
     schema: SelectOutput,
@@ -64,6 +89,9 @@ const ROLES: Record<ComedyRole, RoleConfig> = {
     timeoutMs: 60_000,
   },
   punch: {
+    model: SONNET_MODEL,
+    thinking: "between_tools",
+    effort: "high",
     meter: "comedy-punch",
     canary: "writer",
     schema: PunchOutput,
@@ -71,6 +99,9 @@ const ROLES: Record<ComedyRole, RoleConfig> = {
     timeoutMs: 90_000,
   },
   editor: {
+    model: SONNET_MODEL,
+    thinking: "between_tools",
+    effort: "high",
     meter: "comedy-editor",
     canary: "judge",
     schema: EditorOutput,
@@ -78,6 +109,9 @@ const ROLES: Record<ComedyRole, RoleConfig> = {
     timeoutMs: 90_000,
   },
   moderator: {
+    model: HAIKU_MODEL,
+    thinking: "disabled",
+    effort: "low",
     meter: "comedy-moderator",
     canary: "moderator",
     schema: ModeratorOutput,
@@ -85,6 +119,16 @@ const ROLES: Record<ComedyRole, RoleConfig> = {
     timeoutMs: 60_000,
   },
 };
+
+export const COMEDY_ROLES = Object.keys(ROLES) as ComedyRole[];
+
+/** Модель каждой роли: в трассу шага `comedy` и в `PunchTrace`. */
+export function comedyModels(): Record<ComedyRole, string> {
+  return Object.fromEntries(COMEDY_ROLES.map((r) => [r, ROLES[r].model])) as Record<
+    ComedyRole,
+    string
+  >;
+}
 
 export function comedyRoleConfig(role: ComedyRole): Readonly<RoleConfig> {
   return ROLES[role];
@@ -115,17 +159,21 @@ function toContent(parts: readonly PromptPart[]) {
 }
 
 /**
- * Реальный вызов одной роли. Неудачная попытка тоже идёт в счётчик: она стоит денег.
- * `deadlineAt` (мс эпохи) — общий срок всех вызовов запуска (`COMEDY_BUDGET_MS`): после него
- * вызовы не начинаются (`ComedyDeadlineError`), а начатый обрывается на сроке.
+ * Реальный вызов одной роли. Модель, размышления и effort — из конфига роли. Неудачная попытка
+ * тоже идёт в счётчик (с моделью роли): она стоит денег. `deadlineAt` (мс эпохи) — общий срок
+ * всех вызовов запуска (`COMEDY_BUDGET_MS`): после него вызовы не начинаются
+ * (`ComedyDeadlineError`), а начатый обрывается на сроке.
  */
 export function createComedyGenerate(
   role: ComedyRole,
-  meter?: CostMeter,
-  modelId: string = COMEDY_MODEL,
-  deadlineAt?: number,
+  options: { meter?: CostMeter; deadlineAt?: number } = {},
 ): ComedyGenerateFn {
+  const { meter, deadlineAt } = options;
   const cfg = ROLES[role];
+  const modelId = cfg.model;
+  const providerOptions = {
+    anthropic: { thinking: { type: cfg.thinking }, effort: cfg.effort },
+  };
   const output = Output.object({
     schema: jsonSchema<unknown>(() => zodSchema(cfg.schema).jsonSchema),
   });
@@ -142,6 +190,7 @@ export function createComedyGenerate(
         messages: [{ role: "user", content: toContent(parts) }],
         output,
         maxOutputTokens: cfg.maxOutputTokens,
+        providerOptions,
         // Свой бюджет попыток ведёт шаг; SDK добавляет не больше одного повтора на сеть и 5xx.
         maxRetries: 1,
         abortSignal: AbortSignal.timeout(timeoutMs),

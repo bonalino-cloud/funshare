@@ -207,7 +207,7 @@ async function main(): Promise<number> {
 
   const run = deps.meter?.snapshot();
   if (run) {
-    const roles = run.llm.map((l) => `${l.role}:${l.calls}/${l.failedCalls}`).join(" ");
+    const roles = run.llm.map((l) => `${l.role}(${l.model}):${l.calls}/${l.failedCalls}`).join(" ");
     console.log(
       `стоимость: $${(run.microUsd / 1_000_000).toFixed(4)} (${microUsdToCents(run.microUsd)} ¢${run.estimated ? ", оценка" : ""}); вызовы/неудачные: ${roles}`,
     );

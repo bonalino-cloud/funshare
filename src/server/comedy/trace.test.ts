@@ -44,7 +44,14 @@ describe("ComedyTraceRecorder", () => {
       mode: "self",
       tier: 1,
       prompts: COMEDY_PROMPTS,
-      model: "m",
+      models: {
+        profile: "m",
+        insights: "m",
+        select: "m",
+        punch: "m",
+        editor: "m",
+        moderator: "h",
+      },
     });
 
   it("пустой запуск (провал до профиля) даёт валидную трассу", () => {

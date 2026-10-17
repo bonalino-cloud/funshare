@@ -24,7 +24,7 @@ import {
 } from "./config";
 import { editRound, pickForOutput, type EditedRound } from "./editor";
 import { findInsights, selectInsights } from "./insights";
-import { COMEDY_MODEL, createComedyGenerate, type ComedyRole } from "./llm";
+import { comedyModels, createComedyGenerate, type ComedyRole } from "./llm";
 import { fetchMaterialImages, fromSnapshot } from "./material";
 import { moderatePass } from "./moderate";
 import { buildComedyProfile, factSource } from "./profile";
@@ -59,8 +59,7 @@ export function defaultComedyDeps(): ComedyDeps {
   const meter = new CostMeter();
   // Один срок на все вызовы запуска: шаг не упрётся в лимит функции (config `COMEDY_BUDGET_MS`).
   const deadlineAt = Date.now() + COMEDY_BUDGET_MS;
-  const generate = (role: ComedyRole) =>
-    createComedyGenerate(role, meter, COMEDY_MODEL, deadlineAt);
+  const generate = (role: ComedyRole) => createComedyGenerate(role, { meter, deadlineAt });
   return {
     meter,
     profile: generate("profile"),
@@ -70,7 +69,7 @@ export function defaultComedyDeps(): ComedyDeps {
     editor: generate("editor"),
     moderator: generate("moderator"),
     fetchCovers: createCoverFetcher(),
-    model: COMEDY_MODEL,
+    models: comedyModels(),
     newId: () => `p_${randomUUID().slice(0, 8)}`,
   };
 }
@@ -212,7 +211,7 @@ function buildResult(
     }
     throw new WriteFailedError("llm_failed");
   };
-  const model = ctx.deps.model;
+  const { models } = ctx.deps;
   return [
     ...carried.map((p): WrittenCandidate => ({ ...p, fromTrial: true })),
     ...chosen.map((c): WrittenCandidate => ({
@@ -232,8 +231,8 @@ function buildResult(
         totalScore: c.total,
         tastePack: COMEDY_TASTE_PACK,
         promptVersion: PUNCH_V,
-        writerModel: model,
-        judgeModel: model,
+        writerModel: models.punch,
+        judgeModel: models.editor,
         structure: c.structure,
         insightId: c.insightId,
       },
@@ -302,7 +301,7 @@ async function run(
     stats,
     tastePack: COMEDY_TASTE_PACK,
     promptVersion: PUNCH_V,
-    moderator: { promptVersion: MODERATOR_V, model: deps.model },
+    moderator: { promptVersion: MODERATOR_V, model: deps.models.moderator },
     trace: null,
   };
 }
@@ -323,7 +322,7 @@ export async function writeComedyCandidates(
     mode: input.mode,
     tier: input.tier,
     prompts: COMEDY_PROMPTS,
-    model: deps.model,
+    models: deps.models,
   });
   const clock = deps.now ?? (() => performance.now());
   const started = clock();

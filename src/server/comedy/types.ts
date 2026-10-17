@@ -4,6 +4,7 @@ import type { CostMeter } from "../cost/meter";
 import type { ProfileFacts } from "../facts";
 import type { LeakIndex } from "../roast/filters";
 import type { CarriedPunch } from "../roast/write/types";
+import type { ComedyRole } from "./llm";
 
 // Типы comedy-движка (comedy-engine §2, §8). Чистые типы: без БД, env и LLM.
 
@@ -83,8 +84,8 @@ export type ComedyDeps = {
   moderator: ComedyGenerateFn;
   /** Скачивание обложек и аватара (allowlist CDN, 512 px). Не бросает. */
   fetchCovers: FetchCoversFn;
-  /** Модель всех шагов: в трассу и `PunchTrace`. */
-  model: string;
+  /** Модель каждой роли: в трассу и `PunchTrace` (генератор — `writerModel`, редактор — `judgeModel`). */
+  models: Record<ComedyRole, string>;
   /** Canary-строки для слоя 4. По умолчанию из `filters/config.ts`. */
   canaries?: readonly string[];
   /** Индекс цепочек слов промптов для слоя 4. По умолчанию по настоящим промптам. */

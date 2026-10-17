@@ -41,6 +41,32 @@ export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
     cacheWriteUsdPerMTok: 2.5,
     verified: true,
   },
+  /**
+   * `claude-sonnet-5-5` (comedy-движок: профиль, инсайты, отбор, генератор, редактор). Прайс
+   * Anthropic на 2026-10-06: вход $2, выход $10, чтение кэша $0.20, как у Sonnet 5. Запись в кэш
+   * считаем как ×1.25 от входа ($2.50): отдельной строкой в прайсе её не сверяли. Промпт-кэш в
+   * вызовах не используется, на сумму кэш-цены не влияют.
+   */
+  "claude-sonnet-5-5": {
+    inputUsdPerMTok: 2,
+    outputUsdPerMTok: 10,
+    cacheReadUsdPerMTok: 0.2,
+    cacheWriteUsdPerMTok: 2.5,
+    verified: true,
+  },
+  /**
+   * `claude-haiku-5-5` (модератор comedy). Прайс Anthropic на 2026-10-06: вход $0.10, выход $0.50
+   * за 1M при входе до 100K токенов; наши вызовы модератора в разы короче, дорогой тариф длинного
+   * входа не применяем. Кэш выведен из множителей, а не сверен: чтение ×0.1 от входа ($0.01),
+   * запись ×1.25 ($0.125). Промпт-кэш не используется, на сумму не влияет.
+   */
+  "claude-haiku-5-5": {
+    inputUsdPerMTok: 0.1,
+    outputUsdPerMTok: 0.5,
+    cacheReadUsdPerMTok: 0.01,
+    cacheWriteUsdPerMTok: 0.125,
+    verified: true,
+  },
 };
 
 /**
