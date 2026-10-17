@@ -456,12 +456,12 @@ describe("генератор: проверки кодом и слой 4", () => 
     const punch = vi.fn<ComedyGenerateFn>(async () => ({ punches: [] }));
     const e = await failure(writeComedyCandidates(comedyInput(), makeComedyDeps({ punch })));
     expect(e?.reason).toBe("llm_failed");
-    // Две пачки по 5 инсайтов, по три попытки.
-    expect(punch).toHaveBeenCalledTimes(6);
+    // 10 инсайтов по 3 на вызов: 4 пачки (3+3+3+1), по три попытки.
+    expect(punch).toHaveBeenCalledTimes(12);
     const notes = punch.mock.calls.filter(([p]) =>
       userText(p).includes("ни одна шутка не принята"),
     );
-    expect(notes).toHaveLength(4);
+    expect(notes).toHaveLength(8);
   });
 });
 

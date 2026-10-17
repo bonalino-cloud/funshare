@@ -37,7 +37,7 @@ export type Structure = (typeof STRUCTURES)[number];
 export const CAPS = {
   callName: 40,
   ageStated: 40,
-  factText: 180,
+  factText: 140,
   source: 60,
   quoteText: 200,
   about: 60,
@@ -47,7 +47,7 @@ export const CAPS = {
   ownHumor: 300,
   closedTopic: 80,
   insightTitle: 60,
-  insight: 240,
+  insight: 180,
   direction: 60,
   risk: 120,
   theme: 40,
@@ -78,7 +78,7 @@ export const ProfileOutput = z.object({
         basis: z.enum(FACT_BASES),
       }),
     )
-    .max(60),
+    .max(45),
   quotes: z
     .array(
       z.object({
@@ -87,7 +87,7 @@ export const ProfileOutput = z.object({
         about: z.string().max(CAPS.about),
       }),
     )
-    .max(12),
+    .max(10),
   audience: z
     .array(
       z.object({ text: z.string().max(CAPS.audienceText), source: z.string().max(CAPS.source) }),
@@ -116,7 +116,7 @@ export const InsightsOutput = z.object({
       title: z.string().max(CAPS.insightTitle),
       factIds: z.array(z.string()).min(1).max(4),
       insight: z.string().max(CAPS.insight),
-      directions: z.array(z.string().max(CAPS.direction)).max(3),
+      directions: z.array(z.string().max(CAPS.direction)).max(2),
       potential: z.number().int().min(1).max(5),
       risk: z.string().max(CAPS.risk).nullable(),
     }),
@@ -351,8 +351,8 @@ export const ComedyProfileSchema = z.object({
     gender: z.enum(GENDERS),
     ageStated: Capped(CAPS.ageStated).nullable(),
   }),
-  facts: z.array(ProfileFactSchema).max(60),
-  quotes: z.array(ProfileQuoteSchema).max(12),
+  facts: z.array(ProfileFactSchema).max(45),
+  quotes: z.array(ProfileQuoteSchema).max(10),
   audience: z
     .array(z.object({ text: Capped(CAPS.audienceText), source: Capped(CAPS.source) }))
     .max(6),
@@ -371,7 +371,7 @@ export const InsightSchema = z.object({
   title: Capped(CAPS.insightTitle),
   factIds: z.array(z.string().max(CAPS.id)).min(1).max(4),
   insight: Capped(CAPS.insight),
-  directions: z.array(Capped(CAPS.direction)).max(3),
+  directions: z.array(Capped(CAPS.direction)).max(2),
   potential: z.number().int().min(1).max(5),
   risk: Capped(CAPS.risk).nullable(),
 });

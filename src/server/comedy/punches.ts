@@ -28,7 +28,7 @@ import { PunchEnvelope, PunchItem, type Insight, type Structure } from "./schema
 import type { Candidate, RunContext } from "./state";
 import { newComedyEntry, type ComedyTraceEntry } from "./trace";
 
-// Шаг 3 (comedy-engine §7.4): по 3 шутки на инсайт, пачками по 5 инсайтов параллельно. Каждая
+// Шаг 3 (comedy-engine §7.4): по 3 шутки на инсайт, пачками по 3 инсайта параллельно. Каждая
 // шутка проверяется кодом (§3): инсайт из пачки, длина ≤ PUNCH_MAX_CHARS, кириллица ≥ 0.6,
 // эмодзи через `cleanEmoji`, слой 4 (`checkOutputText`, well done), запретные темы досье, дубль
 // по нормализованному тексту (с выбранными в Поджоге тоже).

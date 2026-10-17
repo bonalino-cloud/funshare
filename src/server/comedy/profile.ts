@@ -66,7 +66,7 @@ export function parseProfile(raw: unknown): Parsed<ComedyProfile> {
   if (facts.length < MIN_PROFILE_FACTS) {
     return {
       ok: false,
-      note: `проверяемых фактов ${facts.length}, нужно не меньше ${MIN_PROFILE_FACTS} (лучше 25–60): section, text, source, basis по схеме`,
+      note: `проверяемых фактов ${facts.length}, нужно не меньше ${MIN_PROFILE_FACTS} (лучше 25–45): section, text, source, basis по схеме`,
     };
   }
   const quotes = acceptItems(

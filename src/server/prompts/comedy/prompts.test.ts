@@ -154,7 +154,7 @@ describe("пользовательские сообщения", () => {
         mode: "friend",
         forbidden: ["бывший муж"],
         category: "B",
-        range: [12, 14],
+        range: [10, 12],
       }),
     );
     expect(text).toContain("[F1] (appearance; seen; post:0) Факт номер 1");
@@ -162,7 +162,7 @@ describe("пользовательские сообщения", () => {
     expect(text).toContain("Режим: «друга»");
     expect(text).toContain("<forbidden_topics>\n- бывший муж\n</forbidden_topics>");
     expect(text).toContain(
-      "Найди 12–14 инсайтов категории B (неожиданные связи). Только эта категория.",
+      "Найди 10–12 инсайтов категории B (неожиданные связи). Только эта категория.",
     );
   });
 

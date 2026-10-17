@@ -20,9 +20,9 @@ export type InsightCategory = (typeof INSIGHT_CATEGORIES)[number];
 
 /** Сколько инсайтов просим у каждой категории: [от, до]. Больше «до» код отрезает. */
 export const INSIGHTS_PER_CATEGORY: Record<InsightCategory, readonly [number, number]> = {
-  A: [10, 12],
-  B: [12, 14],
-  C: [10, 12],
+  A: [9, 11],
+  B: [10, 12],
+  C: [9, 11],
 };
 
 /** Инсайтов в работу (раунд 1) и в запас (раунд 2 при недоборе). */
@@ -33,8 +33,11 @@ export const SELECT_INSIGHTS = WORK_INSIGHTS + RESERVE_INSIGHTS;
 
 /** Шуток на инсайт. */
 export const PUNCHES_PER_INSIGHT = 3;
-/** Инсайтов в одном вызове генератора: размер ответа не зависит от тарифа. */
-export const PUNCH_INSIGHTS_PER_CALL = 5;
+/**
+ * Инсайтов в одном вызове генератора: 10 инсайтов = 4 параллельных вызова (3+3+3+1). Ответ
+ * короче, вызовы параллельны: раунд генератора идёт столько, сколько самый длинный из них.
+ */
+export const PUNCH_INSIGHTS_PER_CALL = 3;
 /** Шуток в одном вызове модератора (два флага на шутку, ответ маленький). */
 export const MODERATOR_PER_CALL = 12;
 /** Раундов генератора: второй по запасным инсайтам, если после модератора меньше минимума. */
@@ -76,8 +79,8 @@ export const MIN_PROFILE_FACTS = 5;
 
 /** Потолки списков профиля (comedy-engine §3): лишнее код отрезает. */
 export const PROFILE_LIMITS = {
-  facts: 60,
-  quotes: 12,
+  facts: 45,
+  quotes: 10,
   audience: 6,
   unknowns: 10,
   closedTopics: 8,
@@ -85,7 +88,7 @@ export const PROFILE_LIMITS = {
 
 /** Опорных фактов у инсайта: 1–4. */
 export const MAX_INSIGHT_FACTS = 4;
-export const MAX_INSIGHT_DIRECTIONS = 3;
+export const MAX_INSIGHT_DIRECTIONS = 2;
 
 /** Порог ясности у редактора: ниже шутку не берём. */
 export const MIN_CLARITY = 2;
