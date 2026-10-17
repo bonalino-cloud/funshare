@@ -1,4 +1,10 @@
 import { ANALYZE_SYSTEM as ANALYZE_V1 } from "./analyze/v1";
+import { EDITOR_SYSTEM as COMEDY_EDITOR_V1 } from "./comedy/editor-v1";
+import { INSIGHTS_SYSTEM as COMEDY_INSIGHTS_V1 } from "./comedy/insights-v1";
+import { MODERATOR_SYSTEM as COMEDY_MODERATOR_V1 } from "./comedy/moderator-v1";
+import { PROFILE_SYSTEM as COMEDY_PROFILE_V1 } from "./comedy/profile-v1";
+import { PUNCH_SYSTEM as COMEDY_PUNCH_V1 } from "./comedy/punch-v1";
+import { SELECT_SYSTEM as COMEDY_SELECT_V1 } from "./comedy/select-v1";
 import { ANALYZE_SYSTEM as ANALYZE_V2 } from "./analyze/v2";
 import { MODERATOR_SYSTEM as MODERATOR_V1 } from "./roast/moderator-v1";
 import { MODERATOR_SYSTEM as MODERATOR_V2 } from "./roast/moderator-v2";
@@ -25,4 +31,16 @@ export function allWriteSystemPrompts(): string[] {
 /** Досье всех версий. */
 export function allAnalyzeSystemPrompts(): string[] {
   return [ANALYZE_V1, ANALYZE_V2];
+}
+
+/** Comedy-движок well done (comedy-engine §7): шесть шагов всех версий. */
+export function allComedySystemPrompts(): string[] {
+  return [
+    COMEDY_PROFILE_V1,
+    COMEDY_INSIGHTS_V1,
+    COMEDY_SELECT_V1,
+    COMEDY_PUNCH_V1,
+    COMEDY_EDITOR_V1,
+    COMEDY_MODERATOR_V1,
+  ];
 }

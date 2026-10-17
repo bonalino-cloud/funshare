@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`тексты comedy v1 > снимок байтов (sha256) 1`] = `
+{
+  "comedy/editor-v1": "e35ff83b48fc3446",
+  "comedy/insights-v1": "f145ccc42a34e9e1",
+  "comedy/moderator-v1": "5850ce763aa1367e",
+  "comedy/profile-v1": "ce171c2031b09c7f",
+  "comedy/punch-v1": "1c19854183dd4185",
+  "comedy/select-v1": "d5b4f2da17a4b4d3",
+}
+`;

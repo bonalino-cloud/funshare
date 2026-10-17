@@ -7,6 +7,9 @@ import type { TrialPunchRow, WriteInputRow, WriteRepository } from "./repository
 import { WriteFailedError, type WrittenCandidate } from "./types";
 import { WriteTrace } from "./trace";
 import { makePersona, makeTrace, makeWriteDeps } from "./test-helpers";
+import { ComedyFailedError } from "../../comedy";
+import { ComedyTrace } from "../../comedy/trace";
+import { fakeModerator, makeComedyDeps } from "../../comedy/test-helpers";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -41,14 +44,15 @@ function setup(over: Partial<WriteInputRow> | null = {}, trial: TrialPunchRow[] 
     }),
   };
   const writeDeps = makeWriteDeps();
+  const comedyDeps = makeComedyDeps();
   const costs = {
     saved: [] as { generationId: string; step: string; run: CostRun }[],
     addStepCost: vi.fn(async (generationId: string, step: string, run: CostRun) => {
       costs.saved.push({ generationId, step, run });
     }),
   };
-  const deps: WriteStepDeps = { repo, write: () => writeDeps, costs };
-  return { repo, deps, saved, writeDeps, traces, costs };
+  const deps: WriteStepDeps = { repo, write: () => writeDeps, costs, comedy: () => comedyDeps };
+  return { repo, deps, saved, writeDeps, comedyDeps, traces, costs };
 }
 
 const reason = async (p: Promise<unknown>) => {
@@ -249,6 +253,96 @@ describe("runWriteStep", () => {
       await runWriteStep("g1", s.deps);
       await runWriteStep("g1", s.deps);
       expect(s.costs.addStepCost).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("маршрутизация comedy (well done)", () => {
+    it("well_done → comedy-движок: старый писатель не зовётся, трасса шага comedy", async () => {
+      const s = setup({ level: "well_done", tier: 1 });
+      await runWriteStep("g1", s.deps);
+      expect(s.writeDeps.writer).not.toHaveBeenCalled();
+      expect(s.comedyDeps.profile).toHaveBeenCalledTimes(1);
+      expect(s.saved).toHaveLength(10);
+      expect(s.saved[0]?.trace.tastePack).toBe("comedy/v1");
+      expect(s.repo.saveCandidates).toHaveBeenCalledWith(
+        "g1",
+        expect.any(Array),
+        "comedy/punch-v1",
+      );
+      expect(s.traces).toHaveLength(1);
+      expect(s.traces[0]).toMatchObject({ generationId: "g1", step: "comedy" });
+      const trace = ComedyTrace.parse(s.traces[0]?.data);
+      const chosen = trace.candidates.filter((c) => c.outcome === "chosen").map((c) => c.punchId);
+      expect(chosen.sort()).toEqual(s.saved.map((c) => c.id).sort());
+    });
+
+    it("rare и medium → старый путь, comedy не зовётся", async () => {
+      for (const level of ["rare", "medium"] as const) {
+        const s = setup({ level });
+        await runWriteStep("g", s.deps);
+        expect(s.writeDeps.writer).toHaveBeenCalled();
+        expect(s.comedyDeps.profile).not.toHaveBeenCalled();
+        expect(s.traces[0]?.step).toBe("write");
+      }
+    });
+
+    it("гардрейлы досье проверяются до comedy: модель не зовётся", async () => {
+      const persona = makePersona(
+        { flags: { isPrivate: false, likelyMinor: true, insufficientData: false } },
+        14,
+      );
+      const s = setup({ level: "well_done", persona });
+      expect(await reason(runWriteStep("g", s.deps))).toBe("bad_input");
+      expect(s.comedyDeps.profile).not.toHaveBeenCalled();
+    });
+
+    it("запретные темы досье доходят до comedy, факты заказчика — в материал", async () => {
+      const persona = makePersona(
+        { avoidTopics: ["бывшая работа"], sensitiveEvents: ["развод"] },
+        14,
+      );
+      const s = setup({ level: "well_done", persona, extraFacts: ["храпит в поезде"] });
+      await runWriteStep("g", s.deps);
+      const profileText = JSON.stringify(vi.mocked(s.comedyDeps.profile).mock.calls[0]![0].parts);
+      expect(profileText).toContain("храпит в поезде");
+      const moderatorText = JSON.stringify(
+        vi.mocked(s.comedyDeps.moderator).mock.calls[0]![0].parts,
+      );
+      expect(moderatorText).toContain("бывшая работа");
+      expect(moderatorText).toContain("развод");
+    });
+
+    it("провал comedy: трасса comedy записана, с ошибкой дальше не едет, траты записаны", async () => {
+      const s = setup({ level: "well_done" });
+      const meter = new CostMeter();
+      meter.recordLlm({
+        role: "comedy-profile",
+        model: "claude-sonnet-5",
+        usage: { inputTokens: 10 },
+        ok: true,
+      });
+      s.comedyDeps.meter = meter;
+      s.comedyDeps.moderator = fakeModerator(() => ({ hitsClosedTopic: true }));
+      const thrown = await runWriteStep("g", s.deps).catch((e: unknown) => e);
+      expect(thrown).toBeInstanceOf(ComedyFailedError);
+      expect((thrown as ComedyFailedError).reason).toBe("not_enough_candidates");
+      expect((thrown as ComedyFailedError).comedyTrace).toBeNull();
+      expect(s.saved).toHaveLength(0);
+      expect(s.traces).toHaveLength(1);
+      expect(s.traces[0]?.step).toBe("comedy");
+      expect(ComedyTrace.parse(s.traces[0]?.data).result).toBe("failed");
+      expect(s.costs.saved).toHaveLength(1);
+      expect(s.costs.saved[0]).toMatchObject({ generationId: "g", step: "write" });
+    });
+
+    it("Кострище well done: карри из Поджога переносится через comedy", async () => {
+      const trial: TrialPunchRow[] = [
+        { punchId: "t1", emoji: "🔥", text: "Выбранная в Поджоге шутка", trace: makeTrace() },
+      ];
+      const s = setup({ level: "well_done", tier: 2, trialGenerationId: "trial" }, trial);
+      await runWriteStep("g", s.deps);
+      expect(s.saved[0]).toMatchObject({ id: "t1", fromTrial: true });
+      expect(s.saved.filter((c) => !c.fromTrial)).toHaveLength(20);
     });
   });
 });

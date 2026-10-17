@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STRUCTURES } from "../../comedy/schema";
 import { JOKE_MECHANISMS } from "../jokes/card";
 
 // Схемы ответов писателя и судьи. Модели уходит строгая JSON Schema (`WriterOutput`, `JudgeOutput`),
@@ -75,4 +76,7 @@ export const PunchTraceSchema = z.object({
   promptVersion: z.string(),
   writerModel: z.string(),
   judgeModel: z.string(),
+  /** Comedy-движок (well done): структура шутки и id инсайта. У старого писателя полей нет. */
+  structure: z.enum(STRUCTURES).optional(),
+  insightId: z.string().max(40).optional(),
 });
