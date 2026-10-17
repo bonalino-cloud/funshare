@@ -266,7 +266,6 @@ async function run(
     level: input.level,
     mode: input.mode,
     forbidden: mergeTopics(input.forbidden, profile.closedTopics),
-    dossierForbidden: input.forbidden,
     profile,
     deps,
     rec,
@@ -276,7 +275,9 @@ async function run(
     findInsights({ profile, mode: input.mode, forbidden: ctx.forbidden, generate: deps.insights }),
   );
   rec.insights = insights;
-  const selection = await timed("select", () => selectInsights(profile, insights, deps.select));
+  const selection = await timed("select", () =>
+    selectInsights(profile, insights, ctx.forbidden, deps.select),
+  );
   rec.selection = selection;
 
   const byId = new Map(insights.map((i) => [i.id, i]));

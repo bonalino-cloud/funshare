@@ -215,12 +215,19 @@ describe("пользовательские сообщения", () => {
 
   it("отбор: инсайты с фактами одной строкой и обращение", () => {
     const text = userText(
-      select.buildSelectPrompt({ profile: makeProfile(), insights: [insight()], count: 1 }),
+      select.buildSelectPrompt({
+        profile: makeProfile(),
+        insights: [insight()],
+        forbidden: ["бывший муж"],
+        count: 1,
+      }),
     );
     expect(text).toContain("Герой: Кирилл");
     expect(text).toContain("[A1] категория A: Зеркало — вместо тренера");
     expect(text).toContain("факты: [F1] Факт номер 1: шейкер в кадре; [Q1] «Дисциплина");
     expect(text).toContain("Выбери 1 инсайтов из <insights>");
+    expect(text).toContain("<forbidden_topics>\n- бывший муж\n</forbidden_topics>");
+    expect(text).toContain("задевают темы из списка «нельзя», не бери");
   });
 });
 

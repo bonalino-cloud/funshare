@@ -27,8 +27,6 @@ export type RunContext = {
   mode: GenerationMode;
   /** Список «нельзя»: закрытые темы профиля ∪ запретные темы досье. */
   forbidden: readonly string[];
-  /** Запретные темы досье: страховка кодом поверх промпта (`overlapsForbidden`). */
-  dossierForbidden: readonly string[];
   profile: ComedyProfile;
   deps: ComedyDeps;
   rec: ComedyTraceRecorder;

@@ -20,7 +20,6 @@ import {
   type Rejection,
 } from "../roast/write/candidate";
 import { MIN_CYRILLIC_SHARE } from "../roast/write/config";
-import { overlapsForbidden } from "../roast/write/hooks";
 import { PUNCH_INSIGHTS_PER_CALL, PUNCHES_PER_INSIGHT } from "./config";
 import { normalizeRefId } from "./insights";
 import { chunk, settleBatches, withRetries } from "./retry";
@@ -31,7 +30,9 @@ import { newComedyEntry, type ComedyTraceEntry } from "./trace";
 // Шаг 3 (comedy-engine §7.4): по 3 шутки на инсайт, пачками по 3 инсайта параллельно. Каждая
 // шутка проверяется кодом (§3): инсайт из пачки, длина ≤ PUNCH_MAX_CHARS, кириллица ≥ 0.6,
 // эмодзи через `cleanEmoji`, слой 4 (`checkOutputText`, well done), дефис с пробелами вместо тире,
-// запретные темы досье, дубль по нормализованному тексту (с выбранными в Поджоге тоже).
+// дубль по нормализованному тексту (с выбранными в Поджоге тоже). Запретные темы досье код по
+// основам слов НЕ проверяет: основы ловили весь бизнес героя («аренд», «ланке»). Список «нельзя»
+// уходит в промпты и модератору, вычёркивает модератор (`hitsClosedTopic`).
 
 /**
  * Дефис с пробелами вместо тире («факт - вывод»): `punch-v1` его запрещает, а общий слой 4
@@ -134,10 +135,6 @@ function parseBatch(
     }
     if (hasSpacedHyphen(p.text)) {
       drop(p.insightId, "spaced_hyphen", p);
-      continue;
-    }
-    if (overlapsForbidden(p.text, ctx.dossierForbidden)) {
-      drop(p.insightId, "avoid_topic", p);
       continue;
     }
     const key = normalizeForDedupe(p.text);

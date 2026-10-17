@@ -460,18 +460,33 @@ describe("генератор: проверки кодом и слой 4", () => 
     expect(r.candidates.filter((c) => c.text.startsWith("Карри"))).toHaveLength(1);
   });
 
-  it("запретная тема досье в тексте шутки вычёркивается кодом (avoid_topic)", async () => {
+  it("запретные темы досье код по основам не режет: решает модератор", async () => {
+    const forbidden = ["догадки о доходах арендного бизнеса на Шри-Ланке"];
+    const lanka = (id: string) => `Свой человек на Шри-Ланке ${id}: аренда у тебя ебучая`;
     const punch = fakePunch((id, n, call) =>
-      n === 1
-        ? `Твой клуб Титан видно даже на ${id}, блядь`
-        : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+      n === 1 ? lanka(id) : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
     );
-    const r = await writeComedyCandidates(
-      comedyInput({ forbidden: ["клуб «Титан»"] }),
-      makeComedyDeps({ punch }),
-    );
-    expect(ComedyTrace.parse(r.trace).filters.layer4.avoid_topic).toBeGreaterThan(0);
-    expect(r.candidates.every((c) => !c.text.includes("Титан"))).toBe(true);
+    const ok = makeComedyDeps({ punch });
+    const r = await writeComedyCandidates(comedyInput({ forbidden }), ok);
+    const trace = ComedyTrace.parse(r.trace);
+    expect(trace.filters.layer4.avoid_topic).toBeUndefined();
+    expect(r.candidates.some((c) => c.text.startsWith("Свой человек на Шри-Ланке"))).toBe(true);
+    // Список «нельзя» доходит до инсайтов, отбора, генератора и модератора.
+    for (const fn of [ok.insights, ok.select, ok.punch, ok.moderator]) {
+      expect(userText(vi.mocked(fn).mock.calls[0]![0])).toContain(forbidden[0]);
+    }
+
+    const strict = makeComedyDeps({
+      punch: fakePunch((id, n, call) =>
+        n === 1 ? lanka(id) : `Зеркало ${id} вызов ${call} вариант ${n}, блядь`,
+      ),
+      moderator: fakeModerator((_id, text) =>
+        text.startsWith("Свой человек на Шри-Ланке") ? { hitsClosedTopic: true } : {},
+      ),
+    });
+    const r2 = await writeComedyCandidates(comedyInput({ tier: 2, forbidden }), strict);
+    expect(r2.candidates.some((c) => c.text.startsWith("Свой человек"))).toBe(false);
+    expect(ComedyTrace.parse(r2.trace).filters.layer5.forbidden_topic).toBeGreaterThan(0);
   });
 
   it("пустой ответ генератора: ретраи с причиной, затем llm_failed", async () => {

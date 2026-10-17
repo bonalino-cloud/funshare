@@ -204,6 +204,7 @@ export function topUpPicks(
 export async function selectInsights(
   profile: ComedyProfile,
   insights: readonly Insight[],
+  forbidden: readonly string[],
   generate: ComedyGenerateFn,
 ): Promise<Selection> {
   const count = Math.min(SELECT_INSIGHTS, insights.length);
@@ -211,7 +212,7 @@ export async function selectInsights(
   try {
     picks = await withRetries(
       "отбор",
-      ({ retryNote }) => buildSelectPrompt({ profile, insights, count, retryNote }),
+      ({ retryNote }) => buildSelectPrompt({ profile, insights, forbidden, count, retryNote }),
       generate,
       (raw) => parseSelection(raw, insights),
     );
