@@ -35,6 +35,43 @@ describe("createApifyFetcher", () => {
     });
   });
 
+  it("400 run-failed без TIMED-OUT → без ретрая", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ error: { type: "run-failed", message: "actor crashed" } }), {
+          status: 400,
+        }),
+    );
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: false,
+    });
+  });
+
+  it("400 run-failed с TIMED-OUT (#115, Instagram блокирует actor) → ретраибельная ошибка", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              type: "run-failed",
+              message: "Actor run did not succeed (run ID: abc123): status: TIMED-OUT.",
+            },
+          }),
+          { status: 400 },
+        ),
+    );
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: true,
+    });
+  });
+
+  it("400 без JSON-тела → без ретрая", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response("x", { status: 400 }));
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: false,
+    });
+  });
+
   it("таймаут (AbortSignal) → ретраибельная ошибка", async () => {
     const fetchImpl = vi.fn<typeof fetch>(
       (_url, init) =>
