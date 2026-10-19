@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CandidatesResponse } from "@/contracts";
 import { Spinner } from "@/components/ui/Spinner";
 import { cx } from "@/components/cx";
+import { PRIVATE_BLOCK } from "@/lib/client/analytics";
 import { api, toErrorCode } from "@/lib/client/api";
 import { errorLine } from "./errors";
 import { StepLead, StepTitle } from "./StepTitle";
@@ -100,7 +101,11 @@ export function PickPunches({ id, onDone }: { id: string; onDone: () => void }) 
       </StepTitle>
       <StepLead>Выбери {need || 6} самых смешных шуток</StepLead>
 
-      <div role="group" aria-label="Шутки" className="mx-2 flex flex-col gap-3 pb-3">
+      <div
+        role="group"
+        aria-label="Шутки"
+        className={`${PRIVATE_BLOCK} mx-2 flex flex-col gap-3 pb-3`}
+      >
         {data?.candidates.map((c) => {
           const index = picked.indexOf(c.id);
           const on = index >= 0;

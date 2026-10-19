@@ -1,4 +1,5 @@
 import type { CheckedProfile } from "@/contracts";
+import { PRIVATE_BLOCK } from "@/lib/client/analytics";
 import { Avatar } from "./Avatar";
 import { StepTitle } from "./StepTitle";
 
@@ -7,7 +8,9 @@ export function ProfileFound({ profile }: { profile: CheckedProfile }) {
   return (
     <>
       <StepTitle accent="!">Нашли</StepTitle>
-      <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+      <div
+        className={`${PRIVATE_BLOCK} flex flex-1 flex-col items-center justify-center gap-1.5 text-center`}
+      >
         <Avatar
           username={profile.username}
           url={profile.avatarUrl}

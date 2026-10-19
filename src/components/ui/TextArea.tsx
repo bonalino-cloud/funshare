@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
 import { cx } from "@/components/cx";
+import { PRIVATE_INPUT } from "@/lib/client/analytics";
 
 /**
  * Многострочное поле в языке LinkInput: paper, ink-обводка, radius.s, offset-тень.
@@ -36,6 +37,8 @@ export function TextArea({
         value={value}
         aria-invalid={error ? true : undefined}
         className={cx(
+          // Факты о человеке в запись сессий не идут
+          PRIVATE_INPUT,
           "block w-full resize-none rounded-sm border-2 border-ink bg-paper font-semibold text-ink shadow-offset-paper outline-none placeholder:text-ink/45",
           size === "lg" ? "px-5 py-[18px] text-[19px] leading-[1.35]" : "px-4 py-3.5 type-body",
           "focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-pink",

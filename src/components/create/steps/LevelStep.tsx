@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { CardTone } from "@/components/ui/Card";
 import { Sheet } from "@/components/ui/Sheet";
 import { cx } from "@/components/cx";
+import { track } from "@/lib/client/analytics";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { HotIcon } from "../icons";
 import { LEVEL_NAME } from "../labels";
@@ -50,11 +51,13 @@ export function LevelStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =
       setWarn(true);
       return;
     }
+    track("level_selected", { level });
     patchDraft({ level, ageConfirmed: false });
     go("checkout");
   };
 
   const agree = () => {
+    track("level_selected", { level: "well_done" });
     patchDraft({ level: "well_done", ageConfirmed: true });
     setWarn(false);
     go("checkout");

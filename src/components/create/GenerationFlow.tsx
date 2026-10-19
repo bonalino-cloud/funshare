@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import type { GenerationStatusCode } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import koster from "@/components/roast/assets/level-koster.png";
+import { track } from "@/lib/client/analytics";
 import { isTransient } from "@/lib/client/api";
 import { resetDraft } from "@/lib/client/draft";
 import { recallLevel } from "@/lib/client/history";
@@ -40,6 +42,23 @@ export function GenerationFlow({ id }: { id: string }) {
     resetDraft();
   }, []);
 
+  // События по смене статуса. «Дождался» — готово стало на открытом экране, а не при входе
+  // в уже готовую прожарку из истории
+  const current = status?.status;
+  const failReason = status?.errorCode ?? "internal";
+  const seen = useRef<GenerationStatusCode | null>(null);
+  useEffect(() => {
+    if (!current || current === seen.current) return;
+    const waited = seen.current !== null;
+    seen.current = current;
+    if (current === "awaiting_selection") track("selection_view");
+    if (current === "failed") track("generation_failed", { reason: failReason });
+    if (current === "ready") {
+      if (waited) track("result_waited");
+      track("result_view");
+    }
+  }, [current, failReason]);
+
   const failedLine = error
     ? generationErrorLine(error.cause)
     : status?.status === "failed"
@@ -67,7 +86,14 @@ export function GenerationFlow({ id }: { id: string }) {
               look="display"
               arrow={false}
               className="h-16 w-full"
-              onClick={canResume ? resume : () => router.push("/create")}
+              onClick={
+                canResume
+                  ? resume
+                  : () => {
+                      track("again_click", { place: "failed" });
+                      router.push("/create");
+                    }
+              }
             >
               Ещё раз
             </Button>
@@ -80,7 +106,13 @@ export function GenerationFlow({ id }: { id: string }) {
       ) : status.status === "drawing" ? (
         <Loader image={art} phase="drawing" startedAt={startedAt} />
       ) : status.status === "awaiting_selection" ? (
-        <PickPunches id={id} onDone={selectionSent} />
+        <PickPunches
+          id={id}
+          onDone={() => {
+            track("selection_submitted");
+            selectionSent();
+          }}
+        />
       ) : (
         <ResultScreen slug={status.artifactSlug ?? ""} />
       )}
