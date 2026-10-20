@@ -6,7 +6,7 @@ export type TierCardState = { disabled: boolean; footer: string };
 /**
  * Что показать на карточке тарифа. Поджог: первый раз бесплатно (`freeTrialAvailable`), повтор —
  * по цене тарифа. Пока сервер отдаёт Поджогу цену 0, повтора нет: «Уже был», карточка неактивна.
- * Пекло — заглушка до конца MVP.
+ * Недоступный тариф (`available: false`) — «Скоро».
  */
 export function tierCardState(info: TierInfo, freeTrialAvailable: boolean): TierCardState {
   if (!info.available) return { disabled: true, footer: "Скоро" };
