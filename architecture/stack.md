@@ -40,6 +40,7 @@
 | `ANTHROPIC_API_KEY` — отдельный ключ проекта | BE |
 | `KIE_API_KEY` — отдельный ключ проекта | BE |
 | `APIFY_TOKEN` | BE |
+| `APIFY_DAILY_BUDGET_USD` (необязательная, по умолчанию 5; `0` выключает Apify) | BE |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | BE |
 | `NEXT_PUBLIC_USE_MOCKS` | FE (`1` — работать на фикстурах) |
 | `NEXT_PUBLIC_SITE_URL` | FE, BE (ссылки для шаринга) |

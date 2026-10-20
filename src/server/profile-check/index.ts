@@ -1,3 +1,4 @@
+import { getApifyBudget } from "../cost/budget";
 import { defaultEnsureDossier } from "../dossier";
 import { createRateLimiter, type RateLimiter } from "../ratelimit";
 import { defaultScrapeDeps, scrapeProfile } from "../scrape";
@@ -17,6 +18,7 @@ export function defaultDeps(schedule: HandlerDeps["schedule"]): HandlerDeps {
   return {
     repo: createProfileCheckRepository(),
     limiter,
+    budget: getApifyBudget(),
     schedule,
     pipeline: {
       // Счётчик трат проверки (только Apify) создаёт `runProfileCheck`; у досье свой счётчик и своя строка.
