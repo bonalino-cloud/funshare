@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileCheckCreated, ProfileCheckStatus } from "@/contracts";
 import { CostMeter } from "../cost";
+import { RateLimitUnavailableError } from "../ratelimit";
 import { RESULT_CACHE_TTL_MS, STALE_AFTER_MS } from "./config";
 import { clientIp, createProfileCheck, getProfileCheck } from "./handlers";
 import {
@@ -117,19 +118,22 @@ describe("POST: успех checking → ok", () => {
 });
 
 describe("POST: гардрейлы → failed + errorCode", () => {
-  it.each(["profile_not_found", "profile_private", "not_enough_data", "internal"] as const)(
-    "scrape: %s — досье (платное) не запускается",
-    async (errorCode) => {
-      const t = makeHandlerDeps();
-      t.scrape.mockResolvedValue({ ok: false, errorCode });
-      const id = await create(t);
-      await t.flush();
-      expect(t.ensureDossier).not.toHaveBeenCalled();
-      const { body } = await status(t, id);
-      expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "failed", errorCode });
-      expect(body).not.toHaveProperty("profile");
-    },
-  );
+  it.each([
+    "profile_not_found",
+    "profile_private",
+    "not_enough_data",
+    "rate_limited",
+    "internal",
+  ] as const)("scrape: %s — досье (платное) не запускается", async (errorCode) => {
+    const t = makeHandlerDeps();
+    t.scrape.mockResolvedValue({ ok: false, errorCode });
+    const id = await create(t);
+    await t.flush();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    const { body } = await status(t, id);
+    expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "failed", errorCode });
+    expect(body).not.toHaveProperty("profile");
+  });
 
   it.each(["profile_private", "minor_detected", "not_enough_data", "internal"] as const)(
     "отказ досье в фоне (%s) не переписывает «Нашли!»: проверка остаётся ok",
@@ -223,8 +227,13 @@ describe("POST: кэш 24 ч", () => {
     expect(t.ensureDossier).not.toHaveBeenCalled();
   });
 
-  it("другие отказы и internal не кэшируются: повтор запускает работу заново", async () => {
-    for (const errorCode of ["internal", "profile_private", "not_enough_data"] as const) {
+  it("другие отказы, rate_limited и internal не кэшируются: повтор запускает работу заново", async () => {
+    for (const errorCode of [
+      "internal",
+      "profile_private",
+      "not_enough_data",
+      "rate_limited",
+    ] as const) {
       const t = makeHandlerDeps();
       t.scrape.mockResolvedValueOnce({ ok: false, errorCode });
       await create(t);
@@ -452,5 +461,48 @@ describe("GET: зависшие проверки", () => {
     await t.flush(); // фон «проснулся» после закрытия
     expect(t.rows.get(id)?.status).toBe("failed");
     expect(t.rows.get(id)?.errorCode).toBe("internal");
+  });
+});
+
+describe("POST: дневной потолок Apify", () => {
+  it("потолок исчерпан → 429 rate_limited, строку checking не создаём, фон не запускаем", async () => {
+    const t = makeHandlerDeps();
+    t.hasRoom.mockResolvedValue(false);
+    const res = await createProfileCheck(post(URL_BODY, { token: TOKEN }), t.deps);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ errorCode: "rate_limited" });
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(t.repo.insert).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+  });
+
+  it("результат из кэша отдаём и при исчерпанном бюджете, бюджет даже не спрашиваем", async () => {
+    const t = makeHandlerDeps();
+    await create(t);
+    await t.flush();
+    t.hasRoom.mockClear();
+    t.hasRoom.mockResolvedValue(false);
+    const second = await create(t, OTHER_TOKEN);
+    expect(t.hasRoom).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+    const { body } = await status(t, second, OTHER_TOKEN);
+    expect(ProfileCheckStatus.parse(body).status).toBe("ok");
+  });
+
+  it("счётчик недоступен → 503 internal, строку не создаём", async () => {
+    const t = makeHandlerDeps();
+    t.hasRoom.mockRejectedValue(new RateLimitUnavailableError("Redis"));
+    const res = await createProfileCheck(post(URL_BODY, { token: TOKEN }), t.deps);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ errorCode: "internal" });
+    expect(t.repo.insert).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+  });
+
+  it("есть место → обычный запуск", async () => {
+    const t = makeHandlerDeps();
+    await create(t);
+    expect(t.hasRoom).toHaveBeenCalledOnce();
+    expect(t.tasks).toHaveLength(1);
   });
 });

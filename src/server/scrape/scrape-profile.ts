@@ -1,5 +1,6 @@
 import type { ErrorCode, ProfileSnapshot as ProfileSnapshotType } from "@/contracts";
 import { ProfileSnapshot } from "@/contracts";
+import { getApifyBudget, type ApifyBudget } from "../cost/budget";
 import type { CostMeter } from "../cost/meter";
 import { createApifyFetcher, ScrapeTransportError } from "./apify";
 import { putRawBlob, rawBlobKey } from "./blob";
@@ -16,7 +17,12 @@ const USERNAME_RE = /^[a-z0-9._]{1,30}$/;
 
 export type ScrapeErrorCode = Extract<
   ErrorCode,
-  "invalid_url" | "profile_not_found" | "profile_private" | "not_enough_data" | "internal"
+  | "invalid_url"
+  | "profile_not_found"
+  | "profile_private"
+  | "not_enough_data"
+  | "rate_limited"
+  | "internal"
 >;
 
 /** Наружу — только это. Детали провайдера остаются в логах. */
@@ -32,6 +38,11 @@ export type ScrapeDeps = {
   now: () => Date;
   /** Счётчик трат проверки: каждое обращение к Apify. Кэш снимка ничего не записывает. */
   meter?: CostMeter;
+  /**
+   * Дневной потолок трат на Apify: резерв перед КАЖДЫМ обращением (и перед ретраем). Нет поля —
+   * потолка нет (тесты). Отказ → `rate_limited`; счётчик недоступен → `internal` (закрыто).
+   */
+  budget?: Pick<ApifyBudget, "reserve">;
 };
 
 /** Реальные реализации создаются лениво: сборка и тесты не требуют токенов и БД. */
@@ -41,6 +52,7 @@ export function defaultScrapeDeps(): ScrapeDeps {
     putRaw: putRawBlob,
     snapshots: createSnapshotRepository(),
     now: () => new Date(),
+    budget: getApifyBudget(),
   };
 }
 
@@ -121,8 +133,8 @@ function finish(snapshot: ProfileSnapshotType, snapshotId: string, cached: boole
  * Порядок записи: Blob, затем БД (сбой Blob — в БД ничего не пишем).
  *
  * Траты: каждое обращение к Apify попадает в `deps.meter` (оценка по числу результатов, цена в
- * `cost/prices.ts`). TODO(cost-cap): перед `fetchRaw` проверить дневной потолок трат на Apify
- * (roast-engine.md §8, задача `be/p3-cost-cap`).
+ * `cost/prices.ts`). Перед каждым `fetchRaw` — резерв в дневном бюджете Apify (`cost/budget.ts`):
+ * нет места → без ретраев `rate_limited`. Кэш снимка бюджет не трогает.
  */
 export async function scrapeProfile(
   igUsername: string,
@@ -146,6 +158,8 @@ export async function scrapeProfile(
     let raw: unknown;
     let fetchedAt = deps.now();
     for (let attempt = 1; attempt <= 2 && result === null; attempt++) {
+      const lease = deps.budget ? await deps.budget.reserve() : undefined;
+      if (lease === null) return { ok: false, errorCode: "rate_limited" };
       try {
         raw = await deps.fetchRaw(username);
       } catch (error) {
@@ -155,7 +169,10 @@ export async function scrapeProfile(
         if (error instanceof ScrapeTransportError && !error.retryable) break;
         continue;
       }
-      deps.meter?.recordApify({ results: Array.isArray(raw) ? raw.length : 0 });
+      const results = Array.isArray(raw) ? raw.length : 0;
+      deps.meter?.recordApify({ results });
+      // Запрос без ответа резерв не возвращает (Apify мог списать за работу актора): считаем с запасом.
+      await lease?.settle(results);
       fetchedAt = deps.now();
       const classified = classify(raw, username, fetchedAt);
       if (classified.kind === "invalid") {

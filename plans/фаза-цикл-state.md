@@ -9,11 +9,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-writing-watchdog
+текущая_фаза: be/p3-cost-guard
 статус_фазы: ждёт_принято
 текущий_шаг_карусели: 9
-промт_следующей_фазы: be/p3-cost-guard — дневной потолок трат на генерации
-открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention; Сергей: CRON_SECRET в Vercel (#112), показать vercel.json; eslint globalIgnores .claude/worktrees/**; Денис: срок жизни awaiting_selection без выбора (не закрывать / закрыть через N суток с возвратом пробы и кода / возврат оплаты с be/p4-billing / напоминание)
+промт_следующей_фазы: — (BE фазы 3: botid ждёт Сергея, moderation — зона «Юмор», metrics — развилка SQL или /admin)
+открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention; Сергей: CRON_SECRET в Vercel (#112), показать vercel.json; eslint globalIgnores .claude/worktrees/**; Денис: срок жизни awaiting_selection без выбора (не закрывать / закрыть через N суток с возвратом пробы и кода / возврат оплаты с be/p4-billing / напоминание); FE: текст для rate_limited при исчерпанном бюджете Apify (be/p3-cost-guard)
 входящие: —
 обкатка_страницы: нет
 обкатка_чеклист: —

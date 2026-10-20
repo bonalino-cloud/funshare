@@ -9,6 +9,9 @@ const serverEnvSchema = z.object({
   BLOB_RAW_READ_WRITE_TOKEN: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   APIFY_TOKEN: z.string().min(1).optional(),
+  // Дневной потолок трат на Apify, USD (по умолчанию 5; 0 — Apify выключен). Строкой: опечатка не должна
+  // ронять разбор env у всего бэкенда, значение разбирает `apifyDailyCapMicroUsd` (cost/budget.ts).
+  APIFY_DAILY_BUDGET_USD: z.string().optional(),
   KIE_API_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),

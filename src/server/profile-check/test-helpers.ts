@@ -110,9 +110,11 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const removeAvatar = vi.fn<HandlerDeps["pipeline"]["removeAvatar"]>(async () => {});
   const copyAvatar = vi.fn<HandlerDeps["pipeline"]["copyAvatar"]>(async () => OUR_AVATAR_URL);
   const check = vi.fn<HandlerDeps["limiter"]["check"]>(async () => true);
+  const hasRoom = vi.fn<HandlerDeps["budget"]["hasRoom"]>(async () => true);
   const deps: HandlerDeps = {
     repo,
     limiter: { check },
+    budget: { hasRoom },
     schedule: (task) => void tasks.push(task),
     pipeline: { scrape, ensureDossier, copyAvatar, removeAvatar },
     now: () => NOW,
@@ -122,7 +124,19 @@ export function makeHandlerDeps(over: Partial<HandlerDeps> = {}) {
   const flush = async () => {
     while (tasks.length > 0) await tasks.shift()?.();
   };
-  return { deps, repo, rows, scrape, ensureDossier, removeAvatar, copyAvatar, check, tasks, flush };
+  return {
+    deps,
+    repo,
+    rows,
+    scrape,
+    ensureDossier,
+    removeAvatar,
+    copyAvatar,
+    check,
+    hasRoom,
+    tasks,
+    flush,
+  };
 }
 
 export function post(body: unknown, init: { token?: string; ip?: string } = {}) {
