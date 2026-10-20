@@ -160,8 +160,8 @@ function synthesizeTraits(claims: readonly string[], humorAngles: readonly strin
  */
 function safeClaims(
   observations: readonly { claim: string }[],
-  avoidTopics: readonly string[],
-  sensitiveEvents: readonly string[],
+  avoidTopics: string[],
+  sensitiveEvents: string[],
 ): string[] {
   const forbidden = forbiddenTopics({ avoidTopics, sensitiveEvents });
   return observations.map((o) => o.claim).filter((claim) => !overlapsForbidden(claim, forbidden));
