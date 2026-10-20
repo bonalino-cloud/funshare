@@ -38,7 +38,7 @@ function items(t: TierInfo, base: TierInfo | undefined): string[] {
   else if (base && t.candidateCount > base.candidateCount) out.push("Ещё больше шуток");
   // Картинок столько, сколько выбрано шуток: число — максимум
   if (t.imageCount > 0) out.push(`До ${plural(t.imageCount, "картинки", "картинок", "картинок")}`);
-  if (t.tier === 3) out.push("Видео для сторис");
+  if (t.video) out.push("Видео для сторис");
   return out;
 }
 
