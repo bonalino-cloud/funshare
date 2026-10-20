@@ -1,13 +1,16 @@
 import { PgDialect } from "drizzle-orm/pg-core";
+import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GenerationStatus, type GenerationStatusCode } from "@/contracts";
-import { createGeneration, getGeneration } from "./handlers";
+import { retentionLogLine } from "../retention/run";
+import { createGeneration, getGeneration, postSelection } from "./handlers";
 import { failGeneration, runWrite, type PipelineDeps } from "./pipeline";
 import { failStaleSql } from "./repository";
 import {
   STALE_AFTER_MS,
   STEP_WINDOW_MS,
   WAITING_REPORT_AFTER_MS,
+  WAITING_SELECTION_STALE_MS,
   closeStaleGeneration,
   maybeStale,
   staleCutoffs,
@@ -68,6 +71,8 @@ describe("пороги выведены из лимитов", () => {
     expect(STALE_AFTER_MS.queued).toBe(10 * 60_000);
     expect(STALE_AFTER_MS.writing).toBe(28 * 60_000);
     expect(STALE_AFTER_MS.afterSelection).toBe(51 * 60_000);
+    expect(STALE_AFTER_MS.awaitingSelection).toBe(3 * 24 * 60 * 60_000);
+    expect(WAITING_SELECTION_STALE_MS).toBe(STALE_AFTER_MS.awaitingSelection);
   });
 });
 
@@ -77,6 +82,12 @@ describe("граница по каждому статусу", () => {
     ["writing", "writing", false, STALE_AFTER_MS.writing],
     ["drawing", "drawing", false, STALE_AFTER_MS.afterSelection],
     ["awaiting_selection после выбора", "awaiting_selection", true, STALE_AFTER_MS.afterSelection],
+    [
+      "awaiting_selection без выбора",
+      "awaiting_selection",
+      false,
+      STALE_AFTER_MS.awaitingSelection,
+    ],
   ];
 
   for (const [name, status, selected, limit] of cases) {
@@ -101,20 +112,44 @@ describe("граница по каждому статусу", () => {
     expect(maybeStale({ status: "writing", updatedAt: at(-STALE_AFTER_MS.writing) }, NOW)).toBe(
       false,
     );
+    // awaiting_selection: выбор в строке не виден, берём меньший порог; в первые 51 мин UPDATE не нужен.
+    const waitingRow = (ms: number) => ({
+      status: "awaiting_selection" as const,
+      updatedAt: at(-ms),
+    });
+    expect(maybeStale(waitingRow(STALE_AFTER_MS.afterSelection), NOW)).toBe(false);
+    expect(maybeStale(waitingRow(STALE_AFTER_MS.afterSelection + 1), NOW)).toBe(true);
     expect(maybeStale({ status: "ready", updatedAt: old }, NOW)).toBe(false);
     expect(maybeStale({ status: "failed", updatedAt: old }, NOW)).toBe(false);
   });
 
-  it("awaiting_selection без выбора не закрывается даже через сутки и неделю", async () => {
+  it("awaiting_selection без выбора живёт до 3 суток включительно", async () => {
     const s = await setup();
     s.put("awaiting_selection", NOW, false);
-    for (const days of [1, 7, 60]) {
-      s.clock.at = at(days * 24 * 60 * 60_000);
+    for (const ms of [
+      STALE_AFTER_MS.afterSelection + 1,
+      24 * 60 * 60_000,
+      WAITING_SELECTION_STALE_MS - 60_000,
+      WAITING_SELECTION_STALE_MS,
+    ]) {
+      s.clock.at = at(ms);
       expect(await closeStaleGeneration(s.stale, s.id)).toBe(false);
       expect((await sweepStaleGenerations(s.stale)).closed).toBe(0);
     }
     expect(s.row()?.status).toBe("awaiting_selection");
     expect(s.t.orders.orders[0]?.status).toBe("free");
+  });
+
+  it("через 51 мин закрывается строка с принятым выбором, без выбора ещё нет", async () => {
+    const accepted = await setup();
+    accepted.put("awaiting_selection", NOW, true);
+    const waiting = await setup();
+    waiting.put("awaiting_selection", NOW, false);
+    const clock = at(STALE_AFTER_MS.afterSelection + 1);
+    accepted.clock.at = clock;
+    waiting.clock.at = clock;
+    expect(await closeStaleGeneration(accepted.stale, accepted.id)).toBe(true);
+    expect(await closeStaleGeneration(waiting.stale, waiting.id)).toBe(false);
   });
 
   it("ready не трогается, заказ остаётся", async () => {
@@ -202,6 +237,150 @@ describe("закрытие и заказ", () => {
     s.put("writing", at(STALE_AFTER_MS.writing - 1000));
     s.clock.at = at(STALE_AFTER_MS.writing + 1);
     expect(await closeStaleGeneration(s.stale, s.id)).toBe(false);
+  });
+});
+
+describe("брошенный выбор: 3 суток без движения", () => {
+  const DAY = 24 * 60 * 60_000;
+  const submit = (s: Awaited<ReturnType<typeof setup>>) =>
+    s.t.generations.repo.submitSelection({
+      generationId: s.id,
+      punchIds: ["p1"],
+      max: 1,
+      now: s.clock.at,
+    });
+
+  it("закрывается failed/internal, заказ освобождён, проба возвращена", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    expect(await closeStaleGeneration(s.stale, s.id)).toBe(true);
+    expect(s.row()).toMatchObject({ status: "failed", errorCode: "internal" });
+    expect(s.t.orders.orders[0]?.status).toBe("voided");
+  });
+
+  it("промокод возвращается ровно один раз (закрытие, потом подметание)", async () => {
+    const s = await setup({ tier: 2, promoCode: "FUNTEST" });
+    const code = s.t.orders.codes.get("FUNTEST");
+    expect(code?.redeemed).toBe(1);
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    await closeStaleGeneration(s.stale, s.id);
+    await sweepStaleGenerations(s.stale);
+    expect(code?.redeemed).toBe(0);
+    expect(await effectiveReleases(s.t.orders.repo.release)).toBe(1);
+  });
+
+  it("подметание закрывает и освобождает; закрытая в счётчик ожидающих не попадает", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    expect(await sweepStaleGenerations(s.stale)).toEqual({
+      closed: 1,
+      released: 1,
+      releaseFailures: 0,
+      waiting: 0,
+      truncated: false,
+    });
+  });
+
+  it("живая строка моложе 3 суток не трогается, хотя ждёт больше суток", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(2 * DAY);
+    expect(await sweepStaleGenerations(s.stale)).toMatchObject({
+      closed: 0,
+      released: 0,
+      waiting: 1,
+    });
+    expect(s.row()?.status).toBe("awaiting_selection");
+    expect(s.t.orders.orders[0]?.status).toBe("free");
+  });
+
+  it("выбор принят после порога, но до сторожа: строка живая, старый срок не наследует", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.t.generations.addCandidates(s.id, [{ punchId: "p1", text: "a" }]);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    expect(await submit(s)).toBe(true);
+    expect(await closeStaleGeneration(s.stale, s.id)).toBe(false);
+    expect(s.row()?.status).toBe("awaiting_selection");
+    expect(s.t.orders.orders[0]?.status).toBe("free");
+  });
+
+  it("выбор после закрытия отклоняется: submitSelection false, POST selection 409, воркфлоу не будят", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.t.generations.addCandidates(s.id, [{ punchId: "p1", text: "a" }]);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    await closeStaleGeneration(s.stale, s.id);
+
+    expect(await submit(s)).toBe(false);
+
+    const resume = vi.fn(async () => {});
+    const res = await postSelection(
+      new NextRequest("http://localhost/api/generations/gen-1/selection", {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `ownerToken=${TOKEN}` },
+        body: JSON.stringify({ punchIds: ["p1"] }),
+      }),
+      s.id,
+      { repo: s.t.generations.repo, resumeSelection: resume, now: s.stale.now },
+    );
+    expect(res.status).toBe(409);
+    expect(resume).not.toHaveBeenCalled();
+    expect(s.row()?.status).toBe("failed");
+  });
+
+  it("гонка: человек нажал «выбрать» прямо перед сторожем, строка живая, заказ цел", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.t.generations.addCandidates(s.id, [{ punchId: "p1", text: "a" }]);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    const realFail = s.t.generations.repo.failStale.getMockImplementation();
+    s.t.generations.repo.failStale.mockImplementationOnce(async (input) => {
+      await submit(s);
+      return realFail ? realFail(input) : [];
+    });
+    expect(await closeStaleGeneration(s.stale, s.id)).toBe(false);
+    expect(s.row()?.status).toBe("awaiting_selection");
+    expect(s.t.orders.orders[0]?.status).toBe("free");
+    expect(await effectiveReleases(s.t.orders.repo.release)).toBe(0);
+  });
+
+  it("гонка параллельно: побеждает ровно один, освобождение не двойное", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.t.generations.addCandidates(s.id, [{ punchId: "p1", text: "a" }]);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    const [closed, taken] = await Promise.all([closeStaleGeneration(s.stale, s.id), submit(s)]);
+    expect(closed).not.toBe(taken);
+    expect(s.row()?.status).toBe(closed ? "failed" : "awaiting_selection");
+    expect(await effectiveReleases(s.t.orders.repo.release)).toBe(closed ? 1 : 0);
+  });
+});
+
+describe("строка лога Cron", () => {
+  it("закрытая брошенная генерация попадает в stuckClosed/stuckReleased, не в awaitingOver24h", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
+    const sweep = await sweepStaleGenerations(s.stale);
+    const none = { deleted: 0, truncated: false, error: null };
+    const line = retentionLogLine({
+      stuck: {
+        closed: sweep.closed,
+        released: sweep.released,
+        waiting: sweep.waiting,
+        truncated: sweep.truncated,
+        error: null,
+      },
+      traces: none,
+      snapshots: none,
+      raw: none,
+      avatars: { ...none, cleared: 0 },
+    });
+    expect(line).toContain("stuckClosed=1 stuckReleased=1 awaitingOver24h=0");
   });
 });
 
@@ -296,12 +475,25 @@ describe("GET /api/generations/:id закрывает зависшую", () => {
     expect(s.t.orders.orders[0]?.status).toBe("free");
   });
 
-  it("ожидание выбора человеком не закрывается GET-ом", async () => {
+  it("ожидание выбора: до 3 суток GET не закрывает, после закрывает как failed/internal", async () => {
     const s = await setup();
     s.put("awaiting_selection", NOW, false);
-    s.clock.at = at(30 * 24 * 60 * 60_000);
+    s.clock.at = at(WAITING_SELECTION_STALE_MS - 1000);
+    expect((await status(s)).json.status).toBe("awaiting_selection");
+    expect(s.t.orders.orders[0]?.status).toBe("free");
+
+    s.clock.at = at(WAITING_SELECTION_STALE_MS + 1);
     const { json } = await status(s);
-    expect(json.status).toBe("awaiting_selection");
+    expect(GenerationStatus.parse(json)).toMatchObject({ status: "failed", errorCode: "internal" });
+    expect(s.t.orders.orders[0]?.status).toBe("voided");
+  });
+
+  it("ожидающая строка младше 51 мин: GET не шлёт UPDATE", async () => {
+    const s = await setup();
+    s.put("awaiting_selection", NOW, false);
+    s.clock.at = at(STALE_AFTER_MS.afterSelection - 1000);
+    await status(s);
+    expect(s.t.generations.repo.failStale).not.toHaveBeenCalled();
   });
 
   it("сбой закрытия не ломает ответ: отдаём строку как есть", async () => {
@@ -361,7 +553,7 @@ describe("подметание пачкой", () => {
     });
   });
 
-  it("считает awaiting_selection старше 24 ч, но не закрывает и не освобождает", async () => {
+  it("считает awaiting_selection старше 24 ч (моложе 3 суток), но не закрывает и не освобождает", async () => {
     const s = await setup();
     s.put("awaiting_selection", NOW, false);
     s.clock.at = at(WAITING_REPORT_AFTER_MS - 1);
@@ -416,10 +608,14 @@ describe("SQL закрытия", () => {
     expect(text).toContain("RETURNING id");
   });
 
-  it("awaiting_selection закрывается только с принятым выбором; ready и failed в условии нет", () => {
-    expect(text).toContain(
-      "status = 'awaiting_selection' AND step_timings #> '{awaiting_selection,finishedAt}' IS NOT NULL",
-    );
+  it("awaiting_selection: ветки «выбор принят» и «не принят», каждая в обоих местах; ready и failed нет", () => {
+    const branch = (nullness: string) =>
+      new RegExp(
+        `status = 'awaiting_selection' AND step_timings #> '\\{awaiting_selection,finishedAt\\}' IS ${nullness} AND updated_at <`,
+        "g",
+      );
+    expect(text.match(branch("NOT NULL"))).toHaveLength(2);
+    expect(text.match(branch("NULL"))).toHaveLength(2);
     expect(text).not.toMatch(/status = 'ready'/);
     expect(text).not.toMatch(/status = 'failed' AND/);
   });
@@ -430,5 +626,9 @@ describe("SQL закрытия", () => {
     );
     expect(withId.params).toContain("g-1");
     expect(withId.params).toContain(staleCutoffs(NOW).writing.toISOString());
+    // Границы разные: короткая для принятого выбора, 3 суток для брошенного.
+    expect(withId.params).toContain(staleCutoffs(NOW).afterSelection.toISOString());
+    expect(withId.params).toContain(staleCutoffs(NOW).waitingSelection.toISOString());
+    expect(staleCutoffs(NOW).waitingSelection.getTime()).toBe(NOW.getTime() - 3 * 24 * 60 * 60_000);
   });
 });

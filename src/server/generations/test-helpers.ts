@@ -38,9 +38,9 @@ function isStale(row: StoredGeneration, c: StaleCutoffs): boolean {
     case "drawing":
       return t < c.afterSelection.getTime();
     case "awaiting_selection":
-      return (
-        Boolean(row.stepTimings.awaiting_selection?.finishedAt) && t < c.afterSelection.getTime()
-      );
+      return Boolean(row.stepTimings.awaiting_selection?.finishedAt)
+        ? t < c.afterSelection.getTime()
+        : t < c.waitingSelection.getTime();
     default:
       return false;
   }
@@ -97,7 +97,7 @@ export function makeGenerationRepo(now: Date) {
       rows.set(id, { ...row, status: input.to, stepTimings: timings, updatedAt: input.now });
       return true;
     }),
-    /** Повторяет `failStaleSql`: рабочий статус + старая `updatedAt`; выбор принят — для awaiting_selection. */
+    /** Повторяет `failStaleSql`: рабочий статус + старая `updatedAt`; у awaiting_selection порог зависит от принятого выбора. */
     failStale: vi.fn<GenerationRepository["failStale"]>(async (input) => {
       const closed: string[] = [];
       const sorted = [...rows.values()].sort(
