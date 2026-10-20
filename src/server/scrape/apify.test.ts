@@ -6,14 +6,14 @@ afterEach(() => vi.unstubAllEnvs());
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 201 });
 
 describe("createApifyFetcher", () => {
-  it("POST на run-sync с таймаутом актора 40 с, токен в заголовке, не в URL", async () => {
+  it("POST на run-sync с таймаутом актора 100 с, токен в заголовке, не в URL", async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => ok([{ username: "a" }]));
     const result = await createApifyFetcher({ token: "tok_test", fetchImpl })("test.user");
 
     expect(result).toEqual([{ username: "a" }]);
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
     expect(String(url)).toBe(
-      "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=40",
+      "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=100",
     );
     expect(String(url)).not.toContain("tok_test");
     expect(init?.method).toBe("POST");

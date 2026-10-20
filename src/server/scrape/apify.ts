@@ -12,13 +12,17 @@ export class ScrapeTransportError extends Error {
 }
 
 export const APIFY_ACTOR = "apify~instagram-profile-scraper";
-/** Таймаут актора, секунды (параметр `timeout`). */
-export const ACTOR_TIMEOUT_SECONDS = 40;
-/** Жёсткий обрыв запроса у нас: актору 40 с и небольшой запас на сеть. */
+/**
+ * Таймаут актора, секунды (параметр `timeout`). 40 с оказалось мало: Instagram блокирует
+ * `web_profile_info`, актор уходит в ретраи с новыми сессиями и не укладывается (#115) —
+ * отсюда 100 с с запасом в диапазоне 90–120 с, предложенном в issue.
+ */
+export const ACTOR_TIMEOUT_SECONDS = 100;
+/** Жёсткий обрыв запроса у нас: актору 100 с и небольшой запас на сеть. */
 const ABORT_AFTER_MS = (ACTOR_TIMEOUT_SECONDS + 3) * 1000;
 
 /**
- * Apify run-sync на таймаут актора (у нас 40 с) отвечает 400, а не 408:
+ * Apify run-sync на таймаут актора отвечает 400, а не 408:
  * `{ error: { type: "run-failed", message: "… status: TIMED-OUT." } }`.
  * Тело читаем клоном ответа — исходный `response` остаётся непрочитанным для вызывающего.
  */
