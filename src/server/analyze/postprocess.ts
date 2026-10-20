@@ -227,7 +227,9 @@ export function buildPersona(draft: LlmDossier, ctx: PostprocessContext) {
     username: ctx.snapshot.username,
     displayName: clean(ctx.snapshot.fullName, 100) || ctx.snapshot.username,
     language: /^[a-z]{2}$/.test(language) ? language : (ctx.facts.language.code ?? "ru"),
-    summary: clean(claims.slice(0, 3).join(" ") || humorAngles[0] || "", SUMMARY_CAP) || "профиль без развёрнутого досье",
+    summary:
+      clean(claims.slice(0, 3).join(" ") || humorAngles[0] || "", SUMMARY_CAP) ||
+      "профиль без развёрнутого досье",
     vibe: clean(claims[1] ?? claims[0] ?? humorAngles[0] ?? "", LINE_CAP) || "обычный профиль",
     traits: synthesizeTraits(claims, humorAngles),
     interests: [],

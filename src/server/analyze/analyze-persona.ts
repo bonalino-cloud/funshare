@@ -48,7 +48,9 @@ export type AnalyzeDeps = {
 
 export type AnalyzeStepDeps = AnalyzeDeps & { personas: PersonaRepository };
 
-async function fetchAvatarBytes(url: string): Promise<{ data: Uint8Array; mediaType: string } | null> {
+async function fetchAvatarBytes(
+  url: string,
+): Promise<{ data: Uint8Array; mediaType: string } | null> {
   const downloaded = await downloadCover(url);
   if (!downloaded) return null;
   try {

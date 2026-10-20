@@ -177,9 +177,7 @@ describe("analyzePersona: пост-обработка ответа", () => {
 
   it("чистит текст модели: угловые скобки, управляющие символы, дубли, лимиты", async () => {
     const dossier = makeDossier({
-      observations: [
-        makeObservation({ claim: "Тест <b>жирный</b>\u0000", evidence: ["post:0"] }),
-      ],
+      observations: [makeObservation({ claim: "Тест <b>жирный</b>\u0000", evidence: ["post:0"] })],
       warmFacts: Array.from({ length: 8 }, (_, i) => `факт ${i}`),
       language: "RU",
     });
@@ -385,8 +383,16 @@ describe("analyzePersona: промпт и недоверенные данные"
     // уходили в блок данных целиком (ProfileFacts хранит там `likes`), это легко бы увидеть.
     // MIN_POSTS (scrape-profile.ts) требует не меньше 6 постов.
     const profile = makeSnapshot([
-      makePost({ caption: "Топ пост", likesCount: 50_000, imageUrl: "https://cdn.example.com/a.jpg" }),
-      makePost({ caption: "Худший пост", likesCount: 1, imageUrl: "https://cdn.example.com/b.jpg" }),
+      makePost({
+        caption: "Топ пост",
+        likesCount: 50_000,
+        imageUrl: "https://cdn.example.com/a.jpg",
+      }),
+      makePost({
+        caption: "Худший пост",
+        likesCount: 1,
+        imageUrl: "https://cdn.example.com/b.jpg",
+      }),
       makePost({ caption: "Третий" }),
       makePost({ caption: "Четвёртый" }),
       makePost({ caption: "Пятый" }),
