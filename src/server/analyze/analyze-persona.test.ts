@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PersonaProfile } from "@/contracts";
-import { makePost } from "../facts/fixtures";
+import { makePost, makeSnapshot } from "../facts/fixtures";
 import { ANALYZE_PROMPT_VERSION as PROMPT_VERSION } from "../prompts/active";
 import { analyzePersona, analyzeStep, MAX_ATTEMPTS } from "./analyze-persona";
 import { pickCovers } from "./covers";
@@ -56,6 +56,24 @@ describe("analyzePersona: успех", () => {
     expect(persona.traits.length).toBeGreaterThanOrEqual(3);
     expect(persona.interests).toEqual([]);
     expect(persona.habits).toEqual([]);
+  });
+
+  it("summary/vibe/traits не цитируют запретную тему, даже если safe=true у модели (ревью issue #102)", async () => {
+    const dossier = makeDossier({
+      avoidTopics: ["развод"],
+      humorAngles: ["кофе"],
+      observations: [
+        makeObservation({ claim: "Развод родителей виден по старым фото", evidence: ["post:0"] }),
+        makeObservation({ claim: "Кофе в каждой второй сторис", evidence: ["post:1"] }),
+      ],
+    });
+    const { deps } = makeDeps([dossier]);
+    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    const forbidden = forbiddenTopics(persona);
+    expect(forbidden).toContain("развод");
+    for (const text of [persona.summary, persona.vibe, ...persona.traits]) {
+      expect(text.toLowerCase()).not.toContain("развод");
+    }
   });
 
   it("мало наблюдений и пустые humorAngles — traits всё равно добираются до 3", async () => {
@@ -363,12 +381,25 @@ describe("analyzePersona: промпт и недоверенные данные"
   });
 
   it("хэштеги, локации и счётчик лайков не уходят модели (issue #102)", async () => {
+    // Профиль с заметной разницей лайков между постами: если бы `rhythm.topPost`/`worstPost`
+    // уходили в блок данных целиком (ProfileFacts хранит там `likes`), это легко бы увидеть.
+    // MIN_POSTS (scrape-profile.ts) требует не меньше 6 постов.
+    const profile = makeSnapshot([
+      makePost({ caption: "Топ пост", likesCount: 50_000, imageUrl: "https://cdn.example.com/a.jpg" }),
+      makePost({ caption: "Худший пост", likesCount: 1, imageUrl: "https://cdn.example.com/b.jpg" }),
+      makePost({ caption: "Третий" }),
+      makePost({ caption: "Четвёртый" }),
+      makePost({ caption: "Пятый" }),
+      makePost({ caption: "Шестой" }),
+    ]);
     const { deps, generate } = makeDeps();
-    ok(await analyzePersona(makeProfile(), deps));
+    ok(await analyzePersona(profile, deps));
     const user = textOf(generate.mock.calls[0]![0]);
     expect(user).not.toContain('"hashtags"');
     expect(user).not.toContain('"locations"');
     expect(user).not.toContain("avgLikes");
+    expect(user).not.toContain("50000");
+    expect(user).not.toMatch(/"likes"\s*:/);
   });
 
   it("причина ретрая в промпте очищена от угловых скобок", async () => {

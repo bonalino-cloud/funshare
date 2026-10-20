@@ -91,6 +91,9 @@ function formatDate(iso: string): string {
  */
 function profileDataBlock(input: AnalyzePromptInput): string {
   const { facts, displayName, postCount } = input;
+  // `rhythm.topPost`/`worstPost` в ProfileFacts несут `likes` (facts/schema.ts): крючкам число
+  // лайков не нужно и явно в списке исключений issue #102, поэтому отсюда берём только ссылку
+  // на пост и дату — не весь объект.
   const computed = {
     postsAnalyzed: facts.postsAnalyzed,
     stats: {
@@ -102,7 +105,14 @@ function profileDataBlock(input: AnalyzePromptInput): string {
       noCaptionShare: facts.stats.noCaptionShare,
     },
     repeats: { words: facts.repeats.words },
-    rhythm: facts.rhythm,
+    rhythm: {
+      longestGapDays: facts.rhythm.longestGapDays,
+      burstDays: facts.rhythm.burstDays,
+      maxPostsInDay: facts.rhythm.maxPostsInDay,
+      daysSinceLastPost: facts.rhythm.daysSinceLastPost,
+      topPost: facts.rhythm.topPost && { index: facts.rhythm.topPost.index },
+      worstPost: facts.rhythm.worstPost && { index: facts.rhythm.worstPost.index },
+    },
     language: facts.language,
   };
   const captions =

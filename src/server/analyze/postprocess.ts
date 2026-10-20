@@ -3,6 +3,7 @@ import { ObservationEvidence, PersonaProfile } from "@/contracts";
 import type { ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted, sanitizeText } from "../facts/text";
 import type { Cover } from "./covers";
+import { forbiddenTopics, overlapsForbidden } from "./forbidden";
 import type { LlmDossier } from "./schema";
 
 // Всё, что код делает с ответом модели ДО строгого `PersonaProfile.parse` (инвариант 9):
@@ -140,14 +141,30 @@ function validEvidence(
 
 /**
  * `summary`/`vibe`/`traits` обязательны в `PersonaProfile`, но модель их больше не отдаёт
- * (issue #102 — только крючки). `write` их не читает (`roast/v3.ts` строит контекст из
- * `observations`), так что заглушки здесь — только чтобы пройти контракт, не для качества шутки.
+ * (issue #102 — только крючки). `write` строит шутки из `<hooks>` (`persona.observations`),
+ * а эти поля читает лишь как вторичный контекст (`roast/v2.ts`), поэтому заглушки здесь — чтобы
+ * пройти контракт и не отдать writer-у пустоту, не для качества шутки.
  */
 function synthesizeTraits(claims: readonly string[], humorAngles: readonly string[]): string[] {
   const filler = ["ведёт профиль", "что-то постит", "как и все здесь"];
   const source = claims.length > 0 ? claims : humorAngles.length > 0 ? humorAngles : filler;
   const padded = source.length >= TRAITS_MIN ? source : [...source, ...filler];
   return cleanList(padded, 10, 60);
+}
+
+/**
+ * Наблюдения, которые можно отдать в `summary`/`vibe`/`traits`: тот же фильтр, что `write` считает
+ * допустимым крючком (`safe` уже отфильтрован в `buildObservations`, здесь — пересечение с
+ * `avoidTopics ∪ sensitiveEvents`). Без этого фильтра строка досье могла бы процитировать
+ * наблюдение, которое `hooks.ts` отсеял бы как крючок (issue #102, ревью от 2026-10-20).
+ */
+function safeClaims(
+  observations: readonly { claim: string }[],
+  avoidTopics: readonly string[],
+  sensitiveEvents: readonly string[],
+): string[] {
+  const forbidden = forbiddenTopics({ avoidTopics, sensitiveEvents });
+  return observations.map((o) => o.claim).filter((claim) => !overlapsForbidden(claim, forbidden));
 }
 
 function buildObservations(draft: LlmDossier["observations"], ctx: PostprocessContext) {
@@ -200,24 +217,28 @@ export function buildPersona(draft: LlmDossier, ctx: PostprocessContext) {
   const { observations, stats } = buildObservations(draft.observations, ctx);
   const language = draft.language.trim().toLowerCase();
   const humorAngles = cleanList(draft.humorAngles, 10);
-  const claims = observations.map((o) => o.claim);
+  const avoidTopics = cleanList(draft.avoidTopics, 10);
+  const sensitiveEvents = cleanList(draft.sensitiveEvents, 10);
+  // Те же претенденты, что мог бы выбрать `write` как крючок (без запретных тем): нечего писателю
+  // показывать через summary/vibe то, что ему же нельзя показывать через <hooks>.
+  const claims = safeClaims(observations, avoidTopics, sensitiveEvents);
 
   const candidate = {
     username: ctx.snapshot.username,
     displayName: clean(ctx.snapshot.fullName, 100) || ctx.snapshot.username,
     language: /^[a-z]{2}$/.test(language) ? language : (ctx.facts.language.code ?? "ru"),
     summary: clean(claims.slice(0, 3).join(" ") || humorAngles[0] || "", SUMMARY_CAP) || "профиль без развёрнутого досье",
-    vibe: clean(claims[0] || humorAngles[0] || "", LINE_CAP) || "обычный профиль",
+    vibe: clean(claims[1] ?? claims[0] ?? humorAngles[0] ?? "", LINE_CAP) || "обычный профиль",
     traits: synthesizeTraits(claims, humorAngles),
     interests: [],
     habits: [],
     aesthetics: "",
     humorAngles,
-    avoidTopics: cleanList(draft.avoidTopics, 10),
+    avoidTopics,
     look: null,
     observations,
     warmFacts: cleanList(draft.warmFacts, 5),
-    sensitiveEvents: cleanList(draft.sensitiveEvents, 10),
+    sensitiveEvents,
     flags: {
       isPrivate: ctx.snapshot.isPrivate,
       likelyMinor: draft.flags.likelyMinor,

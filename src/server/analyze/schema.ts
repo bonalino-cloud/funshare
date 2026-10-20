@@ -9,10 +9,11 @@ import { z } from "zod";
 // summary, vibe, traits, interests, habits, aesthetics, look) модель отдаёт только крючки —
 // наблюдения с опорой — и то, что нужно гардрейлам и безопасным темам. `summary`/`vibe`/`traits`/
 // `interests`/`habits`/`aesthetics`/`look`/`signatureMoves` требует `PersonaProfile` (кроме
-// `look`/`signatureMoves`, они опциональны), но их не читает ни `write` (`roast/v2.ts` их не
-// использует вовсе), ни `judge` — `postprocess.ts` синтезирует их из наблюдений, а не просит у
-// модели. Откат на `analyze/v1` или `analyze/v2` (`prompts/active.ts`) требует вернуть и эту
-// схему, и `postprocess.ts`: формы входа/выхода версий здесь разошлись.
+// `look`/`signatureMoves`, они опциональны); `judge` их не читает, а `write` (`roast/v2.ts`)
+// держит `summary`/`vibe`/`signatureMoves` как вторичный контекст рядом с основными крючками
+// (`<hooks>`) — `postprocess.ts` синтезирует их из тех же наблюдений, а не просит у модели.
+// Откат на `analyze/v1` или `analyze/v2` (`prompts/active.ts`) требует вернуть и эту схему, и
+// `postprocess.ts`: формы входа/выхода версий здесь разошлись.
 
 const Strings = z.array(z.string());
 
