@@ -18,6 +18,13 @@ function deps(over: Partial<RetentionDeps["db"]> = {}): RetentionDeps {
     del: vi.fn(async () => {}),
   };
   return {
+    stuck: vi.fn(async () => ({
+      closed: 0,
+      released: 0,
+      releaseFailures: 0,
+      waiting: 0,
+      truncated: false,
+    })),
     db: {
       deleteTraces: vi.fn(async () => 2),
       deleteSnapshots: vi.fn(async () => 1),
@@ -80,7 +87,9 @@ describe("ответ", () => {
     const body = await res.json();
     expect(body).toMatchObject({ ok: true, traces: { deleted: 2 }, snapshots: { deleted: 1 } });
     expect(log).toHaveBeenCalledTimes(1);
-    expect(log.mock.calls[0]?.[0]).toMatch(/^\[retention\] traces=2 snapshots=1 /);
+    expect(log.mock.calls[0]?.[0]).toMatch(
+      /^\[retention\] stuckClosed=0 stuckReleased=0 awaitingOver24h=0 traces=2 snapshots=1 /,
+    );
   });
 
   it("частичный сбой: 500 с числами, остальные шаги выполнены", async () => {

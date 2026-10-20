@@ -35,9 +35,13 @@ export function defaultDeps(): GenerationsHandlerDeps {
   };
 }
 
-/** Для GET нужна только строка генерации. */
-export function defaultReadDeps(): Pick<GenerationsHandlerDeps, "repo"> {
-  return { repo: createGenerationRepository() };
+/** Для GET: строка генерации; заказы и часы нужны, чтобы закрыть зависшую (`stale.ts`). */
+export function defaultReadDeps(): Pick<GenerationsHandlerDeps, "repo" | "orders" | "now"> {
+  return {
+    repo: createGenerationRepository(),
+    orders: createOrderRepository(),
+    now: () => new Date(),
+  };
 }
 
 /** Для выбора шуток: строка генерации, кандидаты, пробуждение workflow. */

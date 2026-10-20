@@ -1,3 +1,4 @@
+import type { StaleSweep } from "../generations/stale";
 import {
   AVATAR_PREFIX,
   BLOB_DELETE_BATCH,
@@ -36,6 +37,8 @@ export type RetentionDb = {
 
 export type RetentionDeps = {
   db: RetentionDb;
+  /** Сторож зависших генераций (`generations/stale.ts`): закрыть, освободить заказы, посчитать. */
+  stuck: (now: Date) => Promise<StaleSweep>;
   /** Функции, чтобы нехватка токена одного хранилища роняла только свой шаг. */
   rawStore: () => RetentionBlobStore;
   avatarStore: () => RetentionBlobStore;
@@ -50,7 +53,19 @@ export type StepResult = {
   error: string | null;
 };
 
+export type StuckStep = {
+  /** Закрыто зависших генераций (`failed/internal`). */
+  closed: number;
+  /** Освобождено заказов (пробы и промокоды вернулись). */
+  released: number;
+  /** Ждут выбор человека дольше суток: только число, закрытия нет (решение за продуктом). */
+  waiting: number;
+  truncated: boolean;
+  error: string | null;
+};
+
 export type RetentionResult = {
+  stuck: StuckStep;
   traces: StepResult;
   snapshots: StepResult;
   raw: StepResult;
@@ -75,9 +90,25 @@ function emptyStep(): StepResult {
 }
 
 export function hasFailure(result: RetentionResult): boolean {
-  return [result.traces, result.snapshots, result.raw, result.avatars].some(
+  return [result.stuck, result.traces, result.snapshots, result.raw, result.avatars].some(
     (step) => step.error !== null,
   );
+}
+
+/** Сбой освобождения заказа = красный прогон (заказ завис в `free`), но остальное сделано. */
+async function sweepStuck(deps: RetentionDeps): Promise<StuckStep> {
+  try {
+    const sweep = await deps.stuck(deps.now());
+    return {
+      closed: sweep.closed,
+      released: sweep.released,
+      waiting: sweep.waiting,
+      truncated: sweep.truncated,
+      error: sweep.releaseFailures > 0 ? "OrderReleaseFailed" : null,
+    };
+  } catch (error) {
+    return { closed: 0, released: 0, waiting: 0, truncated: false, error: safeErrorName(error) };
+  }
 }
 
 type Clock = { now: () => Date; deadline: number };
@@ -159,6 +190,8 @@ export async function runRetention(deps: RetentionDeps): Promise<RetentionResult
   const cutoff = retentionCutoff(startedAt);
   const clock: Clock = { now: deps.now, deadline: startedAt.getTime() + TIME_BUDGET_MS };
 
+  // Первым: дёшево, и от него зависит то, что видит человек; долгие шаги ниже бюджет не съедят.
+  const stuck = await sweepStuck(deps);
   const traces = await drainDb(deps.db.deleteTraces, cutoff, clock);
   const snapshots = await drainDb(deps.db.deleteSnapshots, cutoff, clock);
 
@@ -202,7 +235,7 @@ export async function runRetention(deps: RetentionDeps): Promise<RetentionResult
   }
 
   if (headCutShort) avatars.truncated = true;
-  return { traces, snapshots, raw, avatars: { ...avatars, cleared } };
+  return { stuck, traces, snapshots, raw, avatars: { ...avatars, cleared } };
 }
 
 /** Одна строка лога: только числа и имена ошибок, без ников, URL, ключей и текстов. */
@@ -211,6 +244,9 @@ export function retentionLogLine(result: RetentionResult): string {
     `${name}=${step.deleted}${step.truncated ? "+" : ""}${step.error ? `(${step.error})` : ""}`;
   return [
     "[retention]",
+    `stuckClosed=${result.stuck.closed}${result.stuck.truncated ? "+" : ""}${result.stuck.error ? `(${result.stuck.error})` : ""}`,
+    `stuckReleased=${result.stuck.released}`,
+    `awaitingOver24h=${result.stuck.waiting}`,
     part("traces", result.traces),
     part("snapshots", result.snapshots),
     part("raw", result.raw),

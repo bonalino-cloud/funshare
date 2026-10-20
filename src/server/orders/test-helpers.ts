@@ -51,7 +51,11 @@ type Redemption = {
  * Репозиторий в памяти. Повторяет решения SQL (WHERE списания, уникальность пробы, идемпотентный
  * release), но не доказывает атомарность: она держится на одной SQL-команде (см. sql.test.ts).
  */
-export function makeRepo(promos: Record<string, PromoRow> = {}) {
+export function makeRepo(
+  promos: Record<string, PromoRow> = {},
+  /** Генерация закрыта (`failed`)? Нужна только для `listOrphanOrderIds`. */
+  isGenerationFailed: (generationId: string) => boolean = () => false,
+) {
   const codes = new Map(Object.entries(promos));
   const orders: Order[] = [];
   const redemptions: Redemption[] = [];
@@ -129,6 +133,12 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       }
       return true;
     }),
+    listOrphanOrderIds: vi.fn<OrderRepository["listOrphanOrderIds"]>(async (limit) =>
+      orders
+        .filter((o) => ["free", "created"].includes(o.status) && isGenerationFailed(o.generationId))
+        .slice(0, limit)
+        .map((o) => o.id),
+    ),
     orderIdFor: vi.fn<OrderRepository["orderIdFor"]>(
       async (generationId) => orders.find((o) => o.generationId === generationId)?.id ?? null,
     ),
