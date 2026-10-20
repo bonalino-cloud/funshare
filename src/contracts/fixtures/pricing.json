@@ -2,7 +2,7 @@
   "tiers": [
     {
       "tier": 1,
-      "listAmount": 0,
+      "listAmount": 9900,
       "currency": "RUB",
       "candidateCount": 10,
       "selectCount": 6,
