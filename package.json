@@ -18,7 +18,8 @@
     "jokes:ingest": "tsx --env-file-if-exists=.env.local scripts/jokes/ingest.ts",
     "jokes:review:export": "tsx --env-file-if-exists=.env.local scripts/jokes/review-export.ts",
     "jokes:review:import": "tsx --env-file-if-exists=.env.local scripts/jokes/review-import.ts",
-    "roast:try": "tsx --env-file-if-exists=.env.local scripts/roast/try-write.ts"
+    "roast:try": "tsx --env-file-if-exists=.env.local scripts/roast/try-write.ts",
+    "comedy:try": "tsx --env-file-if-exists=.env.local scripts/comedy/try.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.71",

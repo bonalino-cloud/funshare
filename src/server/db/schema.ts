@@ -428,7 +428,7 @@ export const punchCandidates = pgTable(
   },
   (t) => [
     uniqueIndex("punch_candidates_generation_punch_idx").on(t.generationId, t.punchId),
-    check("punch_candidates_text_len", sql`char_length(${t.text}) BETWEEN 1 AND 140`),
+    check("punch_candidates_text_len", sql`char_length(${t.text}) BETWEEN 1 AND 200`),
     check(
       "punch_candidates_selection",
       sql`${t.selected} = (${t.selectionPosition} IS NOT NULL) AND (${t.selectionPosition} IS NULL OR ${t.selectionPosition} > 0)`,

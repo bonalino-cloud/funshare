@@ -112,7 +112,8 @@ export function defaultWriteDeps(): WriteDeps {
   };
 }
 
-export type WriteResult = {
+/** Итог шага. `TTrace` — трасса движка: `WriteTrace` у старого писателя, `ComedyTrace` у comedy. */
+export type WriteResult<TTrace = WriteTrace> = {
   /** Сначала перенесённые из Поджога, затем новые по убыванию оценки судьи. */
   candidates: WrittenCandidate[];
   stats: WriteStats;
@@ -122,7 +123,7 @@ export type WriteResult = {
   /** Версия промпта и модель модератора: для `generation_traces` (задача 13). */
   moderator: { promptVersion: string; model: string };
   /** Приватная трасса запуска (`generation_traces`); `null`, если не прошла собственную схему. */
-  trace: WriteTrace | null;
+  trace: TTrace | null;
 };
 
 /** В лог — только счётчики и имя ошибки: ни текста профиля, ни ответа модели, ни ключа. */

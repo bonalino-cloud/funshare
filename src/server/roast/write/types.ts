@@ -1,4 +1,5 @@
 import type { GenerationMode, Level, PersonaProfile, Tier } from "@/contracts";
+import type { Structure } from "../../comedy/schema";
 import type { ProfileFacts } from "../../facts";
 import type { FilterReport } from "../filters";
 import type { JokeLabel } from "../jokes/card";
@@ -57,6 +58,10 @@ export type PunchTrace = {
   promptVersion: string;
   writerModel: string;
   judgeModel: string;
+  /** Comedy-движок (well done): структура шутки (§5 comedy-engine); у старого писателя нет. */
+  structure?: Structure;
+  /** Comedy-движок: id инсайта (`A1`, `B3` …), он же `hookId`; у старого писателя нет. */
+  insightId?: string;
 };
 
 export type WrittenCandidate = {

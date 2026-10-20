@@ -108,8 +108,12 @@ export const GenerationStatus = z
 export type GenerationStatus = z.infer<typeof GenerationStatus>;
 
 /** Одна шутка-кандидат. Внутренние оценки и механики наружу не отдаются. */
-/** Шутка влезает в карточку 9:16 только до 140 знаков: длиннее писатель не отдаёт. */
-export const PUNCH_MAX_CHARS = 140;
+/**
+ * Потолок длины шутки (решение Сергея 2026-10-17, comedy-engine §6): 200 знаков. Карточки выбора
+ * и 9:16 должны вмещать 200 (проверяет FE). Старый писатель rare/medium держит свои 140
+ * (`LEGACY_PUNCH_MAX_CHARS` в `roast/write/config.ts`).
+ */
+export const PUNCH_MAX_CHARS = 200;
 
 export const PunchCandidate = z.object({
   id: z.string().min(1),
