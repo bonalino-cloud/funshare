@@ -1,0 +1,2 @@
+ALTER TABLE "punch_candidates" DROP CONSTRAINT "punch_candidates_text_len";--> statement-breakpoint
+ALTER TABLE "punch_candidates" ADD CONSTRAINT "punch_candidates_text_len" CHECK (char_length("punch_candidates"."text") BETWEEN 1 AND 200);

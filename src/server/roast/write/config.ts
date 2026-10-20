@@ -73,5 +73,11 @@ export function hookCount(level: Level, tier: Tier, available: number): number {
   return Math.min(wanted, available);
 }
 
-/** Потолок длины и язык: контракт `PUNCH_MAX_CHARS` берётся в `candidate.ts`. */
+/**
+ * Потолок длины шутки старого писателя rare/medium. Контракт поднят до 200 (`PUNCH_MAX_CHARS`,
+ * comedy-engine §6), а старый путь держит свои 140: его промпт и поведение не меняются.
+ */
+export const LEGACY_PUNCH_MAX_CHARS = 140;
+
+/** Доля кириллицы среди букв: язык прожарки всегда русский. */
 export const MIN_CYRILLIC_SHARE = 0.6;

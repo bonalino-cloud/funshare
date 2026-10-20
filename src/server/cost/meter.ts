@@ -1,8 +1,19 @@
 import { z } from "zod";
 import { APIFY_PRICE, PRICES_CHECKED_AT, priceForModel } from "./prices";
 
-/** Кто вызвал модель. Один шаг конвейера может звать несколько ролей. */
-export const LlmRole = z.enum(["analyze", "writer", "judge", "moderator"]);
+/** Кто вызвал модель. Один шаг конвейера может звать несколько ролей. `comedy-*` — шаги comedy-движка. */
+export const LlmRole = z.enum([
+  "analyze",
+  "writer",
+  "judge",
+  "moderator",
+  "comedy-profile",
+  "comedy-insights",
+  "comedy-select",
+  "comedy-punch",
+  "comedy-editor",
+  "comedy-moderator",
+]);
 export type LlmRole = z.infer<typeof LlmRole>;
 
 const count = z.number().int().nonnegative();

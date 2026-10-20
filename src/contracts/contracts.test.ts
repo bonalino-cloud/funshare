@@ -9,6 +9,7 @@ import {
   PersonaProfile,
   Pricing,
   ProfileCheckStatus,
+  PUNCH_MAX_CHARS,
   Quote,
   SelectionRequest,
 } from "./index";
@@ -117,14 +118,16 @@ describe("фикстуры проходят схемы", () => {
     expect(Artifact.safeParse(twice).success).toBe(false);
   });
 
-  it("roast: шутка длиннее 140 знаков не проходит", () => {
+  it("roast: шутка длиннее PUNCH_MAX_CHARS (200) не проходит, ровно 200 проходит", () => {
     const [p] = artifactRoast.content.punches;
-    const long = {
+    const withText = (text: string) => ({
       ...artifactRoast,
-      content: { ...artifactRoast.content, punches: [{ ...p, text: "а".repeat(141) }] },
+      content: { ...artifactRoast.content, punches: [{ ...p, text }] },
       punchImages: [],
-    };
-    expect(Artifact.safeParse(long).success).toBe(false);
+    });
+    expect(PUNCH_MAX_CHARS).toBe(200);
+    expect(Artifact.safeParse(withText("а".repeat(PUNCH_MAX_CHARS + 1))).success).toBe(false);
+    expect(Artifact.safeParse(withText("а".repeat(PUNCH_MAX_CHARS))).success).toBe(true);
   });
 
   it("artifact-dossier.json: старый тип артефакта по-прежнему проходит", () => {
