@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Tier } from "@/contracts";
 import { db, schema } from "../db";
 
@@ -80,6 +80,11 @@ export type OrderRepository = {
   createTrialOrder(input: TrialInput): Promise<string | null>;
   /** Освободить заказ. `true` — освободили сейчас; `false` — уже освобождён или не подлежит. */
   release(orderId: string, now: Date): Promise<boolean>;
+  /**
+   * Заказы в `free`/`created`, чья генерация уже `failed`: освобождение не дошло (сбой БД между
+   * `failed` и `release`). Сторож дочищает их через `release`. Не больше `limit`.
+   */
+  listOrphanOrderIds(limit: number): Promise<string[]>;
   /** `id` заказа генерации (на `generationId` уникальный индекс) или `null`. */
   orderIdFor(generationId: string): Promise<string | null>;
 };
@@ -256,6 +261,21 @@ export function createOrderRepository(): OrderRepository {
     async release(orderId, now) {
       const [row] = await rowsOf<{ voided: number }>(releaseSql(orderId, now));
       return Number(row?.voided ?? 0) > 0;
+    },
+
+    async listOrphanOrderIds(limit) {
+      const rows = await db()
+        .select({ id: schema.orders.id })
+        .from(schema.orders)
+        .innerJoin(schema.generations, eq(schema.generations.id, schema.orders.generationId))
+        .where(
+          and(
+            eq(schema.generations.status, "failed"),
+            inArray(schema.orders.status, ["free", "created"]),
+          ),
+        )
+        .limit(limit);
+      return rows.map((r) => r.id);
     },
 
     async orderIdFor(generationId) {

@@ -40,10 +40,17 @@ export function defaultPipelineDeps(): PipelineDeps {
  * POST) не обрабатываем: платных вызовов нет.
  */
 export async function runWrite(deps: PipelineDeps, generationId: string): Promise<boolean> {
-  const started = await deps.repo.advance(generationId, {
+  let started = await deps.repo.advance(generationId, {
     from: ["queued"],
     to: "writing",
     start: ["write"],
+    now: deps.now(),
+  });
+  // Повтор попытки: отметка жизни для сторожа (`stale.ts` меряет порог от `updatedAt`, а без неё
+  // счёт шёл бы от первой попытки). Тайминги не трогаем; закрытую строку (`failed`) не оживляем.
+  started ||= await deps.repo.advance(generationId, {
+    from: ["writing"],
+    to: "writing",
     now: deps.now(),
   });
   const status = started ? "writing" : (await deps.repo.get(generationId))?.status;

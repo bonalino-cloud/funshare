@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { BLOB_MAX_DELETED, DB_BATCH_SIZE, DB_MAX_BATCHES, RETENTION_MS } from "./config";
 import {
+  hasFailure,
   retentionCutoff,
   retentionLogLine,
   runRetention,
@@ -52,14 +53,22 @@ function setup(over: Partial<RetentionDeps> = {}, dbOver: Partial<RetentionDb> =
   };
   const raw = fakeBlobStore([]);
   const avatars = fakeBlobStore([]);
+  const stuck = vi.fn<RetentionDeps["stuck"]>(async () => ({
+    closed: 0,
+    released: 0,
+    releaseFailures: 0,
+    waiting: 0,
+    truncated: false,
+  }));
   const deps: RetentionDeps = {
     db,
+    stuck,
     rawStore: () => raw.store,
     avatarStore: () => avatars.store,
     now: () => NOW,
     ...over,
   };
-  return { deps, db, raw, avatars };
+  return { deps, db, raw, avatars, stuck };
 }
 
 describe("граница срока", () => {
@@ -310,7 +319,7 @@ describe("лог", () => {
     );
     const line = retentionLogLine(result);
     expect(line).toBe(
-      "[retention] traces=4 snapshots=0 raw=0(RawBlobTokenMissing) avatars=0 avatarUrlsCleared=0",
+      "[retention] stuckClosed=0 stuckReleased=0 awaitingOver24h=0 traces=4 snapshots=0 raw=0(RawBlobTokenMissing) avatars=0 avatarUrlsCleared=0",
     );
     expect(line).not.toMatch(/anya|https|TOKEN/);
   });
@@ -340,5 +349,76 @@ describe("лог", () => {
     );
     const result = await runRetention(t.deps);
     expect(retentionLogLine(result)).toContain("traces=0(BlobServiceRateLimited)");
+  });
+});
+
+describe("сторож зависших генераций", () => {
+  it("идёт первым, зовётся с now прогона; числа попадают в результат и в лог", async () => {
+    const order: string[] = [];
+    const t = setup(
+      {},
+      {
+        deleteTraces: vi.fn(async () => {
+          order.push("traces");
+          return 0;
+        }),
+      },
+    );
+    t.stuck.mockImplementation(async () => {
+      order.push("stuck");
+      return { closed: 3, released: 2, releaseFailures: 0, waiting: 5, truncated: true };
+    });
+    const result = await runRetention(t.deps);
+    expect(order).toEqual(["stuck", "traces"]);
+    expect(t.stuck).toHaveBeenCalledWith(NOW);
+    expect(result.stuck).toEqual({
+      closed: 3,
+      released: 2,
+      waiting: 5,
+      truncated: true,
+      error: null,
+    });
+    expect(retentionLogLine(result)).toContain("stuckClosed=3+ stuckReleased=2 awaitingOver24h=5");
+    expect(hasFailure(result)).toBe(false);
+  });
+
+  it("сбой сторожа не отменяет остальные шаги и красит прогон", async () => {
+    const t = setup({}, { deleteTraces: async () => 7 });
+    t.stuck.mockRejectedValue(
+      Object.assign(new Error("db down: anya.travels"), { name: "DbDown" }),
+    );
+    const result = await runRetention(t.deps);
+    expect(result.stuck.error).toBe("DbDown");
+    expect(result.traces.deleted).toBe(7);
+    expect(hasFailure(result)).toBe(true);
+    expect(retentionLogLine(result)).toContain("stuckClosed=0(DbDown)");
+    expect(retentionLogLine(result)).not.toMatch(/anya/);
+  });
+
+  it("сбой другого шага не мешает сторожу", async () => {
+    const t = setup(
+      {},
+      {
+        deleteTraces: async () => {
+          throw new Error("x");
+        },
+      },
+    );
+    await runRetention(t.deps);
+    expect(t.stuck).toHaveBeenCalledTimes(1);
+  });
+
+  it("не освобождённые заказы (releaseFailures) — ошибка шага без имён и id", async () => {
+    const t = setup();
+    t.stuck.mockResolvedValue({
+      closed: 2,
+      released: 1,
+      releaseFailures: 1,
+      waiting: 0,
+      truncated: false,
+    });
+    const result = await runRetention(t.deps);
+    expect(result.stuck.error).toBe("OrderReleaseFailed");
+    expect(hasFailure(result)).toBe(true);
   });
 });

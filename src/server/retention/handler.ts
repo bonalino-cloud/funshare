@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { parseServerEnv } from "../env";
-import { avatarStore, rawStore, retentionDb } from "./adapters";
+import { avatarStore, rawStore, retentionDb, stuckGenerations } from "./adapters";
 import {
   hasFailure,
   retentionLogLine,
@@ -42,6 +42,7 @@ export function isAuthorized(request: Request, source: Record<string, string | u
 
 export const defaultRetentionDeps: RetentionDeps = {
   db: retentionDb,
+  stuck: stuckGenerations,
   rawStore,
   avatarStore,
   now: () => new Date(),

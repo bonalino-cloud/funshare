@@ -29,6 +29,7 @@ import type { ProfileCheckRepository } from "../profile-check/repository";
 import type { RateLimiter } from "../ratelimit";
 import type { PromoGuard } from "../ratelimit/promo";
 import type { GenerationRepository } from "./repository";
+import { closeStaleGeneration, maybeStale } from "./stale";
 
 export type GenerationsHandlerDeps = {
   repo: GenerationRepository;
@@ -308,18 +309,33 @@ function ownerHashOf(request: NextRequest): { ownerTokenHash: string } | Respons
  * GET /api/generations/:id — только владелец. Чужой, несуществующий и «без cookie» id — одинаковый
  * 404. Ответ строго через `GenerationStatus`: `errorCode` только при failed, `artifactSlug` только
  * при ready.
+ *
+ * Зависшая генерация (рабочий статус давно не двигался, `stale.ts`) закрывается здесь же, как
+ * зависшая проверка профиля: человек получает `failed/internal`, заказ освобождается. Сбой закрытия
+ * ответ не ломает: отдаём строку как есть, сторож Cron доделает.
  */
 export async function getGeneration(
   request: NextRequest,
   id: string,
-  deps: Pick<GenerationsHandlerDeps, "repo">,
+  deps: Pick<GenerationsHandlerDeps, "repo" | "orders" | "now">,
 ): Promise<Response> {
   const owner = ownerHashOf(request);
   if (owner instanceof Response) return owner;
 
   try {
-    const row = await deps.repo.get(id);
+    let row = await deps.repo.get(id);
     if (!row || !sameHash(row.ownerTokenHash, owner.ownerTokenHash)) return notFound();
+
+    if (maybeStale(row, deps.now())) {
+      try {
+        if (await closeStaleGeneration(deps, id)) {
+          console.error("[generations] генерация зависла, закрыта как internal");
+          row = (await deps.repo.get(id)) ?? row;
+        }
+      } catch (error) {
+        console.error(`[generations] зависшая не закрыта: ${errorName(error)}`);
+      }
+    }
 
     const candidate = {
       id: row.id,

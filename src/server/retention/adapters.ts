@@ -2,8 +2,11 @@ import { BlobNotFoundError, del, head, list } from "@vercel/blob";
 import { inArray, lt, sql } from "drizzle-orm";
 import { db, schema } from "../db";
 import { parseServerEnv } from "../env";
+import { createGenerationRepository } from "../generations/repository";
+import { sweepStaleGenerations } from "../generations/stale";
+import { createOrderRepository } from "../orders";
 import { rawBlobToken } from "../scrape/blob";
-import type { RetentionBlobStore, RetentionDb } from "./run";
+import type { RetentionBlobStore, RetentionDb, RetentionDeps } from "./run";
 
 const { artifacts, generationTraces, profileChecks, profileSnapshots } = schema;
 
@@ -104,3 +107,11 @@ export function avatarStore(): RetentionBlobStore {
   }
   return blobStore(token);
 }
+
+/** Сторож зависших генераций на боевых репозиториях (лениво на каждый вызов). */
+export const stuckGenerations: RetentionDeps["stuck"] = (now) =>
+  sweepStaleGenerations({
+    repo: createGenerationRepository(),
+    orders: createOrderRepository(),
+    now: () => now,
+  });
