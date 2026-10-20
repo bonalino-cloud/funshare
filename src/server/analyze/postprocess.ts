@@ -2,7 +2,8 @@ import type { ProfileSnapshot } from "@/contracts";
 import { ObservationEvidence, PersonaProfile } from "@/contracts";
 import type { ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted, sanitizeText } from "../facts/text";
-import { httpUrl, type Cover } from "./covers";
+import type { Cover } from "./covers";
+import { forbiddenTopics, overlapsForbidden } from "./forbidden";
 import type { LlmDossier } from "./schema";
 
 // Всё, что код делает с ответом модели ДО строгого `PersonaProfile.parse` (инвариант 9):
@@ -13,9 +14,8 @@ const OBSERVATIONS_MAX = 14;
 const EVIDENCE_MAX = 10;
 const LINE_CAP = 200;
 const SUMMARY_CAP = 500;
-const LOOK_CAP = 600;
-const LOOK_REFERENCES_MAX = 4;
-const LOOK_PICKS_MAX = 3;
+/** Нижняя граница контракта (`traits.min(3)`): наблюдений может не хватить, добираем заглушками. */
+const TRAITS_MIN = 3;
 
 /** Счётчики вычеркнутого: идут в лог (метрика качества промпта), текста там нет. */
 export type DropStats = {
@@ -139,26 +139,32 @@ function validEvidence(
   return out;
 }
 
-function buildLook(draft: LlmDossier["look"], ctx: PostprocessContext) {
-  if (!draft) return null;
-  const description = clean(draft.description, LOOK_CAP);
-  if (description === "") return null;
-  const byIndex = new Map(ctx.covers.map((c) => [c.index, c.url]));
-  const urls: string[] = [];
-  const avatar = httpUrl(ctx.snapshot.avatarUrl);
-  if (avatar) urls.push(avatar);
-  let picks = 0;
-  for (const index of draft.referenceIndexes) {
-    const url = byIndex.get(index);
-    if (url && !urls.includes(url) && picks < LOOK_PICKS_MAX) {
-      urls.push(url);
-      picks += 1;
-    }
-  }
-  // Аватар модели не показывается: описание опирается только на присланные обложки. Ни одна не
-  // выбрана (или обложек не было) — описание выдумано по тексту, рисовать по нему героя нельзя.
-  if (picks === 0) return null;
-  return { description, referenceImageUrls: urls.slice(0, LOOK_REFERENCES_MAX) };
+/**
+ * `summary`/`vibe`/`traits` обязательны в `PersonaProfile`, но модель их больше не отдаёт
+ * (issue #102 — только крючки). `write` строит шутки из `<hooks>` (`persona.observations`),
+ * а эти поля читает лишь как вторичный контекст (`roast/v2.ts`), поэтому заглушки здесь — чтобы
+ * пройти контракт и не отдать writer-у пустоту, не для качества шутки.
+ */
+function synthesizeTraits(claims: readonly string[], humorAngles: readonly string[]): string[] {
+  const filler = ["ведёт профиль", "что-то постит", "как и все здесь"];
+  const source = claims.length > 0 ? claims : humorAngles.length > 0 ? humorAngles : filler;
+  const padded = source.length >= TRAITS_MIN ? source : [...source, ...filler];
+  return cleanList(padded, 10, 60);
+}
+
+/**
+ * Наблюдения, которые можно отдать в `summary`/`vibe`/`traits`: тот же фильтр, что `write` считает
+ * допустимым крючком (`safe` уже отфильтрован в `buildObservations`, здесь — пересечение с
+ * `avoidTopics ∪ sensitiveEvents`). Без этого фильтра строка досье могла бы процитировать
+ * наблюдение, которое `hooks.ts` отсеял бы как крючок (issue #102, ревью от 2026-10-20).
+ */
+function safeClaims(
+  observations: readonly { claim: string }[],
+  avoidTopics: string[],
+  sensitiveEvents: string[],
+): string[] {
+  const forbidden = forbiddenTopics({ avoidTopics, sensitiveEvents });
+  return observations.map((o) => o.claim).filter((claim) => !overlapsForbidden(claim, forbidden));
 }
 
 function buildObservations(draft: LlmDossier["observations"], ctx: PostprocessContext) {
@@ -210,24 +216,31 @@ function buildObservations(draft: LlmDossier["observations"], ctx: PostprocessCo
 export function buildPersona(draft: LlmDossier, ctx: PostprocessContext) {
   const { observations, stats } = buildObservations(draft.observations, ctx);
   const language = draft.language.trim().toLowerCase();
+  const humorAngles = cleanList(draft.humorAngles, 10);
+  const avoidTopics = cleanList(draft.avoidTopics, 10);
+  const sensitiveEvents = cleanList(draft.sensitiveEvents, 10);
+  // Те же претенденты, что мог бы выбрать `write` как крючок (без запретных тем): нечего писателю
+  // показывать через summary/vibe то, что ему же нельзя показывать через <hooks>.
+  const claims = safeClaims(observations, avoidTopics, sensitiveEvents);
 
   const candidate = {
     username: ctx.snapshot.username,
     displayName: clean(ctx.snapshot.fullName, 100) || ctx.snapshot.username,
     language: /^[a-z]{2}$/.test(language) ? language : (ctx.facts.language.code ?? "ru"),
-    summary: clean(draft.summary, SUMMARY_CAP),
-    vibe: clean(draft.vibe, LINE_CAP),
-    traits: cleanList(draft.traits, 10, 60),
-    interests: cleanList(draft.interests, 10, 80),
-    habits: cleanList(draft.habits, 10),
-    aesthetics: clean(draft.aesthetics, LINE_CAP),
-    humorAngles: cleanList(draft.humorAngles, 10),
-    avoidTopics: cleanList(draft.avoidTopics, 10),
-    look: buildLook(draft.look, ctx),
+    summary:
+      clean(claims.slice(0, 3).join(" ") || humorAngles[0] || "", SUMMARY_CAP) ||
+      "профиль без развёрнутого досье",
+    vibe: clean(claims[1] ?? claims[0] ?? humorAngles[0] ?? "", LINE_CAP) || "обычный профиль",
+    traits: synthesizeTraits(claims, humorAngles),
+    interests: [],
+    habits: [],
+    aesthetics: "",
+    humorAngles,
+    avoidTopics,
+    look: null,
     observations,
     warmFacts: cleanList(draft.warmFacts, 5),
-    signatureMoves: cleanList(draft.signatureMoves, 10),
-    sensitiveEvents: cleanList(draft.sensitiveEvents, 10),
+    sensitiveEvents,
     flags: {
       isPrivate: ctx.snapshot.isPrivate,
       likelyMinor: draft.flags.likelyMinor,

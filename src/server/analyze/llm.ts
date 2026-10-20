@@ -19,8 +19,11 @@ export const ANALYZE_MODEL = "claude-sonnet-5-5";
 const ANALYZE_PROVIDER_OPTIONS = { anthropic: { thinking: { type: "between_tools" } } };
 /** Таймаут одной попытки (вместе с ретраем SDK): от него считается худший случай досье. */
 export const ANALYZE_TIMEOUT_MS = 90_000;
-// Полное досье по верхним лимитам контракта на кириллице — до ~7k токенов; обрезанный JSON
-// = NoObjectGeneratedError и три одинаковых провала подряд.
+// Полный лимит оставлен как есть: обрезанный JSON = NoObjectGeneratedError и три одинаковых
+// провала подряд, а запас дешевле повторного ретрая. Сам ответ меньше потолка: до issue #102
+// полное досье по верхним лимитам контракта на кириллице доходило до ~7k токенов, схема крючков
+// (analyze/schema.ts) меньше на порядок — из output ушли summary/vibe/traits/interests/habits/
+// aesthetics/look, самые объёмные поля старого контракта.
 const MAX_OUTPUT_TOKENS = 8_192;
 
 /** Ответ модели не прошёл схему: можно повторить, сообщив причину. Сырого ответа здесь нет. */

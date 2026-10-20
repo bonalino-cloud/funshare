@@ -1,7 +1,9 @@
 import type { Level, PersonaProfile, Tier } from "@/contracts";
-import { forbiddenTopics } from "../../analyze/forbidden";
+import { forbiddenTopics, overlapsForbidden } from "../../analyze/forbidden";
 import { hookCount } from "./config";
 import type { Hook, HookKind } from "./types";
+
+export { overlapsForbidden };
 
 // Выбор крючков (roast-engine §5.2): чистый код. Из `observations` берём `safe`, не пересекающиеся
 // с `avoidTopics ∪ sensitiveEvents`, по убыванию `recognizability`; среди них хотя бы один
@@ -20,28 +22,6 @@ export function classifyKind(evidence: readonly string[]): HookKind {
 /** Цифра есть в опорах-фактах («=47») или прямо в формулировке («40 сторис»). */
 export function hasNumber(claim: string, evidence: readonly string[]): boolean {
   return /\d/.test(claim) || evidence.some((e) => NUMERIC_FACT.test(e));
-}
-
-const WORD = /[\p{L}\p{N}]+/gu;
-const STEM = 5;
-
-/**
- * Пересекается ли наблюдение с запретной темой. Намеренно грубо и в сторону осторожности:
- * подстрока темы целиком или совпадение основы (первые 5 букв) любого слова длиннее трёх букв.
- * Потерять крючок дешевле, чем пошутить про потерю близкого.
- */
-export function overlapsForbidden(claim: string, topics: readonly string[]): boolean {
-  const text = claim.toLowerCase();
-  const claimStems = new Set((text.match(WORD) ?? []).map((w) => w.slice(0, STEM)));
-  for (const topic of topics) {
-    const t = topic.toLowerCase().trim();
-    if (t === "") continue;
-    if (text.includes(t)) return true;
-    for (const w of t.match(WORD) ?? []) {
-      if (w.length > 3 && claimStems.has(w.slice(0, STEM))) return true;
-    }
-  }
-  return false;
 }
 
 /** Все подходящие под правила наблюдения, лучшие первыми (при равенстве порядок досье). */

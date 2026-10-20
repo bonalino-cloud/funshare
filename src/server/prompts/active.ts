@@ -1,4 +1,4 @@
-import * as analyze from "./analyze/v2";
+import * as analyze from "./analyze/v3";
 import * as roast from "./roast/v2";
 import * as moderator from "./roast/moderator-v2";
 
@@ -17,7 +17,9 @@ import * as moderator from "./roast/moderator-v2";
 // импорта выше. После отката `taste/v1` отдаёт откатные тексты, а снимок в `taste/packs.test.ts`
 // надо обновить сознательно (`vitest -u`). `analyze` вне пакета вкуса и читается отсюда как раньше.
 //
-// Типы промптов структурно одинаковы у всех версий роли: v2 не меняет форму входа и выхода.
+// Типы промптов структурно одинаковы у всех версий роли, КРОМЕ analyze/v3 (issue #102): досье
+// стало списком крючков, вход и выход не совпадают с v1/v2 (комментарий в analyze/v3.ts и
+// analyze/schema.ts). Откат на v1/v2 — не одна строка здесь, а ещё и возврат схемы с postprocess.ts.
 
 // Досье (`analyze`).
 export const {
