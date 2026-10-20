@@ -61,6 +61,8 @@ export type StaleCutoffs = {
   writing: Date;
   /** `drawing` и `awaiting_selection` с уже принятым выбором (workflow должен был идти дальше). */
   afterSelection: Date;
+  /** `awaiting_selection` БЕЗ принятого выбора: человек так и не вернулся (решение Дениса 20.10). */
+  waitingSelection: Date;
 };
 
 export type FailStale = {
@@ -101,7 +103,8 @@ export type GenerationRepository = {
    * ВСЁ ЕЩЁ в рабочем статусе и ВСЁ ЕЩЁ старая (проверка на самой строке под блокировкой, гонка с
    * шагом, который только что сдвинул статус, закрывать не даёт). Возвращает id закрытых СЕЙЧАС;
    * повтор и второй сторож параллельно получат пустой список. Заказ освобождает вызывающий.
-   * `awaiting_selection` без принятого выбора (ждём человека) не закрывается никогда.
+   * `awaiting_selection` без принятого выбора (ждём человека) закрывается по своему, длинному порогу
+   * (`cutoffs.waitingSelection`, 3 суток); с принятым выбором — по `afterSelection`.
    */
   failStale(input: FailStale): Promise<string[]>;
   /** Сколько генераций ждут выбор человека (выбор не принят) с `updatedAt` раньше `olderThan`. */
@@ -154,7 +157,11 @@ export function submitSelectionSql(input: SelectionInput) {
 
 /**
  * Условие «зависла». Принятый выбор = закрытый тайминг `awaiting_selection` (тот же «замок», что в
- * `submitSelectionSql`); без него `awaiting_selection` — это ожидание человека, не зависание.
+ * `submitSelectionSql`). С ним `awaiting_selection` — зависший `draw`/`assemble` (короткий порог);
+ * без него это ожидание человека, и его закрывает только долгий порог (3 суток без движения).
+ * Гонка с приёмом выбора: обе команды берут блокировку строки, проигравшая перечитывает условие —
+ * принятый выбор двигает `updated_at` и ставит `finishedAt` (строка уже не «ждёт»), закрытая строка
+ * не `awaiting_selection` (выбор не пройдёт). Побеждает ровно один.
  * Статусы перечислены явно: `ready` и `failed` под условие не попадают никогда.
  */
 export function staleCondition(c: StaleCutoffs) {
@@ -164,6 +171,7 @@ export function staleCondition(c: StaleCutoffs) {
     OR (status = 'writing' AND updated_at < ${at(c.writing)})
     OR (status = 'drawing' AND updated_at < ${at(c.afterSelection)})
     OR (status = 'awaiting_selection' AND step_timings #> '{awaiting_selection,finishedAt}' IS NOT NULL AND updated_at < ${at(c.afterSelection)})
+    OR (status = 'awaiting_selection' AND step_timings #> '{awaiting_selection,finishedAt}' IS NULL AND updated_at < ${at(c.waitingSelection)})
   )`;
 }
 
