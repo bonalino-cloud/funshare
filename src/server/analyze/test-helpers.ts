@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import type { ProfileSnapshot } from "@/contracts";
 import { at, makePost, makeSnapshot } from "../facts/fixtures";
-import type { AnalyzeDeps, AnalyzeStepDeps } from "./analyze-persona";
+import type { AnalyzeDeps, AnalyzeStepDeps, FetchAvatarFn } from "./analyze-persona";
 import type { FetchCoversFn } from "./cover-fetch";
 import type { GenerateFn } from "./llm";
 import type { PersonaRepository, PersonaRow } from "./repository";
@@ -83,19 +83,12 @@ export function makeObservation(over: Partial<LlmDossier["observations"][number]
   };
 }
 
-/** Валидный ответ модели: 8 наблюдений с разными claim и опорой. */
+/** Валидный ответ модели: 8 наблюдений с разными claim и опорой (issue #102 — только крючки). */
 export function makeDossier(over: Partial<LlmDossier> = {}): LlmDossier {
   return {
     language: "ru",
-    summary: "Путешественница, которая снимает закаты и кофе.",
-    vibe: "тёплая, самоироничная",
-    traits: ["любопытная", "организованная", "сентиментальная"],
-    interests: ["путешествия", "кофе"],
-    habits: ["закат в каждой подписи"],
-    aesthetics: "тёплые тона",
     humorAngles: ["закаты", "аэропорты"],
     avoidTopics: ["болезни"],
-    look: { description: "тёмные волосы до плеч, очки", referenceIndexes: [1, 3] },
     observations: Array.from({ length: 8 }, (_, i) =>
       makeObservation({ claim: `Наблюдение номер ${i + 1}`, evidence: [`post:${i}`] }),
     ),
@@ -104,7 +97,6 @@ export function makeDossier(over: Partial<LlmDossier> = {}): LlmDossier {
       "Умеет смеяться над собой",
       "Верна своим привычкам",
     ],
-    signatureMoves: ["закат в каждой подписи"],
     sensitiveEvents: [],
     flags: { likelyMinor: false, insufficientData: false },
     ...over,
@@ -131,8 +123,10 @@ export function makeDeps(responses: unknown[] | GenerateFn = [makeDossier()]) {
       mediaType: "image/jpeg" as const,
     })),
   );
-  const deps: AnalyzeDeps = { generate, fetchCovers, model: "test-model" };
-  return { deps, generate, fetchCovers };
+  // По умолчанию аватар «не скачался»: большинство тестов обложек это не касается.
+  const fetchAvatar = vi.fn<FetchAvatarFn>(async () => null);
+  const deps: AnalyzeDeps = { generate, fetchCovers, fetchAvatar, model: "test-model" };
+  return { deps, generate, fetchCovers, fetchAvatar };
 }
 
 /** In-memory репозиторий с семантикой upsert по (snapshotId, promptVersion). */
@@ -152,10 +146,10 @@ export function makeStepDeps(
   responses?: unknown[] | GenerateFn,
   initial?: Record<string, PersonaRow>,
 ) {
-  const { deps, generate, fetchCovers } = makeDeps(responses);
+  const { deps, generate, fetchCovers, fetchAvatar } = makeDeps(responses);
   const repo = makeRepo(initial);
   const stepDeps: AnalyzeStepDeps = { ...deps, personas: repo.personas };
-  return { deps: stepDeps, generate, fetchCovers, ...repo };
+  return { deps: stepDeps, generate, fetchCovers, fetchAvatar, ...repo };
 }
 
 /** Все текстовые части вызова `generate` одной строкой. */

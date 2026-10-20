@@ -9,11 +9,11 @@
 ```
 цикл_активен: да
 план_фаз: plans/phase-1-text-mvp.md
-текущая_фаза: be/p1-prices-verify
-статус_фазы: генерация
-текущий_шаг_карусели: 0
-промт_следующей_фазы: сессия «Продукт» (plans/две-сессии.md). be/p1-prices-verify — сверить цены Apify и Anthropic в src/server/cost/prices.ts с официальными страницами, verified: true, источник и дата в комментарии. Затем блок админки (roast-engine.md §12): contracts/admin-v1 (ревью Сергея) → be/p1-admin-api (вход, промокоды) → be/p1-admin-generations; затем хвосты: Cron очистки generation_traces 30 дней, сторож зависших writing, server-only после пакета от Сергея. Скрейп (1) и проверка профиля (4) — живой прогон, как только Сергей заведёт переменные Vercel. Юмор (H1–H9, слова про тело, eval-set) — НЕ здесь, это сессия «Юмор», plans/humor-state.md
-открытые_решения: Сергей: ревью invariants.md п.3 (PR #82); Vercel-переменные Сергея (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID) — проверить после входа Дениса в Vercel CLI; оплата в MVP или в фазе 4 — решить Денису до фазы 3; PR #53 (contracts/error-codes) закрыт без слияния 04.10 — коды invalid_request/tier_unavailable не в dev, при возврате следить за номером миграции; stack.md: generateObject → generateText; profile_checks в data.md и retention
+текущая_фаза: be/p3-cost-guard
+статус_фазы: ждёт_принято
+текущий_шаг_карусели: 9
+промт_следующей_фазы: — (BE фазы 3: botid ждёт Сергея, moderation — зона «Юмор», metrics — развилка SQL или /admin)
+открытые_решения: Сергей: ревью #90 и #107, Vercel-переменные #105 (BLOB_RAW_READ_WRITE_TOKEN, HASH_SALT, Upstash во всех окружениях, BotID); FE: текст для 429 rate_limited на старте генерации; оплата в MVP или в фазе 4 — решить Денису; stack.md: generateObject → generateText; profile_checks в data.md и retention; Сергей: CRON_SECRET в Vercel (#112), показать vercel.json; eslint globalIgnores .claude/worktrees/**; Денис: срок жизни awaiting_selection без выбора (не закрывать / закрыть через N суток с возвратом пробы и кода / возврат оплаты с be/p4-billing / напоминание); FE: текст для rate_limited при исчерпанном бюджете Apify (be/p3-cost-guard)
 входящие: —
 обкатка_страницы: нет
 обкатка_чеклист: —

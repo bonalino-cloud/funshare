@@ -6,14 +6,14 @@ afterEach(() => vi.unstubAllEnvs());
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 201 });
 
 describe("createApifyFetcher", () => {
-  it("POST на run-sync с таймаутом актора 40 с, токен в заголовке, не в URL", async () => {
+  it("POST на run-sync с таймаутом актора 100 с, токен в заголовке, не в URL", async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => ok([{ username: "a" }]));
     const result = await createApifyFetcher({ token: "tok_test", fetchImpl })("test.user");
 
     expect(result).toEqual([{ username: "a" }]);
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
     expect(String(url)).toBe(
-      "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=40",
+      "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=100",
     );
     expect(String(url)).not.toContain("tok_test");
     expect(init?.method).toBe("POST");
@@ -30,6 +30,43 @@ describe("createApifyFetcher", () => {
 
   it.each([401, 402, 403, 404])("%i → без ретрая", async (status) => {
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response("x", { status }));
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: false,
+    });
+  });
+
+  it("400 run-failed без TIMED-OUT → без ретрая", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ error: { type: "run-failed", message: "actor crashed" } }), {
+          status: 400,
+        }),
+    );
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: false,
+    });
+  });
+
+  it("400 run-failed с TIMED-OUT (#115, Instagram блокирует actor) → ретраибельная ошибка", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              type: "run-failed",
+              message: "Actor run did not succeed (run ID: abc123): status: TIMED-OUT.",
+            },
+          }),
+          { status: 400 },
+        ),
+    );
+    await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
+      retryable: true,
+    });
+  });
+
+  it("400 без JSON-тела → без ретрая", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response("x", { status: 400 }));
     await expect(createApifyFetcher({ token: "t", fetchImpl })("a")).rejects.toMatchObject({
       retryable: false,
     });

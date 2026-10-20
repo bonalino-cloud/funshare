@@ -9,7 +9,14 @@ import noText from "./fixtures/no-text.json";
 import notFound from "./fixtures/not-found.json";
 import openProfile from "./fixtures/open-profile.json";
 import privateProfile from "./fixtures/private-profile.json";
-import { CACHE_TTL_MS, normalizeUsername, scrapeProfile } from "./scrape-profile";
+import { makePost, makeSnapshot } from "../facts/fixtures";
+import {
+  CACHE_TTL_MS,
+  MIN_POSTS,
+  normalizeUsername,
+  profileRules,
+  scrapeProfile,
+} from "./scrape-profile";
 import { makeDeps, NOW } from "./test-helpers";
 
 beforeEach(() => {
@@ -279,5 +286,32 @@ describe("scrapeProfile: учёт стоимости Apify", () => {
   it("без счётчика поведение прежнее", async () => {
     const { deps } = makeDeps({ fetchRaw: vi.fn(async () => openProfile) });
     expect(await scrapeProfile("test.user", deps)).toMatchObject({ ok: true });
+  });
+});
+
+describe("profileRules", () => {
+  const posts = (n: number, caption = "подпись") =>
+    Array.from({ length: n }, () => makePost({ caption }));
+
+  it("закрытый профиль", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS), { isPrivate: true }))).toBe(
+      "profile_private",
+    );
+  });
+  it("мало постов", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS - 1)))).toBe("not_enough_data");
+  });
+  it("нет текста вообще", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS, "  ")))).toBe("not_enough_data");
+  });
+  it("текст только в био", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS, ""), { biography: "привет" }))).toBeNull();
+  });
+  it("явный hasText перекрывает сырой текст (факты после чистки пусты)", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS)), false)).toBe("not_enough_data");
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS, "")), true)).toBeNull();
+  });
+  it("нормальный профиль проходит", () => {
+    expect(profileRules(makeSnapshot(posts(MIN_POSTS)))).toBeNull();
   });
 });

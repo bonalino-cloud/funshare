@@ -7,7 +7,8 @@ import {
   type ErrorCode,
 } from "@/contracts";
 import { hashValue, isOwnerToken, newOwnerToken, sameHash } from "../hash";
-import type { RateLimiter } from "../ratelimit";
+import type { ApifyBudget } from "../cost/budget";
+import { RateLimitUnavailableError, type RateLimiter } from "../ratelimit";
 import {
   HINTS,
   OWNER_COOKIE,
@@ -22,6 +23,8 @@ import { runProfileCheck, safeAvatarUrl, type PipelineDeps } from "./run";
 export type HandlerDeps = {
   repo: ProfileCheckRepository;
   limiter: RateLimiter;
+  /** Дневной потолок трат на Apify: проверяется до создания платной проверки. */
+  budget: Pick<ApifyBudget, "hasRoom">;
   /** Запуск фона после ответа: в маршруте это `after` из next/server. */
   schedule: (task: () => Promise<void>) => void;
   pipeline: Omit<PipelineDeps, "repo" | "now">;
@@ -165,10 +168,18 @@ export async function createProfileCheck(
         checkedAt: cached.checkedAt,
       });
     } else {
+      // Платная ветка (скрейп). Кэш результата выше бесплатен и от бюджета не зависит.
+      // Потолок исчерпан → строку `checking` не создаём, Apify не зовём.
+      if (!(await deps.budget.hasRoom())) return errorResponse(429, "rate_limited");
       id = await deps.repo.insert({ ...base, status: "checking", hint: HINTS.scrape });
       started = true;
     }
   } catch (error) {
+    if (error instanceof RateLimitUnavailableError) {
+      // Счётчик бюджета недоступен: платить вслепую нельзя, закрыто (как у лимитера).
+      console.error(`[profile-check] бюджет недоступен: ${error.name}`);
+      return errorResponse(503, "internal");
+    }
     console.error(`[profile-check] БД недоступна: ${error instanceof Error ? error.name : ""}`);
     return errorResponse(500, "internal");
   }

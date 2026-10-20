@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/components/cx";
+import { PRIVATE_INPUT } from "@/lib/client/analytics";
 
 /**
  * Главное поле сервиса — ссылка на Instagram. paper, ink-обводка, radius.s, offset-тень.
@@ -39,6 +40,8 @@ export function LinkInput({
           autoCorrect="off"
           spellCheck={false}
           className={cx(
+            // Ник и «волшебное слово» в запись сессий не идут
+            PRIVATE_INPUT,
             "w-full bg-transparent font-semibold outline-none placeholder:text-ink/40",
             tall ? "text-[17px]" : "type-body",
           )}

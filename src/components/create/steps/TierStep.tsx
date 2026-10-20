@@ -6,6 +6,7 @@ import type { CardTone } from "@/components/ui/Card";
 import ogon from "@/components/roast/assets/level-ogon.png";
 import koster from "@/components/roast/assets/level-koster.png";
 import peklo from "@/components/roast/assets/level-peklo.png";
+import { track } from "@/lib/client/analytics";
 import { api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { errorLine } from "../errors";
@@ -62,6 +63,7 @@ export function TierStep({ go }: { draft: CreateDraft; go: (step: CreateStep) =>
   }, [attempt]);
 
   const pick = (tier: Tier) => {
+    track("tier_selected", { tier });
     patchDraft({ tier });
     go("level");
   };

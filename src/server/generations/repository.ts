@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, count, eq, inArray, lt, ne, sql } from "drizzle-orm";
 import type {
   ArtifactKind,
   ErrorCode,
@@ -52,6 +52,26 @@ export type Advance = {
   now: Date;
 };
 
+/**
+ * Границы «зависла» по статусам: строка в статусе, у которой `updatedAt` строго раньше границы.
+ * Откуда числа — `stale.ts`.
+ */
+export type StaleCutoffs = {
+  queued: Date;
+  writing: Date;
+  /** `drawing` и `awaiting_selection` с уже принятым выбором (workflow должен был идти дальше). */
+  afterSelection: Date;
+};
+
+export type FailStale = {
+  cutoffs: StaleCutoffs;
+  now: Date;
+  /** Потолок строк за вызов. */
+  limit: number;
+  /** Только эта генерация (ленивое закрытие в GET); без него — подметание пачкой. */
+  id?: string;
+};
+
 /** Кандидат для `GET …/candidates`. Оценки и трасса сюда не попадают (инвариант 20). */
 export type CandidateRow = { punchId: string; emoji: string; text: string; fromTrial: boolean };
 
@@ -76,6 +96,16 @@ export type GenerationRepository = {
    * сейчас; `false` — строки нет или статус уже другой (повтор, `failed`, дальше по конвейеру).
    */
   advance(id: string, input: Advance): Promise<boolean>;
+  /**
+   * Закрыть зависшие генерации одной условной командой: `failed` + `internal`, только если строка
+   * ВСЁ ЕЩЁ в рабочем статусе и ВСЁ ЕЩЁ старая (проверка на самой строке под блокировкой, гонка с
+   * шагом, который только что сдвинул статус, закрывать не даёт). Возвращает id закрытых СЕЙЧАС;
+   * повтор и второй сторож параллельно получат пустой список. Заказ освобождает вызывающий.
+   * `awaiting_selection` без принятого выбора (ждём человека) не закрывается никогда.
+   */
+  failStale(input: FailStale): Promise<string[]>;
+  /** Сколько генераций ждут выбор человека (выбор не принят) с `updatedAt` раньше `olderThan`. */
+  countWaitingSelection(olderThan: Date): Promise<number>;
   /** Кандидаты генерации по порядку. */
   listCandidates(generationId: string): Promise<CandidateRow[]>;
   /** `punchId` выбранных шуток в порядке выбора; пусто, пока выбор не принят. */
@@ -120,6 +150,37 @@ export function submitSelectionSql(input: SelectionInput) {
     FROM v, claim
     WHERE c.generation_id = claim.id AND c.punch_id = v.punch_id
     RETURNING c.punch_id`;
+}
+
+/**
+ * Условие «зависла». Принятый выбор = закрытый тайминг `awaiting_selection` (тот же «замок», что в
+ * `submitSelectionSql`); без него `awaiting_selection` — это ожидание человека, не зависание.
+ * Статусы перечислены явно: `ready` и `failed` под условие не попадают никогда.
+ */
+export function staleCondition(c: StaleCutoffs) {
+  const at = (d: Date) => sql`${d.toISOString()}::timestamptz`;
+  return sql`(
+    (status = 'queued' AND updated_at < ${at(c.queued)})
+    OR (status = 'writing' AND updated_at < ${at(c.writing)})
+    OR (status = 'drawing' AND updated_at < ${at(c.afterSelection)})
+    OR (status = 'awaiting_selection' AND step_timings #> '{awaiting_selection,finishedAt}' IS NOT NULL AND updated_at < ${at(c.afterSelection)})
+  )`;
+}
+
+/**
+ * SQL закрытия зависших. Внутренний SELECT берёт кандидатов (самых старых, `SKIP LOCKED`: второй
+ * сторож не ждёт первого), внешний UPDATE повторяет условие на самой строке: если шаг успел сдвинуть
+ * статус или обновить `updated_at`, Postgres перечитает новую версию строки и она не подойдёт.
+ */
+export function failStaleSql(input: FailStale) {
+  const only = input.id === undefined ? sql`` : sql`AND id = ${input.id}`;
+  const stale = staleCondition(input.cutoffs);
+  return sql`
+    UPDATE generations SET status = 'failed', error_code = 'internal', updated_at = ${input.now.toISOString()}::timestamptz
+    WHERE id IN (
+      SELECT id FROM generations WHERE ${stale} ${only} ORDER BY updated_at LIMIT ${input.limit}::int FOR UPDATE SKIP LOCKED
+    ) AND ${stale}
+    RETURNING id`;
 }
 
 /** Новое значение `step_timings`. Имена шагов — константы кода, но значения всё равно параметры. */
@@ -181,6 +242,25 @@ export function createGenerationRepository(): GenerationRepository {
         .where(and(eq(schema.generations.id, id), inArray(schema.generations.status, input.from)))
         .returning({ id: schema.generations.id });
       return rows.length > 0;
+    },
+
+    async failStale(input) {
+      const result = await db().execute(failStaleSql(input));
+      return (result.rows as { id: string }[]).map((r) => r.id);
+    },
+
+    async countWaitingSelection(olderThan) {
+      const [row] = await db()
+        .select({ n: count() })
+        .from(schema.generations)
+        .where(
+          and(
+            eq(schema.generations.status, "awaiting_selection"),
+            sql`${schema.generations.stepTimings} #> '{awaiting_selection,finishedAt}' IS NULL`,
+            lt(schema.generations.updatedAt, olderThan),
+          ),
+        );
+      return Number(row?.n ?? 0);
     },
 
     async listCandidates(generationId) {

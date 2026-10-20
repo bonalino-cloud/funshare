@@ -1,4 +1,4 @@
-import { allWriteSystemPrompts } from "../../prompts/registry";
+import { allComedySystemPrompts, allWriteSystemPrompts } from "../../prompts/registry";
 import { MIN_CANARY_LENGTH, PROMPT_CANARIES, PROMPT_LEAK_CHAIN_WORDS } from "./config";
 import { normalizedWords } from "./normalize";
 
@@ -38,12 +38,13 @@ export function hasCanary(text: string, canaries: readonly string[]): boolean {
 }
 
 /**
- * Все системные промпты шагов `write` ВСЕХ версий (v1 и v2): писатель на всех степенях и
- * режимах, судья, модератор. Список версий ведёт `prompts/registry.ts`: новая версия должна
- * попасть туда, иначе утечку её текста индекс не поймает.
+ * Все системные промпты шага `write` ВСЕХ версий (v1 и v2): писатель на всех степенях и
+ * режимах, судья, модератор, а также шесть промптов comedy-движка (well done). Список версий
+ * ведёт `prompts/registry.ts`: новая версия должна попасть туда, иначе утечку её текста индекс
+ * не поймает. Отсюда же образцы берёт CI-проверка бандла (`scripts/ci/check-bundle-leaks.ts`).
  */
 export function promptSources(): string[] {
-  return allWriteSystemPrompts();
+  return [...allWriteSystemPrompts(), ...allComedySystemPrompts()];
 }
 
 let defaultIndex: LeakIndex | undefined;

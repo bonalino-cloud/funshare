@@ -12,7 +12,7 @@ import { Pricing, TierInfo, type Tier } from "@/contracts";
 export const TIERS: Record<Tier, TierInfo> = {
   1: TierInfo.parse({
     tier: 1,
-    listAmount: 0,
+    listAmount: 9900,
     currency: "RUB",
     candidateCount: 10,
     selectCount: 6,
@@ -50,6 +50,16 @@ export const TIERS: Record<Tier, TierInfo> = {
  */
 export const FREE_TRIAL_PER_DEVICE = 1;
 export const FREE_TRIAL_PER_IP = 3;
+
+/**
+ * Тариф с бесплатной пробой (решение Сергея 06.10, #99): первый Поджог бесплатно, каждый следующий
+ * по обычной цене 99 ₽. Единственная точка истины: «пробный» тариф определяется здесь, а не ценой 0.
+ */
+export const FREE_TRIAL_TIER: Tier = 1;
+
+export function hasFreeTrial(tier: Tier): boolean {
+  return tier === FREE_TRIAL_TIER;
+}
 
 /** Ответ GET /api/pricing. Проходит `Pricing.parse` (инвариант 20). */
 export function buildPricing(freeTrialAvailable: boolean): Pricing {

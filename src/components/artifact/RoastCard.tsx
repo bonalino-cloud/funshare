@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx } from "@/components/cx";
+import { PRIVATE_BLOCK } from "@/lib/client/analytics";
 import {
   cardFontsReady,
   cardLayout,
@@ -50,6 +51,8 @@ export function RoastCard({
   return (
     <figure
       className={cx(
+        // Шутки, ник и картинка в запись сессий не идут
+        PRIVATE_BLOCK,
         "[container-type:inline-size] relative m-0 aspect-[9/16] w-full overflow-hidden",
         className,
       )}

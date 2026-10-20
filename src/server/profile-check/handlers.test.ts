@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileCheckCreated, ProfileCheckStatus } from "@/contracts";
 import { CostMeter } from "../cost";
+import { RateLimitUnavailableError } from "../ratelimit";
 import { RESULT_CACHE_TTL_MS, STALE_AFTER_MS } from "./config";
 import { clientIp, createProfileCheck, getProfileCheck } from "./handlers";
 import {
@@ -90,9 +91,10 @@ describe("POST: успех checking → ok", () => {
     await t.flush();
     const scraped = okScrape();
     expect(t.scrape).toHaveBeenCalledExactlyOnceWith("anya.travels", expect.any(CostMeter));
-    expect(t.analyze).toHaveBeenCalledExactlyOnceWith(
+    // Досье считается в фоне ПОСЛЕ «Нашли!»; ждать чужой замок фон не должен (waitMs = 0).
+    expect(t.ensureDossier).toHaveBeenCalledExactlyOnceWith(
       { snapshotId: "snap-1", snapshot: scraped.ok ? scraped.snapshot : undefined },
-      expect.any(CostMeter),
+      0,
     );
 
     const after = await status(t, id);
@@ -116,29 +118,32 @@ describe("POST: успех checking → ok", () => {
 });
 
 describe("POST: гардрейлы → failed + errorCode", () => {
-  it.each(["profile_not_found", "profile_private", "not_enough_data", "internal"] as const)(
-    "scrape: %s — analyze (платный) не запускается",
-    async (errorCode) => {
-      const t = makeHandlerDeps();
-      t.scrape.mockResolvedValue({ ok: false, errorCode });
-      const id = await create(t);
-      await t.flush();
-      expect(t.analyze).not.toHaveBeenCalled();
-      const { body } = await status(t, id);
-      expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "failed", errorCode });
-      expect(body).not.toHaveProperty("profile");
-    },
-  );
+  it.each([
+    "profile_not_found",
+    "profile_private",
+    "not_enough_data",
+    "rate_limited",
+    "internal",
+  ] as const)("scrape: %s — досье (платное) не запускается", async (errorCode) => {
+    const t = makeHandlerDeps();
+    t.scrape.mockResolvedValue({ ok: false, errorCode });
+    const id = await create(t);
+    await t.flush();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    const { body } = await status(t, id);
+    expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "failed", errorCode });
+    expect(body).not.toHaveProperty("profile");
+  });
 
   it.each(["profile_private", "minor_detected", "not_enough_data", "internal"] as const)(
-    "analyze: %s",
+    "отказ досье в фоне (%s) не переписывает «Нашли!»: проверка остаётся ok",
     async (errorCode) => {
       const t = makeHandlerDeps();
-      t.analyze.mockResolvedValue({ ok: false, errorCode });
+      t.ensureDossier.mockResolvedValue({ ok: false, errorCode });
       const id = await create(t);
       await t.flush();
       const { body } = await status(t, id);
-      expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "failed", errorCode });
+      expect(ProfileCheckStatus.parse(body)).toMatchObject({ status: "ok" });
     },
   );
 
@@ -162,7 +167,7 @@ describe("POST: кэш 24 ч", () => {
     await create(t);
     await t.flush();
     t.scrape.mockClear();
-    t.analyze.mockClear();
+    t.ensureDossier.mockClear();
 
     const second = await create(t, OTHER_TOKEN);
     expect(t.tasks).toHaveLength(0);
@@ -172,7 +177,7 @@ describe("POST: кэш 24 ч", () => {
       profile: EXPECTED_PROFILE,
     });
     expect(t.scrape).not.toHaveBeenCalled();
-    expect(t.analyze).not.toHaveBeenCalled();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
     expect(t.rows.get(second)?.snapshotId).toBe("snap-1");
   });
 
@@ -201,27 +206,34 @@ describe("POST: кэш 24 ч", () => {
     expect(t.rows.get(copy)?.checkedAt).toEqual(sourceAt);
   });
 
-  it("отказ minor_detected кэшируется: повтор не платит модели", async () => {
+  it("кэшированный отказ minor_detected (старые строки) отдаётся сразу, без работы", async () => {
     const t = makeHandlerDeps();
-    t.analyze.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
-    await create(t);
-    await t.flush();
-    t.scrape.mockClear();
-    t.analyze.mockClear();
-
-    const second = await create(t, OTHER_TOKEN);
+    await t.repo.insert({
+      igUsername: "anya.travels",
+      ownerTokenHash: ownerHash(OTHER_TOKEN),
+      ipHash: "i",
+      status: "failed",
+      errorCode: "minor_detected",
+      checkedAt: NOW,
+    });
+    const second = await create(t, TOKEN);
     expect(t.tasks).toHaveLength(0);
-    const { body } = await status(t, second, OTHER_TOKEN);
+    const { body } = await status(t, second, TOKEN);
     expect(ProfileCheckStatus.parse(body)).toMatchObject({
       status: "failed",
       errorCode: "minor_detected",
     });
     expect(t.scrape).not.toHaveBeenCalled();
-    expect(t.analyze).not.toHaveBeenCalled();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
   });
 
-  it("другие отказы и internal не кэшируются: повтор запускает работу заново", async () => {
-    for (const errorCode of ["internal", "profile_private", "not_enough_data"] as const) {
+  it("другие отказы, rate_limited и internal не кэшируются: повтор запускает работу заново", async () => {
+    for (const errorCode of [
+      "internal",
+      "profile_private",
+      "not_enough_data",
+      "rate_limited",
+    ] as const) {
       const t = makeHandlerDeps();
       t.scrape.mockResolvedValueOnce({ ok: false, errorCode });
       await create(t);
@@ -449,5 +461,48 @@ describe("GET: зависшие проверки", () => {
     await t.flush(); // фон «проснулся» после закрытия
     expect(t.rows.get(id)?.status).toBe("failed");
     expect(t.rows.get(id)?.errorCode).toBe("internal");
+  });
+});
+
+describe("POST: дневной потолок Apify", () => {
+  it("потолок исчерпан → 429 rate_limited, строку checking не создаём, фон не запускаем", async () => {
+    const t = makeHandlerDeps();
+    t.hasRoom.mockResolvedValue(false);
+    const res = await createProfileCheck(post(URL_BODY, { token: TOKEN }), t.deps);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ errorCode: "rate_limited" });
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(t.repo.insert).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+  });
+
+  it("результат из кэша отдаём и при исчерпанном бюджете, бюджет даже не спрашиваем", async () => {
+    const t = makeHandlerDeps();
+    await create(t);
+    await t.flush();
+    t.hasRoom.mockClear();
+    t.hasRoom.mockResolvedValue(false);
+    const second = await create(t, OTHER_TOKEN);
+    expect(t.hasRoom).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+    const { body } = await status(t, second, OTHER_TOKEN);
+    expect(ProfileCheckStatus.parse(body).status).toBe("ok");
+  });
+
+  it("счётчик недоступен → 503 internal, строку не создаём", async () => {
+    const t = makeHandlerDeps();
+    t.hasRoom.mockRejectedValue(new RateLimitUnavailableError("Redis"));
+    const res = await createProfileCheck(post(URL_BODY, { token: TOKEN }), t.deps);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ errorCode: "internal" });
+    expect(t.repo.insert).not.toHaveBeenCalled();
+    expect(t.tasks).toHaveLength(0);
+  });
+
+  it("есть место → обычный запуск", async () => {
+    const t = makeHandlerDeps();
+    await create(t);
+    expect(t.hasRoom).toHaveBeenCalledOnce();
+    expect(t.tasks).toHaveLength(1);
   });
 });

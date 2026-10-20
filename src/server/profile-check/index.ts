@@ -1,8 +1,8 @@
-import { analyzeStep, defaultAnalyzeDeps } from "../analyze";
-import { createPersonaRepository } from "../analyze/repository";
+import { getApifyBudget } from "../cost/budget";
+import { defaultEnsureDossier } from "../dossier";
 import { createRateLimiter, type RateLimiter } from "../ratelimit";
 import { defaultScrapeDeps, scrapeProfile } from "../scrape";
-import { createAvatarCopier } from "./avatar";
+import { createAvatarCopier, removePublic } from "./avatar";
 import type { HandlerDeps } from "./handlers";
 import { createProfileCheckRepository } from "./repository";
 
@@ -18,13 +18,14 @@ export function defaultDeps(schedule: HandlerDeps["schedule"]): HandlerDeps {
   return {
     repo: createProfileCheckRepository(),
     limiter,
+    budget: getApifyBudget(),
     schedule,
     pipeline: {
-      // Счётчик трат один на проверку: его создаёт `runProfileCheck` и отдаёт в оба шага.
+      // Счётчик трат проверки (только Apify) создаёт `runProfileCheck`; у досье свой счётчик и своя строка.
       scrape: (username, meter) => scrapeProfile(username, { ...defaultScrapeDeps(), meter }),
-      analyze: (input, meter) =>
-        analyzeStep(input, { ...defaultAnalyzeDeps(meter), personas: createPersonaRepository() }),
+      ensureDossier: defaultEnsureDossier(),
       copyAvatar: avatarCopier,
+      removeAvatar: removePublic,
     },
     now: () => new Date(),
     secureCookie: process.env.NODE_ENV === "production",

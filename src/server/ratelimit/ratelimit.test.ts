@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   composeLimiter,
+  createGenerationLimiter,
   createRateLimiter,
+  GENERATION_LIMITS,
   LIMITS,
   RateLimitUnavailableError,
   type Limit,
@@ -20,6 +22,26 @@ afterEach(() => vi.restoreAllMocks());
 it("лимиты по документу: 5 проверок в час на устройство и IP", () => {
   expect(LIMITS.ownerPerHour).toEqual({ requests: 5, window: "1 h" });
   expect(LIMITS.ipPerHour).toEqual({ requests: 5, window: "1 h" });
+});
+
+it("лимиты старта генерации: устройство 6/ч, IP 10/ч и 40/сутки", () => {
+  expect(GENERATION_LIMITS.ownerPerHour).toEqual({ requests: 6, window: "1 h" });
+  expect(GENERATION_LIMITS.ipPerHour).toEqual({ requests: 10, window: "1 h" });
+  expect(GENERATION_LIMITS.ipPerDay).toEqual({ requests: 40, window: "1 d" });
+});
+
+describe("createGenerationLimiter без Redis", () => {
+  it("dev: пускает", async () => {
+    const limiter = createGenerationLimiter({}, false);
+    expect(await limiter.check({ ipHash: "h", ownerHash: "o" })).toBe(true);
+  });
+
+  it("production: закрыто", async () => {
+    const limiter = createGenerationLimiter({}, true);
+    await expect(limiter.check({ ipHash: "h", ownerHash: "o" })).rejects.toBeInstanceOf(
+      RateLimitUnavailableError,
+    );
+  });
 });
 
 describe("composeLimiter", () => {

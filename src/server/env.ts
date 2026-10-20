@@ -9,6 +9,9 @@ const serverEnvSchema = z.object({
   BLOB_RAW_READ_WRITE_TOKEN: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   APIFY_TOKEN: z.string().min(1).optional(),
+  // Дневной потолок трат на Apify, USD (по умолчанию 5; 0 — Apify выключен). Строкой: опечатка не должна
+  // ронять разбор env у всего бэкенда, значение разбирает `apifyDailyCapMicroUsd` (cost/budget.ts).
+  APIFY_DAILY_BUDGET_USD: z.string().optional(),
   KIE_API_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
@@ -17,6 +20,10 @@ const serverEnvSchema = z.object({
   KV_REST_API_TOKEN: z.string().min(1).optional(),
   // Секрет для хэшей IP и ownerToken (инвариант 6). Без него хэш работает с запасной солью.
   HASH_SALT: z.string().min(16).optional(),
+  // Секрет Vercel Cron: заголовок `Authorization: Bearer <секрет>` на /api/cron/*. Без него маршруты Cron
+  // отвечают 401. Длину (от 16) проверяет маршрут Cron, а не схема: короткий секрет не должен ронять
+  // разбор env у всего бэкенда.
+  CRON_SECRET: z.string().optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 

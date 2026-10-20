@@ -4,6 +4,7 @@ import { makeProfile } from "../analyze/test-helpers";
 import * as active from "./active";
 import { buildAnalyzePrompt as analyzeV1, PROMPT_VERSION as ANALYZE_V1 } from "./analyze/v1";
 import { buildAnalyzePrompt as analyzeV2, PROMPT_VERSION as ANALYZE_V2 } from "./analyze/v2";
+import { PROMPT_VERSION as ANALYZE_V3 } from "./analyze/v3";
 import {
   buildModeratorPrompt as moderatorBuildV2,
   MODERATOR_PROMPT_VERSION as MODERATOR_V2,
@@ -27,8 +28,8 @@ import {
 const levels = ["rare", "medium", "well_done"] as const;
 
 describe("выбор версии: одна точка prompts/active.ts", () => {
-  it("активны v2, v1 остаётся опубликованной", () => {
-    expect(active.ANALYZE_PROMPT_VERSION).toBe("analyze/v2");
+  it("активны analyze/v3 и roast/v2, v1 остаётся опубликованной", () => {
+    expect(active.ANALYZE_PROMPT_VERSION).toBe("analyze/v3");
     expect(active.ROAST_PROMPT_VERSION).toBe("roast/v2");
     expect(active.MODERATOR_PROMPT_VERSION).toBe("roast/moderator-v2");
     expect([ANALYZE_V1, ROAST_V1, MODERATOR_V1]).toEqual([
@@ -36,8 +37,10 @@ describe("выбор версии: одна точка prompts/active.ts", () =>
       "roast/v1",
       "roast/moderator-v1",
     ]);
-    expect([ANALYZE_V2, ROAST_V2, MODERATOR_V2]).toEqual([
-      active.ANALYZE_PROMPT_VERSION,
+    // analyze/v2 остаётся опубликованной (откат), но активная версия — v3 (issue #102).
+    expect(ANALYZE_V2).toBe("analyze/v2");
+    expect(ANALYZE_V3).toBe(active.ANALYZE_PROMPT_VERSION);
+    expect([ROAST_V2, MODERATOR_V2]).toEqual([
       active.ROAST_PROMPT_VERSION,
       active.MODERATOR_PROMPT_VERSION,
     ]);

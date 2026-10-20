@@ -7,6 +7,7 @@ import {
   makeRepo as makeProfileRepo,
   ownerHash,
 } from "../profile-check/test-helpers";
+import type { RateLimiter } from "../ratelimit";
 import type { NewProfileCheck } from "../profile-check/repository";
 import type { StepTimings } from "../db/schema";
 import type { GenerationsHandlerDeps } from "./handlers";
@@ -16,6 +17,7 @@ import type {
   GenerationRepository,
   GenerationRow,
   NewGeneration,
+  StaleCutoffs,
 } from "./repository";
 
 export { NOW, OTHER_TOKEN, TOKEN, ownerHash } from "../profile-check/test-helpers";
@@ -24,6 +26,25 @@ export { makePromo };
 /** Строка в памяти: `GenerationRow` плюс то, что пишет POST и читает шаг `write`. */
 export type StoredGeneration = GenerationRow &
   Omit<NewGeneration, "tier" | "id"> & { ipHash: string; stepTimings: StepTimings };
+
+/** Условие `staleCondition` из SQL на строке в памяти. */
+function isStale(row: StoredGeneration, c: StaleCutoffs): boolean {
+  const t = row.updatedAt.getTime();
+  switch (row.status) {
+    case "queued":
+      return t < c.queued.getTime();
+    case "writing":
+      return t < c.writing.getTime();
+    case "drawing":
+      return t < c.afterSelection.getTime();
+    case "awaiting_selection":
+      return (
+        Boolean(row.stepTimings.awaiting_selection?.finishedAt) && t < c.afterSelection.getTime()
+      );
+    default:
+      return false;
+  }
+}
 
 /** Репозиторий в памяти. `artifacts` — slug по `generationId`, как LEFT JOIN в SQL. */
 export function makeGenerationRepo(now: Date) {
@@ -76,6 +97,30 @@ export function makeGenerationRepo(now: Date) {
       rows.set(id, { ...row, status: input.to, stepTimings: timings, updatedAt: input.now });
       return true;
     }),
+    /** Повторяет `failStaleSql`: рабочий статус + старая `updatedAt`; выбор принят — для awaiting_selection. */
+    failStale: vi.fn<GenerationRepository["failStale"]>(async (input) => {
+      const closed: string[] = [];
+      const sorted = [...rows.values()].sort(
+        (a, b) => a.updatedAt.getTime() - b.updatedAt.getTime(),
+      );
+      for (const row of sorted) {
+        if (closed.length >= input.limit) break;
+        if (input.id !== undefined && row.id !== input.id) continue;
+        if (!isStale(row, input.cutoffs)) continue;
+        rows.set(row.id, { ...row, status: "failed", errorCode: "internal", updatedAt: input.now });
+        closed.push(row.id);
+      }
+      return closed;
+    }),
+    countWaitingSelection: vi.fn<GenerationRepository["countWaitingSelection"]>(
+      async (olderThan) =>
+        [...rows.values()].filter(
+          (r) =>
+            r.status === "awaiting_selection" &&
+            !r.stepTimings.awaiting_selection?.finishedAt &&
+            r.updatedAt.getTime() < olderThan.getTime(),
+        ).length,
+    ),
     listCandidates: vi.fn<GenerationRepository["listCandidates"]>(async (id) =>
       (candidates.get(id) ?? []).map((c) => ({
         punchId: c.punchId,
@@ -190,21 +235,32 @@ export function makeDeps(
   opts: {
     promos?: Parameters<typeof makeOrdersRepo>[0];
     guardAllowed?: boolean;
+    limiterAllowed?: boolean;
     check?: Partial<NewProfileCheck> & { checkedAt?: Date };
   } = {},
   now = new Date("2026-10-03T12:00:00.000Z"),
 ) {
   const generations = makeGenerationRepo(now);
   const profiles = makeProfileRepo();
-  const orders = makeOrdersRepo(opts.promos);
+  const orders = makeOrdersRepo(
+    opts.promos,
+    (generationId) => generations.rows.get(generationId)?.status === "failed",
+  );
   const { guard, enter, fail } = makeGuard(opts.guardAllowed ?? true);
+  const limiterCheck = vi.fn<RateLimiter["check"]>(async () => opts.limiterAllowed ?? true);
   const startWorkflow = vi.fn<GenerationsHandlerDeps["startWorkflow"]>(async () => {});
+  const ensureDossier = vi.fn<GenerationsHandlerDeps["ensureDossier"]>(async () => ({ ok: true }));
+  const onMinor = vi.fn<GenerationsHandlerDeps["onMinor"]>(async () => {});
   let n = 0;
   const deps: GenerationsHandlerDeps = {
     repo: generations.repo,
     profiles: profiles.repo,
     orders: orders.repo,
     guard,
+    limiter: { check: limiterCheck },
+    ensureDossier,
+    onMinor,
+    dossierWaitMs: 1234,
     startWorkflow,
     newId: () => `gen-${++n}`,
     now: () => now,
@@ -225,7 +281,19 @@ export function makeDeps(
       checkedAt: over.checkedAt ?? now,
     });
 
-  return { deps, generations, profiles, orders, enter, fail, startWorkflow, addCheck };
+  return {
+    deps,
+    generations,
+    profiles,
+    orders,
+    enter,
+    fail,
+    limiterCheck,
+    startWorkflow,
+    ensureDossier,
+    onMinor,
+    addCheck,
+  };
 }
 
 export function post(body: unknown, init: { token?: string; ip?: string } = {}) {

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, gte, or } from "drizzle-orm";
+import { and, desc, eq, gte, or, sql } from "drizzle-orm";
 import type { CheckedProfile, ErrorCode, ProfileCheckStatusCode } from "@/contracts";
 import { CostRun, microUsdToCents } from "../cost/meter";
 import { db, schema } from "../db";
@@ -48,6 +48,8 @@ export type ProfileCheckRepository = {
     result: { snapshotId: string; profile: CheckedProfile; checkedAt: Date; cost?: CostRun },
   ): Promise<boolean>;
   fail(id: string, errorCode: ErrorCode, checkedAt: Date, cost?: CostRun): Promise<boolean>;
+  /** Обнулить `avatarUrl` во всех готовых проверках этого ника (копия удалена из Blob). */
+  clearAvatar(igUsername: string): Promise<void>;
 };
 
 const columns = {
@@ -161,6 +163,21 @@ export function createProfileCheckRepository(): ProfileCheckRepository {
         checkedAt,
         ...costColumns(cost),
       }),
+
+    async clearAvatar(igUsername) {
+      await db()
+        .update(schema.profileChecks)
+        .set({
+          profile: sql`jsonb_set(${schema.profileChecks.profile}, '{avatarUrl}', 'null'::jsonb)`,
+        })
+        .where(
+          and(
+            eq(schema.profileChecks.igUsername, igUsername),
+            eq(schema.profileChecks.status, "ok"),
+            sql`${schema.profileChecks.profile} IS NOT NULL`,
+          ),
+        );
+    },
 
     fail: (id, errorCode, checkedAt, cost) =>
       updateChecking(id, {

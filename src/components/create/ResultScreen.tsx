@@ -7,6 +7,7 @@ import { ArtifactCards, cardFile, saveFile } from "@/components/artifact/Artifac
 import { CoBrand } from "@/components/artifact/CoBrand";
 import { cx } from "@/components/cx";
 import { Button } from "@/components/ui/Button";
+import { track } from "@/lib/client/analytics";
 import { api, toErrorCode } from "@/lib/client/api";
 import { roastCards } from "@/lib/client/roast-card";
 import { STORY_HINT, shareToStories } from "@/lib/client/stories";
@@ -79,8 +80,10 @@ export function ResultScreen({ slug }: { slug: string }) {
     setBusy("share");
     try {
       const result = await shareToStories(await fileAt(index), url, saveFile);
+      track("story_share", { place: "result", result });
       if (result !== "cancelled") showHint(STORY_HINT[result]);
     } catch {
+      track("story_share", { place: "result", result: "error" });
       setError("Не получилось подготовить картинку. Попробуй ещё раз");
     } finally {
       setBusy(null);
@@ -88,6 +91,7 @@ export function ResultScreen({ slug }: { slug: string }) {
   }
 
   async function copy() {
+    track("copy_link");
     try {
       await navigator.clipboard.writeText(url);
       show("copied");
@@ -106,6 +110,7 @@ export function ResultScreen({ slug }: { slug: string }) {
         await new Promise((r) => setTimeout(r, 250));
       }
       show("savedAll");
+      track("save_all");
     } catch {
       setError("Не получилось сохранить картинки. Попробуй ещё раз");
     } finally {
@@ -165,7 +170,10 @@ export function ResultScreen({ slug }: { slug: string }) {
             arrow={false}
             className="h-14 w-14 shrink-0 px-0"
             icon={<IconReload className="size-[26px]" strokeWidth={2.75} />}
-            onClick={() => router.push("/create")}
+            onClick={() => {
+              track("again_click", { place: "result" });
+              router.push("/create");
+            }}
             aria-label="Ещё раз"
             title="Ещё раз"
           />

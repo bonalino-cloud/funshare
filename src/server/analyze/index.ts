@@ -7,5 +7,5 @@ export type {
   AnalyzeStepResult,
 } from "./analyze-persona";
 export { forbiddenTopics } from "./forbidden";
-export { ANALYZE_MODEL } from "./llm";
+export { ANALYZE_MODEL, ANALYZE_TIMEOUT_MS } from "./llm";
 export { ANALYZE_PROMPT_VERSION as PROMPT_VERSION } from "../prompts/active";

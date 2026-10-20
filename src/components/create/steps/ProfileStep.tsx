@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ErrorCode, GenerationMode } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
 import { Segmented } from "@/components/ui/Segmented";
 import { Spinner } from "@/components/ui/Spinner";
 import extinguisher from "@/components/roast/assets/sticker-extinguisher.png";
+import { track } from "@/lib/client/analytics";
 import { api, isTransient, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
 import { checkInstagramInput } from "@/lib/client/instagram";
@@ -62,6 +63,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
   const [slow, setSlow] = useState(false);
 
   const [settled, setSettled] = useState(value);
+  const typed = useRef(false);
 
   const input = checkInstagramInput(value);
   const username = input.ok ? input.username : null;
@@ -108,6 +110,7 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
     ).then(
       (result) => {
         if (result.status === "ok" && result.profile) {
+          track("profile_checked", { result: "ok" });
           patchDraft({
             instagramUrl,
             pendingCheck: undefined,
@@ -115,14 +118,18 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
             profile: result.profile,
           });
         } else {
+          const code = result.errorCode ?? "internal";
+          track("profile_checked", { result: code });
           patchDraft({ pendingCheck: undefined });
-          setPhase({ kind: "error", code: result.errorCode ?? "internal" });
+          setPhase({ kind: "error", code });
         }
       },
       (e: unknown) => {
         if (ac.signal.aborted) return;
+        const code = toErrorCode(e);
+        track("profile_checked", { result: code });
         patchDraft({ pendingCheck: undefined });
-        setPhase({ kind: "error", code: toErrorCode(e) });
+        setPhase({ kind: "error", code });
       },
     );
     return () => ac.abort();
@@ -135,13 +142,16 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
     }
     const startedAt = Date.now();
     setPhase({ kind: "starting", startedAt });
+    track("url_submitted", { mode: draft.mode });
     try {
       const { id } = await api.createProfileCheck({ instagramUrl: value });
       // Дальше проверку ведёт поллинг по черновику, в том числе если со шага уже ушли
       patchDraft({ pendingCheck: { id, instagramUrl: value, startedAt } });
       setPhase({ kind: "idle" });
     } catch (e) {
-      setPhase({ kind: "error", code: toErrorCode(e) });
+      const code = toErrorCode(e);
+      track("profile_checked", { result: code });
+      setPhase({ kind: "error", code });
     }
   }
 
@@ -206,6 +216,10 @@ export function ProfileStep({ draft, go }: { draft: CreateDraft; go: (step: Crea
           value={value}
           disabled={checking}
           onChange={(e) => {
+            if (!typed.current) {
+              typed.current = true;
+              track("input_start");
+            }
             setValue(e.target.value);
             if (phase.kind === "error") setPhase({ kind: "idle" });
           }}

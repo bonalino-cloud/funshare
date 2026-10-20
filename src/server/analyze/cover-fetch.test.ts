@@ -257,3 +257,51 @@ describe("createCoverFetcher", () => {
     expect(Date.now() - started).toBeLessThan(500);
   });
 });
+
+describe("ресайз обложек перед моделью", () => {
+  async function png(width: number, height: number, alpha = false) {
+    const { default: sharp } = await import("sharp");
+    return new Uint8Array(
+      await sharp({
+        create: {
+          width,
+          height,
+          channels: alpha ? 4 : 3,
+          background: alpha ? { r: 255, g: 0, b: 0, alpha: 0.5 } : { r: 10, g: 120, b: 200 },
+        },
+      })
+        .png()
+        .toBuffer(),
+    );
+  }
+  const covers = [{ index: 0, url: GOOD }];
+  const serve = (bytes: Uint8Array, type = "image/png"): FetchLike =>
+    vi.fn(async () => reply(bytes, { type }));
+
+  it("длинная сторона уменьшается до 512 px, формат JPEG, пропорции сохранены", async () => {
+    const { default: sharp } = await import("sharp");
+    const original = await png(1080, 720);
+    const [out] = await createCoverFetcher({ fetchImpl: serve(original) })(covers);
+    expect(out?.mediaType).toBe("image/jpeg");
+    const meta = await sharp(out!.data).metadata();
+    expect([meta.width, meta.height]).toEqual([512, 341]);
+    expect(out).toMatchObject({ index: 0, url: GOOD });
+  });
+
+  it("маленькая картинка не увеличивается, прозрачность ложится на белый", async () => {
+    const { default: sharp } = await import("sharp");
+    const [out] = await createCoverFetcher({ fetchImpl: serve(await png(200, 100, true)) })(covers);
+    const meta = await sharp(out!.data).metadata();
+    expect([meta.width, meta.height]).toEqual([200, 100]);
+    expect(meta.hasAlpha).toBe(false);
+  });
+
+  it("ресайз не удался: отдаём оригинал, анализ не падает", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const original = new Uint8Array([...JPEG, 9, 9, 9]);
+    const [out] = await createCoverFetcher({ fetchImpl: serve(original, "image/jpeg") })(covers);
+    expect(out?.mediaType).toBe("image/jpeg");
+    expect(out?.data).toEqual(original);
+    log.mockRestore();
+  });
+});

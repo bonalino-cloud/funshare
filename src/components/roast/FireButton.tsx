@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes } from "react";
 import { cx } from "@/components/cx";
 import { ArrowNE } from "@/components/brand/Doodles";
+import { track, type StartPlace } from "@/lib/client/analytics";
 import { Flames } from "./Flames";
 
 /**
@@ -22,6 +23,7 @@ export function FireButton({
   size = "lg",
   cut,
   href,
+  place,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: "lg" | "sm";
@@ -29,6 +31,8 @@ export function FireButton({
   cut?: string | null;
   /** Со ссылкой кнопка становится <Link>: главный CTA ведёт во флоу создания */
   href?: string;
+  /** Какая это «Прожарить» на лендинге: уходит в событие `start_click` */
+  place?: StartPlace;
 }) {
   const lg = size === "lg";
   const buttonClass = cx(
@@ -69,7 +73,12 @@ export function FireButton({
         )}
       />
       {href ? (
-        <Link href={href} className={buttonClass} {...heatHandlers}>
+        <Link
+          href={href}
+          className={buttonClass}
+          onClick={place && (() => track("start_click", { place }))}
+          {...heatHandlers}
+        >
           {inner}
         </Link>
       ) : (

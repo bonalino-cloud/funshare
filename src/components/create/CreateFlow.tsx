@@ -1,7 +1,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { track } from "@/lib/client/analytics";
 import { useDraft, useHydrated } from "@/lib/client/draft";
 import { CreateShell } from "./CreateShell";
 import {
@@ -45,6 +46,14 @@ export function CreateFlow() {
       window.history.replaceState(null, "", `?step=${step}`);
     }
   }, [hydrated, step, requested]);
+
+  // Шаг открыт: событие на каждую смену шага, после гидрации (до неё черновик ещё пустой)
+  const viewed = useRef<CreateStep | null>(null);
+  useEffect(() => {
+    if (!hydrated || viewed.current === step) return;
+    viewed.current = step;
+    track("step_view", { step });
+  }, [hydrated, step]);
 
   const go = (next: CreateStep) => {
     window.history.pushState(null, "", `?step=${next}`);

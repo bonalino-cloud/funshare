@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Pricing, Quote, TierInfo } from "@/contracts";
-import { buildPricing, TIERS } from "./config";
+import { buildPricing, hasFreeTrial, TIERS } from "./config";
 import { discountFor, quote, TierUnavailableError } from "./quote";
 
 describe("тарифы", () => {
   it("числа из roast-engine §7.1a, цены в копейках", () => {
     expect(TIERS[1]).toMatchObject({
-      listAmount: 0,
+      listAmount: 9900,
       candidateCount: 10,
       selectCount: 6,
       imageCount: 0,
@@ -43,9 +43,38 @@ describe("quote", () => {
     });
   });
 
-  it("Поджог: проба, итог 0, флаг freeTrial", () => {
-    expect(quote(1, null, true)).toMatchObject({ listAmount: 0, finalAmount: 0, freeTrial: true });
-    expect(quote(1, null, false).freeTrial).toBeUndefined();
+  it("Поджог: проба — вся цена скидкой, итог 0, флаг freeTrial", () => {
+    expect(quote(1, null, true)).toMatchObject({
+      listAmount: 9900,
+      discountAmount: 9900,
+      finalAmount: 0,
+      freeTrial: true,
+    });
+  });
+
+  it("Поджог без пробы: обычная цена 99 ₽, без флага", () => {
+    const q = quote(1, null, false);
+    expect(q).toMatchObject({ listAmount: 9900, discountAmount: 0, finalAmount: 9900 });
+    expect(q.freeTrial).toBeUndefined();
+  });
+
+  it("Поджог без пробы + код на 50 %: скидка по коду, как у Кострища", () => {
+    expect(quote(1, { code: "HALF", percentOff: 50 }, false)).toMatchObject({
+      discountAmount: 4950,
+      finalAmount: 4950,
+      promo: { code: "HALF", percentOff: 50 },
+    });
+  });
+
+  it("проба важнее кода: код в расчёт не входит", () => {
+    const q = quote(1, { code: "FREE", percentOff: 50 }, true);
+    expect(q.promo).toBeUndefined();
+    expect(q).toMatchObject({ discountAmount: 9900, finalAmount: 0, freeTrial: true });
+  });
+
+  it("признак пробы живёт в одном месте: только Поджог", () => {
+    expect([1, 2, 3].map((t) => hasFreeTrial(t as 1 | 2 | 3))).toEqual([true, false, false]);
+    expect(quote(2, null, true).freeTrial).toBeUndefined();
   });
 
   it("-50 %: целые копейки, list - discount = final", () => {
@@ -81,10 +110,8 @@ describe("quote", () => {
     expect(discountFor(1, 99)).toBe(0);
   });
 
-  it("код на тарифе с ценой 0 не применяется", () => {
-    const q = quote(1, { code: "FREE", percentOff: 100 }, true);
-    expect(q.promo).toBeUndefined();
-    expect(q.discountAmount).toBe(0);
+  it("код на тарифе с ценой 0 (Пекло) не применяется", () => {
+    expect(() => quote(3, { code: "FREE", percentOff: 100 }, false)).toThrow(TierUnavailableError);
   });
 
   it("Пекло недоступно: ошибка, а не бесплатно", () => {

@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { vi } from "vitest";
 import type { PromoGuard } from "../ratelimit/promo";
-import type { OrderRepository, PromoRow, RedeemInput, TrialInput } from "./repository";
+import {
+  DuplicateOrderError,
+  type OrderRepository,
+  type PromoRow,
+  type RedeemInput,
+  type TrialInput,
+} from "./repository";
 
 export const NOW = new Date("2026-10-03T12:00:00.000Z");
 export const TOKEN = "A".repeat(43);
@@ -45,7 +51,11 @@ type Redemption = {
  * Репозиторий в памяти. Повторяет решения SQL (WHERE списания, уникальность пробы, идемпотентный
  * release), но не доказывает атомарность: она держится на одной SQL-команде (см. sql.test.ts).
  */
-export function makeRepo(promos: Record<string, PromoRow> = {}) {
+export function makeRepo(
+  promos: Record<string, PromoRow> = {},
+  /** Генерация закрыта (`failed`)? Нужна только для `listOrphanOrderIds`. */
+  isGenerationFailed: (generationId: string) => boolean = () => false,
+) {
   const codes = new Map(Object.entries(promos));
   const orders: Order[] = [];
   const redemptions: Redemption[] = [];
@@ -76,7 +86,7 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       const row = codes.get(i.promoCode);
       if (!row || !row.active || row.redeemed >= row.maxRedemptions) return null;
       if (row.percentOff !== i.percentOff || !row.tiers.includes(i.tier)) return null;
-      if (orders.some((o) => o.generationId === i.generationId)) throw new Error("duplicate");
+      if (orders.some((o) => o.generationId === i.generationId)) throw new DuplicateOrderError();
       row.redeemed += 1;
       const id = `order-${++n}`;
       orders.push({
@@ -100,6 +110,7 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       const trials = orders.filter((o) => o.reason === "first_free" && o.status !== "voided");
       if (trials.some((o) => o.owner === i.ownerTokenHash)) return null;
       if (trials.filter((o) => o.ip === i.ipHash).length >= i.maxPerIp) return null;
+      if (orders.some((o) => o.generationId === i.generationId)) throw new DuplicateOrderError();
       const id = `order-${++n}`;
       orders.push({
         id,
@@ -122,6 +133,12 @@ export function makeRepo(promos: Record<string, PromoRow> = {}) {
       }
       return true;
     }),
+    listOrphanOrderIds: vi.fn<OrderRepository["listOrphanOrderIds"]>(async (limit) =>
+      orders
+        .filter((o) => ["free", "created"].includes(o.status) && isGenerationFailed(o.generationId))
+        .slice(0, limit)
+        .map((o) => o.id),
+    ),
     orderIdFor: vi.fn<OrderRepository["orderIdFor"]>(
       async (generationId) => orders.find((o) => o.generationId === generationId)?.id ?? null,
     ),

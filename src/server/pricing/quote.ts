@@ -1,5 +1,5 @@
 import { Quote, type Tier } from "@/contracts";
-import { TIERS } from "./config";
+import { hasFreeTrial, TIERS } from "./config";
 
 export class TierUnavailableError extends Error {
   constructor(tier: Tier) {
@@ -22,14 +22,25 @@ export function discountFor(listAmount: number, percentOff: number): number {
 
 /**
  * Чистый расчёт цены. Недоступный тариф (Пекло) — ошибка, а не «бесплатно».
- * `freeTrial` — человек берёт бесплатную пробу Поджога; флаг имеет смысл только у тарифа с ценой 0.
- * Код на тарифе с ценой 0 не применяется (скидывать нечего, списывать код незачем).
+ * `freeTrial` — человек берёт бесплатную пробу; имеет смысл только у тарифа с пробой (`hasFreeTrial`):
+ * скидка = вся цена, итог 0, код игнорируется (проба важнее кода, код не списываем).
+ * Код на тарифе с ценой 0 (Пекло) не применяется: скидывать нечего.
  */
 export function quote(tier: Tier, promo: PromoDiscount | null, freeTrial: boolean): Quote {
   const info = TIERS[tier];
   if (!info.available) throw new TierUnavailableError(tier);
 
   const listAmount = info.listAmount;
+  if (freeTrial && hasFreeTrial(tier)) {
+    return Quote.parse({
+      tier,
+      listAmount,
+      discountAmount: listAmount,
+      finalAmount: 0,
+      currency: info.currency,
+      freeTrial: true,
+    });
+  }
   const applied = promo !== null && listAmount > 0 ? promo : null;
   if (
     applied &&
@@ -46,6 +57,5 @@ export function quote(tier: Tier, promo: PromoDiscount | null, freeTrial: boolea
     finalAmount: listAmount - discountAmount,
     currency: info.currency,
     ...(applied ? { promo: { code: applied.code, percentOff: applied.percentOff } } : {}),
-    ...(freeTrial && listAmount === 0 ? { freeTrial: true } : {}),
   });
 }

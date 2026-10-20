@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GenerationCreated, GenerationStatus, type GenerationRequest } from "@/contracts";
+import { GENERATION_COMPUTE_WINDOW_MS } from "../dossier";
 import { RESULT_CACHE_TTL_MS } from "../profile-check/config";
 import { createGeneration, getGeneration } from "./handlers";
 import {
@@ -123,11 +124,13 @@ describe("POST: разбор тела", () => {
     expectNothingWritten(t);
   });
 
-  it("недоступный тариф (Пекло) → 400 без заказа", async () => {
+  it("недоступный тариф (Пекло) → 400 без заказа, без лимита и досье", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     const { res } = await send(t, body(checkId, { tier: 3 }));
     expect(res.status).toBe(400);
+    expect(t.limiterCheck).not.toHaveBeenCalled();
+    expect(t.ensureDossier).not.toHaveBeenCalled();
     expectNothingWritten(t);
   });
 });
@@ -207,6 +210,132 @@ describe("POST: проверка профиля и владение", () => {
   });
 });
 
+describe("POST: досье и гардрейл «младше 16» до заказа", () => {
+  it("досье гарантируется по снимку проверки, ожидание задаётся сервером", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(202);
+    expect(t.ensureDossier).toHaveBeenCalledExactlyOnceWith(
+      { snapshotId: "snap-1" },
+      1234,
+      GENERATION_COMPUTE_WINDOW_MS,
+    );
+  });
+
+  it("minor_detected → 409, ни заказа, ни пробы, ни кода; аватар чистится", async () => {
+    const t = makeDeps({ promos: { FUNTEST: makePromo() } });
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    const { res, json } = await send(t, body(checkId, { tier: 2, promoCode: "funtest" }));
+    expect(res.status).toBe(409);
+    expect(json).toEqual({ errorCode: "minor_detected" });
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(0);
+    expect(t.fail).not.toHaveBeenCalled(); // попытка кода не засчитана
+    expect(t.onMinor).toHaveBeenCalledExactlyOnceWith({
+      igUsername: "anya.travels",
+      avatarUrl: "https://abc123.public.blob.vercel-storage.com/avatars/abc",
+    });
+    expectNothingWritten(t);
+  });
+
+  it("Поджог (проба) при minor_detected: проба не расходуется, заказа нет", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "minor_detected" });
+    await send(t, body(checkId));
+    expect(t.orders.repo.redeemAndCreateOrder).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+  });
+
+  it.each(["not_enough_data", "profile_private"] as const)("%s → 409 без заказа", async (code) => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: code });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(409);
+    expect(json).toEqual({ errorCode: code });
+    expect(t.onMinor).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+  });
+
+  it("досье ещё считается и срок вышел (busy) → 503 internal, ничего не создано", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "internal", busy: true });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(503);
+    expect(json).toEqual({ errorCode: "internal" });
+    expectNothingWritten(t);
+  });
+
+  it("снимка нет (Cron убрал) → 410 profile_not_found", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    t.ensureDossier.mockResolvedValue({ ok: false, errorCode: "profile_not_found" });
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(410);
+    expect(json).toEqual({ errorCode: "profile_not_found" });
+    expectNothingWritten(t);
+  });
+
+  it("чужая проверка: досье не трогаем вовсе", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(OTHER_TOKEN);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(404);
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST: лимит стартов", () => {
+  it("исчерпан → 429 rate_limited до досье, промокода и заказа; в лог без ника и IP", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const t = makeDeps({ promos: { FUNTEST: makePromo() }, limiterAllowed: false });
+    const checkId = await t.addCheck(TOKEN);
+    const { res, json } = await send(t, body(checkId, { tier: 2, promoCode: "funtest" }));
+    expect(res.status).toBe(429);
+    expect(json).toEqual({ errorCode: "rate_limited" });
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    expect(t.enter).not.toHaveBeenCalled();
+    expect(t.orders.repo.findPromo).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+    const logged = warn.mock.calls.flat().join(" ");
+    expect(logged).not.toContain("anya.travels");
+    warn.mockRestore();
+  });
+
+  it("считает по хэшам устройства и IP", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    await send(t, body(checkId));
+    expect(t.limiterCheck).toHaveBeenCalledOnce();
+    const arg = t.limiterCheck.mock.calls[0]?.[0];
+    expect(arg?.ownerHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(arg?.ipHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("чужая проверка и битое тело лимит не тратят", async () => {
+    const t = makeDeps();
+    const other = await t.addCheck(OTHER_TOKEN);
+    await send(t, body(other));
+    await send(t, { nonsense: true });
+    expect(t.limiterCheck).not.toHaveBeenCalled();
+  });
+
+  it("лимитер недоступен → 503, досье не считаем, ничего не пишем", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    const unavailable = new Error("redis");
+    unavailable.name = "RateLimitUnavailableError";
+    t.limiterCheck.mockRejectedValueOnce(unavailable);
+    const { res } = await send(t, body(checkId));
+    expect(res.status).toBe(503);
+    expect(t.ensureDossier).not.toHaveBeenCalled();
+    expectNothingWritten(t);
+  });
+});
+
 describe("POST: заказ", () => {
   it("Кострище без кода → 402 payment_required, нет ни генерации, ни заказа", async () => {
     const t = makeDeps();
@@ -228,12 +357,36 @@ describe("POST: заказ", () => {
     expectNothingWritten(t);
   });
 
-  it("код на Поджоге → promo_invalid", async () => {
+  it("код на Поджоге с доступной пробой: проба важнее, код не списывается", async () => {
     const t = makeDeps({ promos: { FUNTEST: makePromo({ tiers: [1, 2] }) } });
     const checkId = await t.addCheck(TOKEN);
     const { res } = await send(t, body(checkId, { tier: 1, promoCode: "funtest" }));
-    expect(res.status).toBe(400);
-    expectNothingWritten(t);
+    expect(res.status).toBe(202);
+    expect(t.orders.orders).toHaveLength(1);
+    expect(t.orders.orders[0]).toMatchObject({ reason: "first_free" });
+    expect(t.orders.redemptions).toHaveLength(0);
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(0);
+  });
+
+  it("повторный Поджог без кода → 402 payment_required, ничего не записано", async () => {
+    const t = makeDeps();
+    const checkId = await t.addCheck(TOKEN);
+    expect((await send(t, body(checkId))).res.status).toBe(202);
+    const { res, json } = await send(t, body(checkId));
+    expect(res.status).toBe(402);
+    expect(json).toEqual({ errorCode: "payment_required" });
+    expect(t.generations.rows.size).toBe(1);
+    expect(t.orders.orders).toHaveLength(1);
+  });
+
+  it("повторный Поджог по коду на 100 %: стартует, код списан", async () => {
+    const t = makeDeps({ promos: { FUNTEST: makePromo({ tiers: [1, 2] }) } });
+    const checkId = await t.addCheck(TOKEN);
+    expect((await send(t, body(checkId))).res.status).toBe(202);
+    const { res } = await send(t, body(checkId, { tier: 1, promoCode: "funtest" }));
+    expect(res.status).toBe(202);
+    expect(t.orders.orders.map((o) => o.reason)).toEqual(["first_free", "promo_free"]);
+    expect(t.orders.codes.get("FUNTEST")?.redeemed).toBe(1);
   });
 
   it("пауза на перебор → 429 rate_limited до всякой проверки кода", async () => {
@@ -257,23 +410,23 @@ describe("POST: заказ", () => {
     expectNothingWritten(t);
   });
 
-  it("вторая проба Поджога на этом устройстве → 409 free_used, строк не прибавилось", async () => {
+  it("вторая проба Поджога на этом устройстве → 402 payment_required, строк не прибавилось", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     expect((await send(t, body(checkId))).res.status).toBe(202);
     const { res, json } = await send(t, body(checkId));
-    expect(res.status).toBe(409);
-    expect(json).toEqual({ errorCode: "free_used" });
+    expect(res.status).toBe(402);
+    expect(json).toEqual({ errorCode: "payment_required" });
     expect(t.generations.rows.size).toBe(1);
     expect(t.orders.orders).toHaveLength(1);
     expect(t.startWorkflow).toHaveBeenCalledTimes(1);
   });
 
-  it("двойной клик: два параллельных POST дают одну генерацию, второй free_used", async () => {
+  it("двойной клик: два параллельных POST дают одну генерацию, второй payment_required", async () => {
     const t = makeDeps();
     const checkId = await t.addCheck(TOKEN);
     const [a, b] = await Promise.all([send(t, body(checkId)), send(t, body(checkId))]);
-    expect([a.res.status, b.res.status].sort()).toEqual([202, 409]);
+    expect([a.res.status, b.res.status].sort()).toEqual([202, 402]);
     expect(t.generations.rows.size).toBe(1);
     expect(t.startWorkflow).toHaveBeenCalledTimes(1);
   });

@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { IconBrandInstagram, IconCheck, IconDownload, IconX } from "@/components/create/icons";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/cx";
+import { track } from "@/lib/client/analytics";
 import { renderCardPng, type RoastCardData } from "@/lib/client/roast-card";
 import { STORY_HINT, shareToStories } from "@/lib/client/stories";
 import { fontVariables } from "@/styles/fonts";
@@ -328,6 +329,7 @@ function CardViewer({
         `${window.location.origin}/a/${slug}`,
         saveFile,
       );
+      track("story_share", { place: "viewer", result });
       if (result !== "cancelled") {
         setHint(STORY_HINT[result]);
         setTimeout(() => setHint(null), 5000);

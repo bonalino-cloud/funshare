@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { cx } from "@/components/cx";
 import { IconClockHour3, IconX } from "@/components/create/icons";
 import { LEVEL_NAME, TIER_NAME } from "@/components/create/labels";
+import { PRIVATE_BLOCK, track } from "@/lib/client/analytics";
 import { useHistory, type HistoryEntry } from "@/lib/client/history";
 import { fontVariables } from "@/styles/fonts";
 
@@ -110,6 +111,7 @@ function HistoryPanel({ onClose }: { onClose: () => void }) {
             </div>
             <Link
               href="/create"
+              onClick={() => track("start_click", { place: "history" })}
               className="flex h-14 items-center justify-center rounded-sm border-2 border-ink bg-white font-wide font-black tracking-tight text-base text-ink uppercase shadow-offset transition-[translate,box-shadow] duration-[120ms] ease-linear hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-offset-hover"
             >
               Прожарить сейчас
@@ -129,7 +131,12 @@ function HistoryCard({ entry }: { entry: HistoryEntry }) {
       href={`/g/${entry.id}`}
       className="flex flex-col gap-2.5 rounded-md border-2 border-ink bg-paper px-4 py-3.5 text-ink shadow-offset-paper transition-[translate,box-shadow] duration-[120ms] ease-linear hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
     >
-      <span className="truncate font-wide text-lg leading-none font-black tracking-tight">
+      <span
+        className={cx(
+          PRIVATE_BLOCK,
+          "truncate font-wide text-lg leading-none font-black tracking-tight",
+        )}
+      >
         @{entry.username}
       </span>
       <span className="type-body text-ink/60">

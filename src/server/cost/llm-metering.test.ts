@@ -120,6 +120,21 @@ describe("учёт токенов в обёртке write (писатель, с�
 describe("учёт токенов в обёртке analyze", () => {
   const input = { system: "s", parts: [{ type: "text" as const, text: "t" }] };
 
+  it("досье на Sonnet 5.5 с thinking between_tools; цена известна, не оценка", async () => {
+    const meter = new CostMeter();
+    generateText.mockResolvedValueOnce({ output: { d: 1 }, totalUsage: usage(1000, 100) });
+    await createAnthropicGenerate(meter)(input);
+    const call = generateText.mock.calls.at(-1)?.[0] as {
+      model: string;
+      providerOptions: { anthropic: { thinking: unknown } };
+    };
+    expect(call.model).toBe("claude-sonnet-5-5");
+    expect(call.providerOptions.anthropic.thinking).toEqual({ type: "between_tools" });
+    const run = meter.snapshot();
+    expect(run.llm[0]?.model).toBe("claude-sonnet-5-5");
+    expect(run.estimated).toBe(false);
+  });
+
   it("успех и неудача идут в роль analyze", async () => {
     const meter = new CostMeter();
     const generate = createAnthropicGenerate(meter);

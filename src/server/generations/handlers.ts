@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import {
   CandidatesResponse,
+  CheckedProfile,
   GenerationCreated,
   GenerationRequest,
   GenerationStatus,
@@ -8,6 +9,11 @@ import {
   type ErrorCode,
   type Tier,
 } from "@/contracts";
+import {
+  GENERATION_COMPUTE_WINDOW_MS,
+  GENERATION_DOSSIER_WAIT_MS,
+  type EnsureDossier,
+} from "../dossier";
 import { hashValue, isOwnerToken, sameHash } from "../hash";
 import {
   DuplicateOrderError,
@@ -20,8 +26,10 @@ import { TIERS, TierUnavailableError } from "../pricing";
 import { OWNER_COOKIE, RESULT_CACHE_TTL_MS } from "../profile-check/config";
 import { clientIp } from "../profile-check/handlers";
 import type { ProfileCheckRepository } from "../profile-check/repository";
+import type { RateLimiter } from "../ratelimit";
 import type { PromoGuard } from "../ratelimit/promo";
 import type { GenerationRepository } from "./repository";
+import { closeStaleGeneration, maybeStale } from "./stale";
 
 export type GenerationsHandlerDeps = {
   repo: GenerationRepository;
@@ -29,6 +37,17 @@ export type GenerationsHandlerDeps = {
   profiles: Pick<ProfileCheckRepository, "get">;
   orders: OrderRepository;
   guard: PromoGuard;
+  /** Лимит стартов по IP и устройству (`GENERATION_LIMITS`). Недоступен → бросает, ответ 503. */
+  limiter: RateLimiter;
+  /**
+   * Гарантия досье до заказа (не бросает): готово, считается фоном (ждём) или считаем сами.
+   * Отказ гардрейла по досье (`minor_detected` и др.) → заказ не создаётся.
+   */
+  ensureDossier: EnsureDossier;
+  /** Досье показало «младше 16»: убрать аватар из публичного Blob (идемпотентно, не бросает). */
+  onMinor: (check: { igUsername: string; avatarUrl: string | null }) => Promise<void>;
+  /** Сколько ждём чужое досье; по умолчанию `GENERATION_DOSSIER_WAIT_MS`. */
+  dossierWaitMs?: number;
   /** Запуск конвейера (Vercel Workflow, см. `workflow.ts`). */
   startWorkflow: (generationId: string) => Promise<void>;
   newId: () => string;
@@ -37,6 +56,9 @@ export type GenerationsHandlerDeps = {
 
 const STATUS: Partial<Record<ErrorCode, number>> = {
   promo_invalid: 400,
+  minor_detected: 409,
+  not_enough_data: 409,
+  profile_private: 409,
   free_used: 409,
   payment_required: 402,
   rate_limited: 429,
@@ -77,6 +99,12 @@ async function validTrialId(
   return ok ? trialId : null;
 }
 
+/** Ссылка на аватар из jsonb проверки (не доверенный): строка или `null`. */
+function avatarUrlOf(profile: unknown): string | null {
+  const parsed = CheckedProfile.safeParse(profile);
+  return parsed.success ? parsed.data.avatarUrl : null;
+}
+
 /** Освободить заказ (правило 2). Сбой не должен ломать ответ и сам не бросает. */
 async function releaseSafely(deps: GenerationsHandlerDeps, orderId: string): Promise<void> {
   try {
@@ -93,7 +121,7 @@ type Placed = { generationId: string; orderId: string };
 /**
  * Проверка профиля → заказ → строка генерации. Порядок записи: заказ раньше строки.
  * `orders.generationId` без FK, поэтому заказ можно создать до строки; отказ заказа
- * (`payment_required`, `free_used`, `promo_invalid`, пауза) не оставляет НИЧЕГО: ни генерации, ни
+ * (`payment_required`, `promo_invalid`, пауза) не оставляет НИЧЕГО: ни генерации, ни
  * заказа, ни списанного кода. Если после заказа не записалась строка — заказ освобождается здесь же.
  */
 async function place(
@@ -109,6 +137,37 @@ async function place(
   const freshSince = deps.now().getTime() - RESULT_CACHE_TTL_MS;
   if (!check.checkedAt || check.checkedAt.getTime() < freshSince) {
     return errorResponse("profile_not_found", 410);
+  }
+
+  // Гардрейл «младше 16» и «мало данных» по досье — ДО заказа (инварианты 2 и 11): отказ ничего не
+  // оставляет, проба и код не расходуются. Досье в фоне после «Нашли!» обычно уже готово.
+  // Снимок убрал Cron (`snapshotId` обнулился): досье строить не из чего, проверку надо повторить.
+  if (check.snapshotId === null) return errorResponse("profile_not_found", 410);
+  // Недоступный тариф (Пекло) отклоняется и так (`quote` → 400): не тратим на него ни лимит, ни досье.
+  if (!TIERS[body.tier].available) throw new TierUnavailableError(body.tier);
+
+  // Лимит стартов: после дешёвых проверок владения (чужие и битые запросы лимит не тратят), но ДО
+  // досье, промокода и заказа. Досье — платный вызов модели; повтор после сбоя тоже считается.
+  if (!(await deps.limiter.check({ ipHash: who.ipHash, ownerHash: who.ownerTokenHash }))) {
+    console.warn("[generations] лимит стартов исчерпан");
+    return errorResponse("rate_limited");
+  }
+  const dossier = await deps.ensureDossier(
+    { snapshotId: check.snapshotId },
+    deps.dossierWaitMs ?? GENERATION_DOSSIER_WAIT_MS,
+    GENERATION_COMPUTE_WINDOW_MS,
+  );
+  if (!dossier.ok) {
+    if (dossier.errorCode === "minor_detected") {
+      await deps.onMinor({
+        igUsername: check.igUsername,
+        avatarUrl: avatarUrlOf(check.profile),
+      });
+    }
+    if (dossier.errorCode === "profile_not_found") return errorResponse("profile_not_found", 410);
+    // Не успели посчитать за срок или сбой: платного ничего не случилось, можно повторить.
+    if (dossier.errorCode === "internal") return errorResponse("internal", 503);
+    return errorResponse(dossier.errorCode);
   }
 
   const trialGenerationId = await validTrialId(
@@ -250,18 +309,33 @@ function ownerHashOf(request: NextRequest): { ownerTokenHash: string } | Respons
  * GET /api/generations/:id — только владелец. Чужой, несуществующий и «без cookie» id — одинаковый
  * 404. Ответ строго через `GenerationStatus`: `errorCode` только при failed, `artifactSlug` только
  * при ready.
+ *
+ * Зависшая генерация (рабочий статус давно не двигался, `stale.ts`) закрывается здесь же, как
+ * зависшая проверка профиля: человек получает `failed/internal`, заказ освобождается. Сбой закрытия
+ * ответ не ломает: отдаём строку как есть, сторож Cron доделает.
  */
 export async function getGeneration(
   request: NextRequest,
   id: string,
-  deps: Pick<GenerationsHandlerDeps, "repo">,
+  deps: Pick<GenerationsHandlerDeps, "repo" | "orders" | "now">,
 ): Promise<Response> {
   const owner = ownerHashOf(request);
   if (owner instanceof Response) return owner;
 
   try {
-    const row = await deps.repo.get(id);
+    let row = await deps.repo.get(id);
     if (!row || !sameHash(row.ownerTokenHash, owner.ownerTokenHash)) return notFound();
+
+    if (maybeStale(row, deps.now())) {
+      try {
+        if (await closeStaleGeneration(deps, id)) {
+          console.error("[generations] генерация зависла, закрыта как internal");
+          row = (await deps.repo.get(id)) ?? row;
+        }
+      } catch (error) {
+        console.error(`[generations] зависшая не закрыта: ${errorName(error)}`);
+      }
+    }
 
     const candidate = {
       id: row.id,

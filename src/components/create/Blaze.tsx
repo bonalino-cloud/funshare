@@ -1,4 +1,5 @@
 import { Flames } from "@/components/roast/Flames";
+import { PRIVATE_BLOCK } from "@/lib/client/analytics";
 import { Avatar } from "./Avatar";
 
 /**
@@ -15,7 +16,7 @@ export function Blaze({
   size?: number;
 }) {
   return (
-    <div className="relative h-[220px]" aria-hidden="true">
+    <div className={`${PRIVATE_BLOCK} relative h-[220px]`} aria-hidden="true">
       {/* Огонь уже аватара, вытянут вверх и поднят на 10 px; заголовок над ним (z-20) */}
       <Flames
         particle="sm"

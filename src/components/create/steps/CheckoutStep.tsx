@@ -6,9 +6,10 @@ import type { Quote } from "@/contracts";
 import { Button } from "@/components/ui/Button";
 import { LinkInput } from "@/components/ui/LinkInput";
 import { Spinner } from "@/components/ui/Spinner";
+import { track } from "@/lib/client/analytics";
 import { ApiError, api, toErrorCode } from "@/lib/client/api";
 import { patchDraft, type CreateDraft } from "@/lib/client/draft";
-import { rememberGeneration } from "@/lib/client/history";
+import { recallLatest, rememberGeneration } from "@/lib/client/history";
 import { formatRub } from "@/lib/client/money";
 import { Blaze } from "../Blaze";
 import { ERROR_TEXT, errorLine, startErrorLine } from "../errors";
@@ -96,6 +97,7 @@ export function CheckoutStep({
       const q = await api.createQuote({ tier, promoCode: code });
       setQuote(q);
       patchDraft({ promoCode: code });
+      track("promo_applied");
     } catch (e) {
       setPromoError(errorLine(toErrorCode(e)));
     } finally {
@@ -121,6 +123,7 @@ export function CheckoutStep({
     setBusy(true);
     setError(null);
     setCheckStale(false);
+    track("pay_click", { tier, level, mode: draft.mode, free: quote?.finalAmount === 0 });
     try {
       const { id } = await api.createGeneration({
         profileCheckId,
@@ -132,6 +135,24 @@ export function CheckoutStep({
         extraFacts: draft.extraFacts.length ? draft.extraFacts : undefined,
         promoCode: draft.promoCode,
       });
+      track("generation_started", {
+        tier,
+        level,
+        mode: draft.mode,
+        facts: draft.extraFacts.length,
+        promo: Boolean(draft.promoCode),
+      });
+      // До записи новой в историю: первая в списке — ещё прошлая прожарка
+      const previous = recallLatest();
+      if (previous) {
+        track("repeat_started", {
+          tierFrom: previous.tier,
+          tierTo: tier,
+          levelFrom: previous.level,
+          levelTo: level,
+          sameProfile: previous.username === profile?.username,
+        });
+      }
       // В «Мои прожарки» на лендинге и для картинки степени в лоудере
       if (profile) {
         rememberGeneration({
@@ -146,6 +167,7 @@ export function CheckoutStep({
       router.push(`/g/${id}`);
     } catch (e) {
       setError(startErrorLine(e));
+      track("start_failed", { reason: e instanceof ApiError ? e.errorCode : "internal" });
       if (e instanceof ApiError) {
         setCheckStale(e.status === 410);
         if (e.errorCode === "payment_required" || e.errorCode === "promo_invalid")

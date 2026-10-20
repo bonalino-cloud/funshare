@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import type { Cover } from "./covers";
 
 /**
@@ -18,6 +19,36 @@ export const COVER_ALLOWED_HOST_SUFFIXES = ["fbcdn.net", "cdninstagram.com"] as 
 export const COVER_MAX_BYTES = 3 * 1024 * 1024;
 /** Таймаут на одну обложку целиком (заголовки + тело). Качаем параллельно: общий бюджет тот же. */
 export const COVER_TIMEOUT_MS = 5_000;
+
+/**
+ * Обложки уходят модели в уменьшенном виде: длинная сторона не больше 512 px, JPEG. Детали для
+ * досье (одежда, обстановка, лицо крупным планом) на 512 px читаются, а токены на картинки падают
+ * в разы против 1080 px. Кадр не увеличиваем.
+ */
+export const COVER_MAX_SIDE_PX = 512;
+const COVER_JPEG_QUALITY = 80;
+/** Потолок пикселей на входе: защита от «бомб» (маленький файл, огромная картинка). */
+const COVER_MAX_INPUT_PIXELS = 50_000_000;
+
+export type ResizeCoverFn = (
+  data: Uint8Array,
+) => Promise<{ data: Uint8Array; mediaType: "image/jpeg" }>;
+
+/** Уменьшает до `COVER_MAX_SIDE_PX` по длинной стороне, поворот по EXIF, прозрачность на белый. */
+export const resizeCover: ResizeCoverFn = async (data) => {
+  const out = await sharp(data, { limitInputPixels: COVER_MAX_INPUT_PIXELS })
+    .rotate()
+    .resize({
+      width: COVER_MAX_SIDE_PX,
+      height: COVER_MAX_SIDE_PX,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .flatten({ background: "#ffffff" })
+    .jpeg({ quality: COVER_JPEG_QUALITY })
+    .toBuffer();
+  return { data: new Uint8Array(out), mediaType: "image/jpeg" };
+};
 
 export type CoverMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 const MEDIA_TYPES: ReadonlySet<string> = new Set<CoverMediaType>([
@@ -158,18 +189,31 @@ export async function downloadCover(
  * Причины отказов — в лог счётчиками (`status=2 host=1`): так видно смену CDN или протухшие ссылки.
  */
 export function createCoverFetcher(
-  options: { fetchImpl?: FetchLike; timeoutMs?: number } = {},
+  options: { fetchImpl?: FetchLike; timeoutMs?: number; resize?: ResizeCoverFn } = {},
 ): FetchCoversFn {
+  const resize = options.resize ?? resizeCover;
   return async (covers) => {
     const failures = new Map<CoverFailure, number>();
+    let notResized = 0;
     const results = await Promise.all(
       covers.map(async (cover) => {
         const outcome = await tryDownloadCover(cover.url, options);
-        if (!("failure" in outcome)) return { ...cover, ...outcome };
+        if (!("failure" in outcome)) {
+          // Не уменьшилось (битый файл, нет нативного модуля) — отдаём оригинал: он уже прошёл
+          // потолок размера и тип по байтам, а анализ не должен терять картинки из-за ресайза.
+          try {
+            return { ...cover, ...(await resize(outcome.data)) };
+          } catch {
+            notResized++;
+            return { ...cover, ...outcome };
+          }
+        }
         failures.set(outcome.failure, (failures.get(outcome.failure) ?? 0) + 1);
         return null;
       }),
     );
+    if (notResized > 0)
+      console.error(`[analyze] обложки не уменьшены, ушли оригиналом: ${notResized}`);
     if (failures.size > 0) {
       const summary = [...failures].map(([reason, n]) => `${reason}=${n}`).join(" ");
       console.error(`[analyze] обложки не скачаны: ${summary}`);

@@ -21,7 +21,12 @@ export function FinalCta() {
             ["Кого ", { br: "mobile" }, { text: "жарим?", className: "tilt" }],
           ]}
         />
-        <FireButton href="/create" className="mt-32 md:mt-40" cut="var(--color-orange)">
+        <FireButton
+          href="/create"
+          place="final"
+          className="mt-32 md:mt-40"
+          cut="var(--color-orange)"
+        >
           Прожарить
         </FireButton>
       </div>
