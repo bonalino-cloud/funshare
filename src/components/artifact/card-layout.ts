@@ -52,6 +52,8 @@ export const PUNCH_FONT = {
   max: 104,
   maxNoImage: 132,
   min: 60,
+  /** Ниже `min` кегль уходит, только если иначе шутка вылезет на картинку или под ник. */
+  floor: 36,
   step: 2,
   lineHeight: 0.86,
 } as const;
@@ -114,10 +116,11 @@ export function layoutPunch(text: string, measure: Measure, hasImage: boolean): 
   const fits = (ls: string[], size: number) =>
     ls.length * size * PUNCH_FONT.lineHeight <= room && ls.every((l) => measure(l, size) <= TEXT_W);
 
+  // Обычная шутка до 200 знаков влезает не мельче `min`; `floor` — страховка для длинных слов
   let fontSize: number = max;
   let lines = wrap(caps, fontSize, measure);
-  while (fontSize > PUNCH_FONT.min && !fits(lines, fontSize)) {
-    fontSize = Math.max(PUNCH_FONT.min, fontSize - PUNCH_FONT.step);
+  while (fontSize > PUNCH_FONT.floor && !fits(lines, fontSize)) {
+    fontSize = Math.max(PUNCH_FONT.floor, fontSize - PUNCH_FONT.step);
     lines = wrap(caps, fontSize, measure);
   }
 

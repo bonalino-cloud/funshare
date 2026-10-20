@@ -45,6 +45,33 @@ describe("layoutPunch", () => {
     expect(l.top + height / 2).toBeCloseTo(CARD_H / 2);
   });
 
+  const LONG_200 = LONG.padEnd(200, " и").slice(0, 200);
+  /** Запас к метрике Alumni: шрифт на 15% шире, как если бы не догрузился и встал фолбэк. */
+  const wide: Measure = (text, size) => text.length * size * 0.45;
+
+  it.each([
+    ["с картинкой", true],
+    ["без картинки", false],
+  ])("шутка на 200 знаков %s влезает не мельче min", (_, hasImage) => {
+    for (const measure of [alumni, wide]) {
+      const l = layoutPunch(LONG_200, measure, hasImage);
+      const bottom = l.top + l.lines.length * l.fontSize * l.lineHeight;
+      expect(l.fontSize).toBeGreaterThanOrEqual(PUNCH_FONT.min);
+      expect(l.top).toBeGreaterThanOrEqual(200);
+      expect(bottom).toBeLessThanOrEqual(hasImage ? 848 + 0.001 : LABEL_Y_NO_IMAGE - 60);
+      expect(l.lines.every((line) => measure(line, l.fontSize) <= TEXT_W)).toBe(true);
+    }
+  });
+
+  it("если на min не влезает, кегль идёт ниже, но текст не заходит на картинку", () => {
+    const words = Array.from({ length: 9 }, () => "Превысокомногорассмотрительствующий").join(" ");
+    const l = layoutPunch(words, wide, true);
+    expect(l.fontSize).toBeLessThan(PUNCH_FONT.min);
+    expect(l.fontSize).toBeGreaterThanOrEqual(PUNCH_FONT.floor);
+    expect(l.top).toBeGreaterThanOrEqual(200);
+    expect(l.lines.every((line) => wide(line, l.fontSize) <= TEXT_W)).toBe(true);
+  });
+
   it("без картинки даже 140 знаков не доходят до ярлыка внизу", () => {
     const l = layoutPunch(LONG.padEnd(140, " и").slice(0, 140), alumni, false);
     const height = l.lines.length * l.fontSize * l.lineHeight;
