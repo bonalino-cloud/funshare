@@ -1,5 +1,6 @@
 import { ANALYZE_SYSTEM as ANALYZE_V1 } from "./analyze/v1";
 import { ANALYZE_SYSTEM as ANALYZE_V2 } from "./analyze/v2";
+import { ANALYZE_SYSTEM as ANALYZE_V3 } from "./analyze/v3";
 import { MODERATOR_SYSTEM as MODERATOR_V1 } from "./roast/moderator-v1";
 import { MODERATOR_SYSTEM as MODERATOR_V2 } from "./roast/moderator-v2";
 import { buildWriterSystem as writerV1, JUDGE_SYSTEM as JUDGE_V1 } from "./roast/v1";
@@ -24,5 +25,5 @@ export function allWriteSystemPrompts(): string[] {
 
 /** Досье всех версий. */
 export function allAnalyzeSystemPrompts(): string[] {
-  return [ANALYZE_V1, ANALYZE_V2];
+  return [ANALYZE_V1, ANALYZE_V2, ANALYZE_V3];
 }

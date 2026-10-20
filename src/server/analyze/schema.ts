@@ -4,25 +4,22 @@ import { z } from "zod";
 // намеренно не попадают: их применяет код после ответа (postprocess.ts), а строгий
 // `PersonaProfile.parse` стоит последним. Так модель не «падает» по мелочи, а в JSON Schema
 // для провайдера уходят только простые типы.
+//
+// v3 (issue #102, 2026-10-20): вместо полного досье (~7k токенов по верхним лимитам контракта:
+// summary, vibe, traits, interests, habits, aesthetics, look) модель отдаёт только крючки —
+// наблюдения с опорой — и то, что нужно гардрейлам и безопасным темам. `summary`/`vibe`/`traits`/
+// `interests`/`habits`/`aesthetics`/`look`/`signatureMoves` требует `PersonaProfile` (кроме
+// `look`/`signatureMoves`, они опциональны), но их не читает ни `write` (`roast/v2.ts` их не
+// использует вовсе), ни `judge` — `postprocess.ts` синтезирует их из наблюдений, а не просит у
+// модели. Откат на `analyze/v1` или `analyze/v2` (`prompts/active.ts`) требует вернуть и эту
+// схему, и `postprocess.ts`: формы входа/выхода версий здесь разошлись.
 
 const Strings = z.array(z.string());
 
 export const LlmDossier = z.object({
   language: z.string().describe("ISO 639-1, язык профиля"),
-  summary: z.string(),
-  vibe: z.string(),
-  traits: Strings,
-  interests: Strings,
-  habits: Strings,
-  aesthetics: z.string(),
   humorAngles: Strings,
   avoidTopics: Strings,
-  look: z
-    .object({
-      description: z.string(),
-      referenceIndexes: z.array(z.number()).describe("номера постов из присланных обложек"),
-    })
-    .nullable(),
   observations: z.array(
     z.object({
       claim: z.string(),
@@ -32,7 +29,6 @@ export const LlmDossier = z.object({
     }),
   ),
   warmFacts: Strings,
-  signatureMoves: Strings,
   sensitiveEvents: Strings,
   /** `isPrivate` у модели нет: это знает код по снимку. */
   flags: z.object({ likelyMinor: z.boolean(), insufficientData: z.boolean() }),

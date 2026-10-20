@@ -43,22 +43,31 @@ describe("analyzePersona: успех", () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
 
-  it("look: аватар и выбранные моделью обложки, только из присланных", async () => {
+  it("look всегда null (issue #102 — модель его больше не описывает)", async () => {
+    expect(ok(await analyzePersona(makeProfile(), makeDeps().deps)).persona.look).toBeNull();
+  });
+
+  it("summary/vibe/traits синтезируются из наблюдений и крючков, контракт проходит", async () => {
+    const dossier = makeDossier({ humorAngles: ["кофе"] });
+    const { deps } = makeDeps([dossier]);
+    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    expect(persona.summary.length).toBeGreaterThan(0);
+    expect(persona.vibe.length).toBeGreaterThan(0);
+    expect(persona.traits.length).toBeGreaterThanOrEqual(3);
+    expect(persona.interests).toEqual([]);
+    expect(persona.habits).toEqual([]);
+  });
+
+  it("мало наблюдений и пустые humorAngles — traits всё равно добираются до 3", async () => {
     const dossier = makeDossier({
-      look: { description: "борода, кепка", referenceIndexes: [1, 3, 99] },
+      humorAngles: [],
+      observations: [makeObservation({ claim: "Одно наблюдение", evidence: ["post:0"] })],
     });
     const { deps } = makeDeps([dossier]);
     const { persona } = ok(await analyzePersona(makeProfile(), deps));
-    expect(persona.look?.referenceImageUrls).toEqual([
-      "https://cdn.example.com/avatar.jpg",
-      "https://cdn.example.com/p1.jpg",
-      "https://cdn.example.com/p3.jpg",
-    ]);
-  });
-
-  it("look = null, если модель его не заполнила", async () => {
-    const { deps } = makeDeps([makeDossier({ look: null })]);
-    expect(ok(await analyzePersona(makeProfile(), deps)).persona.look).toBeNull();
+    expect(persona.traits.length).toBeGreaterThanOrEqual(3);
+    expect(persona.summary.length).toBeGreaterThan(0);
+    expect(persona.vibe.length).toBeGreaterThan(0);
   });
 });
 
@@ -150,24 +159,27 @@ describe("analyzePersona: пост-обработка ответа", () => {
 
   it("чистит текст модели: угловые скобки, управляющие символы, дубли, лимиты", async () => {
     const dossier = makeDossier({
-      summary: "Тест <b>жирный</b>\u0000",
-      traits: ["раз", "РАЗ", "два", "три", "четыре"],
-      interests: Array.from({ length: 15 }, (_, i) => `интерес ${i}`),
+      observations: [
+        makeObservation({ claim: "Тест <b>жирный</b>\u0000", evidence: ["post:0"] }),
+      ],
       warmFacts: Array.from({ length: 8 }, (_, i) => `факт ${i}`),
       language: "RU",
     });
     const { deps } = makeDeps([dossier]);
     const { persona } = ok(await analyzePersona(makeProfile(), deps));
-    expect(persona.summary).toBe("Тест ‹b›жирный‹/b›");
-    expect(persona.traits).toEqual(["раз", "два", "три", "четыре"]);
-    expect(persona.interests).toHaveLength(10);
+    expect(persona.observations?.[0]?.claim).toBe("Тест ‹b›жирный‹/b›");
     expect(persona.warmFacts).toHaveLength(5);
     expect(persona.language).toBe("ru");
   });
 
   it("PII из ответа модели (например, текст с фото) и из имени вырезается", async () => {
     const dossier = makeDossier({
-      summary: "Пишет +7 999 123-45-67 на каждом постере",
+      observations: [
+        makeObservation({
+          claim: "Пишет +7 999 123-45-67 на каждом постере",
+          evidence: ["post:0"],
+        }),
+      ],
       warmFacts: ["Отвечает на test@example.com", "Добрый", "Щедрый"],
     });
     const { deps } = makeDeps([dossier]);
@@ -203,12 +215,6 @@ describe("analyzePersona: ретраи", () => {
     expect(second).toContain("не по схеме");
   });
 
-  it("досье не прошло контракт (мало traits) → причина с путём поля", async () => {
-    const { deps, generate } = makeDeps([makeDossier({ traits: ["одна"] }), makeDossier()]);
-    ok(await analyzePersona(makeProfile(), deps));
-    expect(textOf(generate.mock.calls[1]![0])).toContain("traits");
-  });
-
   it("LlmSchemaError из провайдера тоже ретраится", async () => {
     const { deps, generate } = makeDeps([new LlmSchemaError("не JSON"), makeDossier()]);
     ok(await analyzePersona(makeProfile(), deps));
@@ -225,19 +231,11 @@ describe("analyzePersona: ретраи", () => {
 
   it("сбой вызова (сеть, недоступная картинка) → следующая попытка без картинок", async () => {
     const { deps, generate } = makeDeps([new Error("boom"), makeDossier()]);
-    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    ok(await analyzePersona(makeProfile(), deps));
     const imagesIn = (i: number) =>
       generate.mock.calls[i]![0].parts.filter((p) => p.type === "image").length;
     expect(imagesIn(0)).toBe(6);
     expect(imagesIn(1)).toBe(0);
-    // без обложек модель внешность не видела: описание выдумано, героя по нему не рисуем
-    expect(persona.look).toBeNull();
-  });
-
-  it("look = null, если модель не выбрала ни одной присланной обложки", async () => {
-    const dossier = makeDossier({ look: { description: "борода", referenceIndexes: [99] } });
-    const { deps } = makeDeps([dossier]);
-    expect(ok(await analyzePersona(makeProfile(), deps)).persona.look).toBeNull();
   });
 
   it("в лог не попадают текст профиля, ответ модели и сообщение исключения", async () => {
@@ -311,8 +309,6 @@ describe("analyzePersona: гардрейлы", () => {
   it("гардрейл срабатывает и на пустом досье (модель не заполнила остальное)", async () => {
     const dossier = makeDossier({
       flags: { likelyMinor: true, insufficientData: false },
-      traits: [],
-      summary: "",
       observations: [],
     });
     const { deps, generate } = makeDeps([dossier]);
@@ -359,12 +355,20 @@ describe("analyzePersona: промпт и недоверенные данные"
     expect(user).toContain("Обложка поста post:1");
   });
 
-  it("факты кода (повторы, статистика) идут в блок данных", async () => {
+  it("факты кода (повторы слов, статистика) идут в блок данных", async () => {
     const { deps, generate } = makeDeps();
     ok(await analyzePersona(makeProfile(), deps));
     const user = textOf(generate.mock.calls[0]![0]);
-    expect(user).toContain('"hashtags":[{"tag":"закат","count":2}]');
-    expect(user).toContain('"locations":[{"name":"Сочи","count":2}]');
+    expect(user).toContain('"postsPerWeek"');
+  });
+
+  it("хэштеги, локации и счётчик лайков не уходят модели (issue #102)", async () => {
+    const { deps, generate } = makeDeps();
+    ok(await analyzePersona(makeProfile(), deps));
+    const user = textOf(generate.mock.calls[0]![0]);
+    expect(user).not.toContain('"hashtags"');
+    expect(user).not.toContain('"locations"');
+    expect(user).not.toContain("avgLikes");
   });
 
   it("причина ретрая в промпте очищена от угловых скобок", async () => {
@@ -433,36 +437,28 @@ describe("обложки", () => {
   });
 
   it("часть обложек не скачалась: остальные с верными номерами постов", async () => {
-    const { deps, generate, fetchCovers } = makeDeps([
-      makeDossier({ look: { description: "борода", referenceIndexes: [1, 3] } }),
-    ]);
+    const { deps, generate, fetchCovers } = makeDeps([makeDossier()]);
     // из выбранных [1, 3, 0, 7, 6, 5] доходят только посты 3 и 7
     fetchCovers.mockImplementation(async (covers) =>
       covers
         .filter((c) => c.index === 3 || c.index === 7)
         .map((c) => ({ ...c, data: new Uint8Array([1]), mediaType: "image/png" as const })),
     );
-    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    ok(await analyzePersona(makeProfile(), deps));
     const parts = generate.mock.calls[0]![0].parts;
     const text = textOf(generate.mock.calls[0]![0]);
     expect(parts.filter((p) => p.type === "image")).toHaveLength(2);
     expect(text).toContain("Обложка поста post:3");
     expect(text).toContain("Обложка поста post:7");
     expect(text).not.toContain("Обложка поста post:1");
-    // пост 1 не скачан: ссылка look на него отброшена, пост 3 остался
-    expect(persona.look?.referenceImageUrls).toEqual([
-      "https://cdn.example.com/avatar.jpg",
-      "https://cdn.example.com/p3.jpg",
-    ]);
   });
 
-  it("ни одна обложка не скачалась → шаг идёт без картинок, look = null", async () => {
+  it("ни одна обложка не скачалась → шаг идёт без картинок", async () => {
     const { deps, generate, fetchCovers } = makeDeps();
     fetchCovers.mockResolvedValue([]);
-    const { persona } = ok(await analyzePersona(makeProfile(), deps));
+    ok(await analyzePersona(makeProfile(), deps));
     expect(generate.mock.calls[0]![0].parts.some((p) => p.type === "image")).toBe(false);
     expect(textOf(generate.mock.calls[0]![0])).toContain("Обложек нет");
-    expect(persona.look).toBeNull();
   });
 
   it("сбой самого скачивания не роняет шаг", async () => {
@@ -480,15 +476,31 @@ describe("обложки", () => {
     expect(logged).not.toContain("cdn.example.com");
   });
 
-  it("ни одной подходящей картинки → модель вызывается без картинок, look = null", async () => {
+  it("ни одной подходящей картинки → модель вызывается без картинок", async () => {
     const profile = makeProfile({ avatarUrl: null });
     const posts = profile.posts.map((p) => ({ ...p, imageUrl: null }));
-    const { deps, generate } = makeDeps([
-      makeDossier({ look: { description: "борода", referenceIndexes: [1] } }),
-    ]);
-    const { persona } = ok(await analyzePersona({ ...profile, posts }, deps));
+    const { deps, generate } = makeDeps([makeDossier()]);
+    ok(await analyzePersona({ ...profile, posts }, deps));
     expect(generate.mock.calls[0]![0].parts.some((p) => p.type === "image")).toBe(false);
-    expect(persona.look).toBeNull();
+  });
+
+  it("аватар скачивается один раз и уходит в промпт как отдельная картинка", async () => {
+    const { deps, generate, fetchAvatar } = makeDeps();
+    fetchAvatar.mockResolvedValue({ data: new Uint8Array([1]), mediaType: "image/jpeg" });
+    ok(await analyzePersona(makeProfile(), deps));
+    expect(fetchAvatar).toHaveBeenCalledTimes(1);
+    expect(fetchAvatar).toHaveBeenCalledWith("https://cdn.example.com/avatar.jpg");
+    const parts = generate.mock.calls[0]![0].parts;
+    expect(parts.filter((p) => p.type === "image")).toHaveLength(7);
+    expect(textOf(generate.mock.calls[0]![0])).toContain("Аватар профиля");
+  });
+
+  it("аватар не скачался → промпт без него, остальное не ломается", async () => {
+    const { deps, generate } = makeDeps();
+    ok(await analyzePersona(makeProfile(), deps));
+    const parts = generate.mock.calls[0]![0].parts;
+    expect(parts.filter((p) => p.type === "image")).toHaveLength(6);
+    expect(textOf(generate.mock.calls[0]![0])).not.toContain("Аватар профиля");
   });
 });
 

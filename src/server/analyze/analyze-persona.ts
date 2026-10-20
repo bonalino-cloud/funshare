@@ -4,8 +4,14 @@ import { buildProfileFacts, type ProfileFacts } from "../facts";
 import { capCodepoints, cleanUntrusted } from "../facts/text";
 import { ANALYZE_PROMPT_VERSION as PROMPT_VERSION, buildAnalyzePrompt } from "../prompts/active";
 import { profileRules } from "../scrape";
-import { createCoverFetcher, type DownloadedCover, type FetchCoversFn } from "./cover-fetch";
-import { pickCovers } from "./covers";
+import {
+  createCoverFetcher,
+  downloadCover,
+  resizeCover,
+  type DownloadedCover,
+  type FetchCoversFn,
+} from "./cover-fetch";
+import { httpUrl, pickCovers } from "./covers";
 import type { CostMeter } from "../cost/meter";
 import { ANALYZE_MODEL, createAnthropicGenerate, LlmSchemaError, type GenerateFn } from "./llm";
 import { buildPersona } from "./postprocess";
@@ -25,21 +31,39 @@ export type AnalyzeResult =
   | { ok: true; persona: PersonaProfileType; promptVersion: string; model: string }
   | { ok: false; errorCode: AnalyzeErrorCode };
 
+/** Аватар для модели (issue #102): байты и mediaType, как у обложки; `null` — не скачался. */
+export type FetchAvatarFn = (
+  url: string,
+) => Promise<{ data: Uint8Array; mediaType: string } | null>;
+
 export type AnalyzeDeps = {
   generate: GenerateFn;
   /** Скачивание обложек (байты для модели). В тестах подменяется: сеть не нужна. */
   fetchCovers: FetchCoversFn;
+  /** Скачивание аватара (байты для модели). В тестах подменяется: сеть не нужна. */
+  fetchAvatar: FetchAvatarFn;
   /** Подпись модели для `personas.model`. */
   model: string;
 };
 
 export type AnalyzeStepDeps = AnalyzeDeps & { personas: PersonaRepository };
 
+async function fetchAvatarBytes(url: string): Promise<{ data: Uint8Array; mediaType: string } | null> {
+  const downloaded = await downloadCover(url);
+  if (!downloaded) return null;
+  try {
+    return await resizeCover(downloaded.data);
+  } catch {
+    return downloaded;
+  }
+}
+
 /** Реальные реализации создаются лениво: сборка и тесты не требуют ключа и БД. */
 export function defaultAnalyzeDeps(meter?: CostMeter): AnalyzeDeps {
   return {
     generate: createAnthropicGenerate(meter),
     fetchCovers: createCoverFetcher(),
+    fetchAvatar: fetchAvatarBytes,
     model: ANALYZE_MODEL,
   };
 }
@@ -83,7 +107,7 @@ export async function analyzePersona(
   if (blocked) return { ok: false, errorCode: blocked };
 
   // Один раз до попыток. Не скачавшиеся обложки пропускаются: `index` у остальных остаётся
-  // индексом поста, постобработка сверяет look.referenceIndexes именно с этим списком.
+  // индексом поста, постобработка сверяет его именно с этим списком.
   const picked = pickCovers(snapshot);
   let allCovers: DownloadedCover[] = [];
   if (picked.length > 0) {
@@ -94,6 +118,19 @@ export async function analyzePersona(
     }
     console.error(`[analyze] обложки: скачано ${allCovers.length} из ${picked.length}`);
   }
+
+  // Аватар (issue #102): раньше модель его не видела совсем, теперь — дополнительный вайб
+  // к обложкам. Как и обложки, скачивается один раз, не скачался — просто не попадает в промпт.
+  let avatar: { data: Uint8Array; mediaType: string } | undefined;
+  const avatarUrl = httpUrl(snapshot.avatarUrl);
+  if (avatarUrl) {
+    try {
+      avatar = (await deps.fetchAvatar(avatarUrl)) ?? undefined;
+    } catch (error) {
+      logFailure("сбой скачивания аватара", error);
+    }
+  }
+
   const displayName = capCodepoints(cleanUntrusted(snapshot.fullName).text, 100);
 
   let retryNote: string | undefined;
@@ -103,6 +140,7 @@ export async function analyzePersona(
     const covers: DownloadedCover[] = withImages ? allCovers : [];
     const prompt = buildAnalyzePrompt({
       facts,
+      avatar: withImages ? avatar : undefined,
       displayName,
       postCount: snapshot.posts.length,
       covers,
